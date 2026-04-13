@@ -5,6 +5,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import DriverDashboard from './pages/DriverDashboard';
 import AdminLogin from './pages/AdminLogin';
 import AdminSignUp from './pages/AdminSignUp';
+import AdminForgotPassword from './pages/AdminForgotPassword';
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
         <Route path="/driver/dashboard" element={<DriverDashboard />} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/forgot-password" element={<AdminForgotPassword />} />
         <Route path="/admin/signup" element={<AdminSignUp />} />
       </Routes>
     </BrowserRouter>

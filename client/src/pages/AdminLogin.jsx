@@ -148,8 +148,13 @@ export default function AdminLogin() {
                 style={{ accentColor: '#1B2B4B', width: '15px', height: '15px', cursor: 'pointer' }} />
               Keep me signed in
             </label>
-            <span style={{ fontSize: '12px', fontWeight: '700', color: '#F5A623', cursor: 'pointer' }}>
+            {/* <span style={{ fontSize: '12px', fontWeight: '700', color: '#F5A623', cursor: 'pointer' }}>
               Forgot password?
+            </span> */}
+            <span
+                onClick={() => navigate('/admin/forgot-password')}
+                style={{ fontSize: '12px', fontWeight: '700', color: '#F5A623', cursor: 'pointer' }}>
+                Forgot password?
             </span>
           </div>
 
