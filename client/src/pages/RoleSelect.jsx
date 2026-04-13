@@ -5,7 +5,12 @@ export default function RoleSelect() {
 
   const handleRole = (role) => {
     localStorage.setItem('role', role);
-    navigate(`/${role.toLowerCase()}/dashboard`);
+    if(role=='Admin'){
+      navigate('/admin/login');
+    }else{
+      navigate(`/${role.toLowerCase()}/dashboard`);
+    }
+
   };
 
   const roles = [

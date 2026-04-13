@@ -3,6 +3,8 @@ import RoleSelect from './pages/RoleSelect';
 import StudentDashboard from './pages/StudentDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import DriverDashboard from './pages/DriverDashboard';
+import AdminLogin from './pages/AdminLogin';
+import AdminSignUp from './pages/AdminSignUp';
 
 export default function App() {
   return (
@@ -12,6 +14,9 @@ export default function App() {
         <Route path="/student/dashboard" element={<StudentDashboard />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/driver/dashboard" element={<DriverDashboard />} />
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/signup" element={<AdminSignUp />} />
       </Routes>
     </BrowserRouter>
   );
