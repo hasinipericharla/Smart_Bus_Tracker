@@ -9,6 +9,7 @@ import DriverSignUp from './pages/DriverSignUp';
 import StudentDashboard from './pages/StudentDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import DriverDashboard from './pages/DriverDashboard';
+import AdminForgotPassword from './pages/AdminForgotPassword';
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/student/dashboard" element={<StudentDashboard />} />
         <Route path="/driver/dashboard" element={<DriverDashboard />} />
+        <Route path="/admin/forgot-password"  element={<AdminForgotPassword />} />
       </Routes>
     </BrowserRouter>
   );
