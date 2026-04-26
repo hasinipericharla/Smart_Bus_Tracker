@@ -3828,6 +3828,9 @@ export default function BusNavDashboard() {
                 <IconLogout /> Logout
               </button>
             </div>
+            {/* <div className="sidebar-bottom">
+              <button className="nav-item" style={{color:'#64748b'}} onClick={() => navigate('/')}><IconLogout/> Logout</button>
+            </div> */}
           </div>
 
           {/* MAIN PAGE CONTENT */}
