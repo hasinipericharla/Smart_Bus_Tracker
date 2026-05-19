@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { signup, verifyEmail, resendOtp } from '../../../server/adminAuthService';
 
 export default function AdminSignUp() {
   const navigate = useNavigate();
@@ -47,17 +48,33 @@ export default function AdminSignUp() {
     }, 1000);
   };
 
-  const handleRegister = () => {
-    if (!name || !email || !password || !confirm) { setError('All fields are required.'); return; }
-    if (!/\S+@\S+\.\S+/.test(email)) { setError('Please enter a valid email address.'); return; }
-    if (password !== confirm) { setError('Passwords do not match.'); return; }
-    if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
-    setError('');
+  // const handleRegister = () => {
+  //   if (!name || !email || !password || !confirm) { setError('All fields are required.'); return; }
+  //   if (!/\S+@\S+\.\S+/.test(email)) { setError('Please enter a valid email address.'); return; }
+  //   if (password !== confirm) { setError('Passwords do not match.'); return; }
+  //   if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
+  //   setError('');
+  //   setSuccess(`OTP sent to ${email}`);
+  //   setTimeout(() => setSuccess(''), 3000);
+  //   startResendTimer();
+  //   setStep(2);
+  // };
+    const handleRegister = async () => {
+  if (!name || !email || !password || !confirm) { setError('All fields are required.'); return; }
+  if (!/\S+@\S+\.\S+/.test(email)) { setError('Please enter a valid email address.'); return; }
+  if (password !== confirm) { setError('Passwords do not match.'); return; }
+  if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
+  setError('');
+  try {
+    await signup({ name, email, password });
     setSuccess(`OTP sent to ${email}`);
     setTimeout(() => setSuccess(''), 3000);
     startResendTimer();
     setStep(2);
-  };
+  } catch (err) {
+    setError(err.message);
+  }
+};
 
   const handleOtpChange = (index, value) => {
     if (!/^\d*$/.test(value)) return;
@@ -75,12 +92,23 @@ export default function AdminSignUp() {
     }
   };
 
-  const handleVerifyOtp = () => {
-    if (otp.join('').length < 6) { setError('Please enter the complete 6-digit OTP.'); return; }
-    setError('');
+  // const handleVerifyOtp = () => {
+  //   if (otp.join('').length < 6) { setError('Please enter the complete 6-digit OTP.'); return; }
+  //   setError('');
+  //   setSuccess('Account created successfully! Redirecting to login...');
+  //   setTimeout(() => navigate('/admin/login'), 2000);
+  // };
+     const handleVerifyOtp = async () => {
+  if (otp.join('').length < 6) { setError('Please enter the complete 6-digit OTP.'); return; }
+  setError('');
+  try {
+    await verifyEmail({ email, otp: otp.join('') });
     setSuccess('Account created successfully! Redirecting to login...');
     setTimeout(() => navigate('/admin/login'), 2000);
-  };
+  } catch (err) {
+    setError(err.message);
+  }
+};
 
   return (
     <div style={{
@@ -311,7 +339,17 @@ export default function AdminSignUp() {
                     </span>
                   ) : (
                     <span
-                      onClick={() => { startResendTimer(); setSuccess('OTP resent!'); setTimeout(() => setSuccess(''), 2000); }}
+                      // onClick={() => { startResendTimer(); setSuccess('OTP resent!'); setTimeout(() => setSuccess(''), 2000); }}
+                      onClick={async () => {
+  try {
+    await resendOtp({ email, purpose: 'email_verification' });
+    startResendTimer();
+    setSuccess('OTP resent!');
+    setTimeout(() => setSuccess(''), 2000);
+  } catch (err) {
+    setError(err.message);
+  }
+}}
                       style={{ fontSize: '12px', color: '#F5A623', fontWeight: '700', cursor: 'pointer' }}>
                       Resend OTP
                     </span>

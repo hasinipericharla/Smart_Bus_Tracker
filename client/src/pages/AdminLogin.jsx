@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { login } from '../api/auth'; // ✅ adjust path as needed
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -31,14 +32,34 @@ export default function AdminLogin() {
     letterSpacing: '0.04em', textTransform: 'uppercase'
   };
 
-  const handleLogin = () => {
-    if (!email || !password) {
-      setError('Please enter both Admin ID and Password.');
+  // const handleLogin = () => {
+  //   if (!email || !password) {
+  //     setError('Please enter both Admin ID and Password.');
+  //     return;
+  //   }
+  //   setError('');
+  //   navigate('/admin/dashboard');
+  // };
+
+// Replace handleLogin with this:
+const handleLogin = async () => {
+  if (!email || !password) {
+    setError('Please enter both Admin ID and Password.');
+    return;
+  }
+  setError('');
+  try {
+    const data = await login({ email, password, remember });
+    if (data.requiresVerification) {
+      // Account exists but email not verified — go verify
+      navigate('/admin/verify-email', { state: { email: data.email } });
       return;
     }
-    setError('');
     navigate('/admin/dashboard');
-  };
+  } catch (err) {
+    setError(err.message);
+  }
+};
 
   return (
     <div style={{

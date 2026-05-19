@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { forgotPassword, verifyResetOtp, resetPassword, resendOtp } from '../api/auth';
 
 export default function AdminForgotPassword() {
   const navigate = useNavigate();
@@ -46,15 +47,31 @@ export default function AdminForgotPassword() {
     }, 1000);
   };
 
-  const handleSendOtp = () => {
-    if (!email) { setError('Please enter your email address.'); return; }
-    if (!/\S+@\S+\.\S+/.test(email)) { setError('Please enter a valid email address.'); return; }
-    setError('');
+  // const handleSendOtp = () => {
+  //   if (!email) { setError('Please enter your email address.'); return; }
+  //   if (!/\S+@\S+\.\S+/.test(email)) { setError('Please enter a valid email address.'); return; }
+  //   setError('');
+  //   setSuccess(`OTP sent to ${email}`);
+  //   setTimeout(() => setSuccess(''), 3000);
+  //   startResendTimer();
+  //   setStep(2);
+  // };
+
+  // Replace handleSendOtp:
+const handleSendOtp = async () => {
+  if (!email) { setError('Please enter your email address.'); return; }
+  if (!/\S+@\S+\.\S+/.test(email)) { setError('Please enter a valid email address.'); return; }
+  setError('');
+  try {
+    await forgotPassword({ email });
     setSuccess(`OTP sent to ${email}`);
     setTimeout(() => setSuccess(''), 3000);
     startResendTimer();
     setStep(2);
-  };
+  } catch (err) {
+    setError(err.message);
+  }
+};
 
   const handleOtpChange = (index, value) => {
     if (!/^\d*$/.test(value)) return;
@@ -72,20 +89,70 @@ export default function AdminForgotPassword() {
     }
   };
 
-  const handleVerifyOtp = () => {
-    if (otp.join('').length < 6) { setError('Please enter the complete 6-digit OTP.'); return; }
-    setError('');
+  // const handleVerifyOtp = () => {
+  //   if (otp.join('').length < 6) { setError('Please enter the complete 6-digit OTP.'); return; }
+  //   setError('');
+  //   setStep(3);
+  // };
+  // Replace handleVerifyOtp:
+// const handleVerifyOtp = async () => {
+//   if (otp.join('').length < 6) { setError('Please enter the complete 6-digit OTP.'); return; }
+//   setError('');
+//   try {
+//     await verifyResetOtp({ email, otp: otp.join('') });
+//     setStep(3);
+//   } catch (err) {
+//     setError(err.message);
+//   }
+// };
+const handleVerifyOtp = async () => {
+  if (otp.join('').length < 6) { setError('Please enter the complete 6-digit OTP.'); return; }
+  setError('');
+  try {
+    const data = await verifyResetOtp({ email, otp: otp.join('') });
+    sessionStorage.setItem('resetToken', data.resetToken); // ← save token after OTP verified
     setStep(3);
-  };
+  } catch (err) {
+    setError(err.message);
+  }
+};
 
-  const handleResetPassword = () => {
-    if (!newPassword || !confirmPassword) { setError('Please fill in both fields.'); return; }
-    if (newPassword !== confirmPassword) { setError('Passwords do not match.'); return; }
-    if (newPassword.length < 6) { setError('Password must be at least 6 characters.'); return; }
-    setError('');
+  // const handleResetPassword = () => {
+  //   if (!newPassword || !confirmPassword) { setError('Please fill in both fields.'); return; }
+  //   if (newPassword !== confirmPassword) { setError('Passwords do not match.'); return; }
+  //   if (newPassword.length < 6) { setError('Password must be at least 6 characters.'); return; }
+  //   setError('');
+  //   setSuccess('Password reset successfully! Redirecting to login...');
+  //   setTimeout(() => navigate('/admin/login'), 2000);
+  // };
+   // Replace handleResetPassword:
+// const handleResetPassword = async () => {
+//   if (!newPassword || !confirmPassword) { setError('Please fill in both fields.'); return; }
+//   if (newPassword !== confirmPassword) { setError('Passwords do not match.'); return; }
+//   if (newPassword.length < 6) { setError('Password must be at least 6 characters.'); return; }
+//   setError('');
+//   try {
+//     await resetPassword({ newPassword, confirmPassword });
+//     setSuccess('Password reset successfully! Redirecting to login...');
+//     setTimeout(() => navigate('/admin/login'), 2000);
+//   } catch (err) {
+//     setError(err.message);
+//   }
+// };
+const handleResetPassword = async () => {
+  if (!newPassword || !confirmPassword) { setError('Please fill in both fields.'); return; }
+  if (newPassword !== confirmPassword) { setError('Passwords do not match.'); return; }
+  if (newPassword.length < 6) { setError('Password must be at least 6 characters.'); return; }
+  setError('');
+  try {
+    const resetToken = sessionStorage.getItem('resetToken'); // ← get token here
+    await resetPassword({ resetToken, newPassword, confirmPassword }); // ← pass it
     setSuccess('Password reset successfully! Redirecting to login...');
     setTimeout(() => navigate('/admin/login'), 2000);
-  };
+  } catch (err) {
+    setError(err.message);
+  }
+};
 
   const stepTitles = ['Reset Password', 'Verify OTP', 'New Password'];
   const stepSubs = [
@@ -255,7 +322,13 @@ export default function AdminForgotPassword() {
                     </span>
                   ) : (
                     <span
-                      onClick={() => { startResendTimer(); setSuccess('OTP resent!'); setTimeout(() => setSuccess(''), 2000); }}
+                      // onClick={() => { startResendTimer(); setSuccess('OTP resent!'); setTimeout(() => setSuccess(''), 2000); }}
+                      onClick={() => {
+  resendOtp({ email, purpose: 'password_reset' });
+  startResendTimer();
+  setSuccess('OTP resent!');
+  setTimeout(() => setSuccess(''), 2000);
+}}
                       style={{ fontSize: '12px', color: '#F5A623', fontWeight: '700', cursor: 'pointer' }}>
                       Resend OTP
                     </span>
