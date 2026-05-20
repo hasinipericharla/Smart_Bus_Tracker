@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { driverSignup, driverVerifyEmail } from '../api/auth';
 
 const inputStyle = {
   width: '100%', padding: '11px 40px 11px 14px',
@@ -70,34 +71,52 @@ export default function DriverSignUp() {
   const formatTime = (s) =>
     `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
-  const handleSendOtp = () => {
-    if (!name || !email || !driverId || !phone || !password || !confirm) {
-      setError('All fields are required.'); return;
-    }
-    if (!validateEmail(email)) {
-      setError('Please enter a valid email address.'); return;
-    }
-    if (password !== confirm) {
-      setError('Passwords do not match.'); return;
-    }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.'); return;
-    }
-    setLoading(true);
-    const otp = generateOTP();
-    setGeneratedOtp(otp);
-    setOtpExpiry(Date.now() + OTP_EXPIRY_SECONDS * 1000);
-    setTimeLeft(OTP_EXPIRY_SECONDS);
-    setOtpDigits(['','','','','','']);
+  // const handleSendOtp = () => {
+  //   if (!name || !email || !driverId || !phone || !password || !confirm) {
+  //     setError('All fields are required.'); return;
+  //   }
+  //   if (!validateEmail(email)) {
+  //     setError('Please enter a valid email address.'); return;
+  //   }
+  //   if (password !== confirm) {
+  //     setError('Passwords do not match.'); return;
+  //   }
+  //   if (password.length < 6) {
+  //     setError('Password must be at least 6 characters.'); return;
+  //   }
+  //   setLoading(true);
+  //   const otp = generateOTP();
+  //   setGeneratedOtp(otp);
+  //   setOtpExpiry(Date.now() + OTP_EXPIRY_SECONDS * 1000);
+  //   setTimeLeft(OTP_EXPIRY_SECONDS);
+  //   setOtpDigits(['','','','','','']);
+  //   setError('');
+  //   // replace with API call when backend is ready:
+  //   // await fetch('/api/send-otp', { method: 'POST', body: JSON.stringify({ email, otp }) })
+  //   console.log(`%c[DEV] OTP for ${email}: ${otp}`, 'color: #F5A623; font-size: 16px; font-weight: bold;');
+  //   setLoading(false);
+  //   setStep('otp');
+  //   setResendCooldown(RESEND_COOLDOWN);
+  //   setTimeout(() => otpRefs.current[0]?.focus(), 100);
+  // };
+  const handleSendOtp = async () => {
+  if (!name || !email || !driverId || !phone || !password || !confirm) {
+    setError('All fields are required.'); return;
+  }
+  if (!validateEmail(email)) { setError('Invalid email.'); return; }
+  if (password !== confirm)  { setError('Passwords do not match.'); return; }
+  if (password.length < 6)   { setError('Min. 6 characters.'); return; }
+  setLoading(true);
+  try {
+    await driverSignup({ name, email, driverId, phone, password });
     setError('');
-    // replace with API call when backend is ready:
-    // await fetch('/api/send-otp', { method: 'POST', body: JSON.stringify({ email, otp }) })
-    console.log(`%c[DEV] OTP for ${email}: ${otp}`, 'color: #F5A623; font-size: 16px; font-weight: bold;');
-    setLoading(false);
     setStep('otp');
     setResendCooldown(RESEND_COOLDOWN);
     setTimeout(() => otpRefs.current[0]?.focus(), 100);
-  };
+  } catch (err) {
+    setError(err.message);
+  } finally { setLoading(false); }
+};
 
   const handleOtpChange = (index, value) => {
     if (!/^\d*$/.test(value)) return;
@@ -119,17 +138,29 @@ export default function DriverSignUp() {
     otpRefs.current[nextEmpty === -1 ? 5 : nextEmpty]?.focus();
   };
 
-  const handleVerifyOtp = () => {
-    if (timeLeft === 0) { setError('OTP has expired. Please resend.'); return; }
-    const entered = otpDigits.join('');
-    if (entered.length < 6) { setError('Please enter the full 6-digit code.'); return; }
-    if (entered !== generatedOtp) { setError('Incorrect OTP. Please try again.'); return; }
+  // const handleVerifyOtp = () => {
+  //   if (timeLeft === 0) { setError('OTP has expired. Please resend.'); return; }
+  //   const entered = otpDigits.join('');
+  //   if (entered.length < 6) { setError('Please enter the full 6-digit code.'); return; }
+  //   if (entered !== generatedOtp) { setError('Incorrect OTP. Please try again.'); return; }
+  //   setError('');
+  //   setStep('done');
+  //   // replace with API call when backend is ready:
+  //   // await fetch('/api/register', { method: 'POST', body: JSON.stringify({ name, email, driverId, phone, password }) })
+  //   setTimeout(() => navigate('/driver/login'), 2000);
+  // };
+  const handleVerifyOtp = async () => {
+  const entered = otpDigits.join('');
+  if (entered.length < 6) { setError('Enter the full 6-digit code.'); return; }
+  try {
+    await driverVerifyEmail({ email, otp: entered });
     setError('');
     setStep('done');
-    // replace with API call when backend is ready:
-    // await fetch('/api/register', { method: 'POST', body: JSON.stringify({ name, email, driverId, phone, password }) })
     setTimeout(() => navigate('/driver/login'), 2000);
-  };
+  } catch (err) {
+    setError(err.message);
+  }
+};
 
   const handleResend = () => {
     if (resendCooldown > 0) return;

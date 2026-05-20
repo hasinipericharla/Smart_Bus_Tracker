@@ -30,6 +30,8 @@ app.use(
 // ── Routes ─────────────────────────────────────
 app.use('/api/admin/auth', require('./routes/auth'));
 app.use('/api/student/auth', require('./routes/studentAuth'));
+// Add this line alongside your admin routes
+app.use('/api/driver/auth', require('./routes/driverAuthRoutes'));
 
 // Health check
 app.get('/api/health', (req, res) =>

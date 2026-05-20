@@ -451,6 +451,7 @@
 // }
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { driverLogin, driverForgotPassword, driverVerifyResetOtp, driverResetPassword, driverResendOtp } from '../api/auth';
 
 // ── shared styles ─────────────────────────────────────────────────────────────
 const inputStyle = {
@@ -497,6 +498,7 @@ export default function DriverLogin() {
   const [fpError, setFpError]       = useState('');
   const [fpSuccess, setFpSuccess]   = useState('');
   const [resendTimer, setResendTimer] = useState(0);
+  const [resetToken, setResetToken] = useState('');
 
   const startResendTimer = () => {
     setResendTimer(30);
@@ -508,15 +510,24 @@ export default function DriverLogin() {
     }, 1000);
   };
 
-  const handleSendOtp = () => {
-    if (!fpEmail) { setFpError('Please enter your email address.'); return; }
-    if (!/\S+@\S+\.\S+/.test(fpEmail)) { setFpError('Please enter a valid email address.'); return; }
-    setFpError('');
-    setFpSuccess(`OTP sent to ${fpEmail}`);
+  // const handleSendOtp = () => {
+  //   if (!fpEmail) { setFpError('Please enter your email address.'); return; }
+  //   if (!/\S+@\S+\.\S+/.test(fpEmail)) { setFpError('Please enter a valid email address.'); return; }
+  //   setFpError('');
+  //   setFpSuccess(`OTP sent to ${fpEmail}`);
+  //   setTimeout(() => setFpSuccess(''), 3000);
+  //   startResendTimer();
+  //   setStep(2);
+  // };
+  const handleSendOtp = async () => {
+  if (!fpEmail) { setFpError('Please enter your email.'); return; }
+  try {
+    await driverForgotPassword({ email: fpEmail });
+    setFpError(''); setFpSuccess(`OTP sent to ${fpEmail}`);
     setTimeout(() => setFpSuccess(''), 3000);
-    startResendTimer();
-    setStep(2);
-  };
+    startResendTimer(); setStep(2);
+  } catch (err) { setFpError(err.message); }
+};
 
   const handleOtpChange = (index, value) => {
     if (!/^\d*$/.test(value)) return;
@@ -531,24 +542,42 @@ export default function DriverLogin() {
       document.getElementById(`dotp-${index - 1}`)?.focus();
   };
 
-  const handleVerifyOtp = () => {
-    if (otp.join('').length < 6) { setFpError('Please enter the complete 6-digit OTP.'); return; }
-    setFpError('');
-    setStep(3);
-  };
+  // const handleVerifyOtp = () => {
+  //   if (otp.join('').length < 6) { setFpError('Please enter the complete 6-digit OTP.'); return; }
+  //   setFpError('');
+  //   setStep(3);
+  // };
+  const handleVerifyOtp = async () => {
+  if (otp.join('').length < 6) { setFpError('Enter the complete OTP.'); return; }
+  try {
+    const data = await driverVerifyResetOtp({ email: fpEmail, otp: otp.join('') });
+    setResetToken(data.resetToken); // ✅ save token
+    setFpError(''); setStep(3);
+  } catch (err) { setFpError(err.message); }
+};
 
-  const handleResetPassword = () => {
-    if (!newPassword || !confirmPassword) { setFpError('Please fill in both fields.'); return; }
-    if (newPassword !== confirmPassword) { setFpError('Passwords do not match.'); return; }
-    if (newPassword.length < 6) { setFpError('Password must be at least 6 characters.'); return; }
-    setFpError('');
-    setFpSuccess('Password reset successfully! Redirecting to login...');
-    setTimeout(() => {
-      setShowForgot(false);
-      setStep(1); setFpEmail(''); setOtp(['','','','','','']);
-      setNewPassword(''); setConfirmPassword(''); setFpSuccess('');
-    }, 2000);
-  };
+  // const handleResetPassword = () => {
+  //   if (!newPassword || !confirmPassword) { setFpError('Please fill in both fields.'); return; }
+  //   if (newPassword !== confirmPassword) { setFpError('Passwords do not match.'); return; }
+  //   if (newPassword.length < 6) { setFpError('Password must be at least 6 characters.'); return; }
+  //   setFpError('');
+  //   setFpSuccess('Password reset successfully! Redirecting to login...');
+  //   setTimeout(() => {
+  //     setShowForgot(false);
+  //     setStep(1); setFpEmail(''); setOtp(['','','','','','']);
+  //     setNewPassword(''); setConfirmPassword(''); setFpSuccess('');
+  //   }, 2000);
+  // };
+  const handleResetPassword = async () => {
+  if (!newPassword || !confirmPassword) { setFpError('Fill in both fields.'); return; }
+  if (newPassword !== confirmPassword)  { setFpError('Passwords do not match.'); return; }
+  if (newPassword.length < 6)           { setFpError('Min. 6 characters.'); return; }
+  try {
+    await driverResetPassword({ resetToken, newPassword, confirmPassword });
+    setFpSuccess('Password reset! Redirecting...');
+    setTimeout(() => { setShowForgot(false); setStep(1); }, 2000);
+  } catch (err) { setFpError(err.message); }
+};
 
   const openForgot = () => {
     setShowForgot(true);
@@ -556,11 +585,26 @@ export default function DriverLogin() {
     setOtp(['','','','','','']); setNewPassword(''); setConfirmPassword('');
   };
 
-  const handleLogin = () => {
-    if (!identifier || !password) { setError('Please enter your Driver ID / Email and Password.'); return; }
-    setError('');
+  // const handleLogin = () => {
+  //   if (!identifier || !password) { setError('Please enter your Driver ID / Email and Password.'); return; }
+  //   setError('');
+  //   navigate('/driver/dashboard');
+  // };
+  const handleLogin = async () => {
+  if (!identifier || !password) { setError('Please enter your credentials.'); return; }
+  setError('');
+  try {
+    const data = await driverLogin({ identifier, password, remember });
+    if (data.requiresVerification) {
+      // handle unverified - you can navigate to a verify page or show inline
+      setError(data.message);
+      return;
+    }
     navigate('/driver/dashboard');
-  };
+  } catch (err) {
+    setError(err.message);
+  }
+};
 
   const stepTitles = ['Reset Password', 'Verify OTP', 'New Password'];
   const stepSubs = [
