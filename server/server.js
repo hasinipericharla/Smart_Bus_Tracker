@@ -29,6 +29,7 @@ app.use(
 
 // ── Routes ─────────────────────────────────────
 app.use('/api/admin/auth', require('./routes/auth'));
+app.use('/api/student/auth', require('./routes/studentAuth'));
 
 // Health check
 app.get('/api/health', (req, res) =>
