@@ -7,7 +7,10 @@
 // app.use('/api/admin',   require('./routes/adminRoutes'));
 // app.use('/api/student', require('./routes/studentRoutes'));
 // app.use('/api/driver',  require('./routes/driverRoutes'));
+
+
 const express = require('express');
+console.log("INDEX.JS RUNNING");
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const dotenv = require('dotenv');
@@ -35,7 +38,24 @@ app.use('/api/student/auth', require('./routes/studentAuth'));
 app.use('/api/driver/auth',  require('./routes/driverAuthRoutes'));
 
 // ── Management routes ────────────────────────────
-app.use('/api/admin',   require('./routes/adminRoutes'));
+//app.use('/api/admin',   require('./routes/adminRoutes'));
+// const adminRoutes = require('./routes/adminRoutes');
+
+// console.log("ADMIN ROUTES IMPORTED:", adminRoutes);
+
+// app.use('/api/admin', adminRoutes);
+// ── Management routes ────────────────────────────
+
+console.log("BEFORE ADMIN ROUTES");
+
+const adminRoutes = require('./routes/adminRoutes');
+
+console.log("ADMIN ROUTES IMPORTED:", adminRoutes);
+
+app.use('/api/admin', adminRoutes);
+
+console.log("AFTER ADMIN ROUTES");
+
 app.use('/api/student', require('./routes/studentRoutes'));
 app.use('/api/driver',  require('./routes/driverRoutes'));
 
