@@ -2619,10 +2619,10 @@
 // }
 
 import {
-  getAdminStudents, createAdminStudent, updateAdminStudent,
-  getBuses, createBus, updateBus,
-  getRoutes, createRoute, updateRoute,
-  getAdminDrivers, createAdminDriver, updateAdminDriver,
+  getAdminStudents, createAdminStudent, updateAdminStudent,deleteAdminStudent,
+  getBuses, createBus, updateBus,deleteBus,
+  getRoutes, createRoute, updateRoute,deleteRoute,
+  getAdminDrivers, createAdminDriver, updateAdminDriver,deleteAdminDriver,
 } from '../api/adminService';
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -3165,9 +3165,9 @@ function ModalBus({ onClose, onSave, editData }) {
   const [model, setModel]         = useState(editData?.model || '');
   const [capacity, setCapacity]   = useState(editData?.capacity || 50);
   const [status, setStatus]       = useState(editData?.status || 'active');
-  const [assignedDriver, setAssignedDriver] = useState(editData?.assignedDriver?._id || '');
+  // const [assignedDriver, setAssignedDriver] = useState(editData?.assignedDriver?._id || '');
   const [assignedRoute, setAssignedRoute]   = useState(editData?.assignedRoute?._id || '');
-  const [drivers, setDrivers] = useState([]);
+  // const [drivers, setDrivers] = useState([]);
   const [routes, setRoutes]   = useState([]);
   const [saving, setSaving]   = useState(false);
   const [error, setError]     = useState('');
@@ -3191,7 +3191,7 @@ function ModalBus({ onClose, onSave, editData }) {
         model,
         capacity: Number(capacity),
         status,
-        assignedDriver: assignedDriver || null,
+        // assignedDriver: assignedDriver || null,
         assignedRoute:  assignedRoute  || null,
       };
       if (editData?._id) {
@@ -3229,7 +3229,7 @@ function ModalBus({ onClose, onSave, editData }) {
         </div>
       </div>
 
-      <div className="form-row">
+      {/* <div className="form-row">
         <label className="form-label">Assign Driver</label>
         <select className="form-input" value={assignedDriver} onChange={e => setAssignedDriver(e.target.value)}>
           <option value="">— Select driver —</option>
@@ -3237,7 +3237,7 @@ function ModalBus({ onClose, onSave, editData }) {
             <option key={d._id} value={d._id}>{d.name} {d.phone ? `· ${d.phone}` : ''}</option>
           ))}
         </select>
-      </div>
+      </div> */}
 
       <div className="form-row">
         <label className="form-label">Assign Route</label>
@@ -3388,17 +3388,17 @@ function ModalDriver({ onClose, onSave, editData }) {
   const [phone, setPhone]           = useState(editData?.phone || '');
   const [status, setStatus]         = useState(editData?.status || 'active');
   const [assignedBus, setAssignedBus]     = useState(editData?.assignedBus?._id || '');
-  const [assignedRoute, setAssignedRoute] = useState(editData?.assignedRoute?._id || '');
+  // const [assignedRoute, setAssignedRoute] = useState(editData?.assignedRoute?._id || '');
   const [buses, setBuses]   = useState([]);
-  const [routes, setRoutes] = useState([]);
+  // const [routes, setRoutes] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState('');
 
   // Fetch buses and routes when modal opens
-  useEffect(() => {
-    getBuses().then(d => setBuses(d.buses || [])).catch(() => {});
-    getRoutes().then(r => setRoutes(r.routes || [])).catch(() => {});
-  }, []);
+  // useEffect(() => {
+  //   getBuses().then(d => setBuses(d.buses || [])).catch(() => {});
+  //   // getRoutes().then(r => setRoutes(r.routes || [])).catch(() => {});
+  // }, []);
 
   const handleSave = async () => {
     if (!name || !email) {
@@ -3416,7 +3416,7 @@ function ModalDriver({ onClose, onSave, editData }) {
         phone,
         status,
         assignedBus:   assignedBus   || null,
-        assignedRoute: assignedRoute || null,
+        // assignedRoute: assignedRoute || null,
       };
       if (editData?._id) {
         await updateAdminDriver(editData._id, payload);
@@ -3514,7 +3514,7 @@ function ModalDriver({ onClose, onSave, editData }) {
         </select>
       </div>
 
-      <div className="form-row">
+      {/* <div className="form-row">
         <label className="form-label">Assign Route</label>
         <select
           className="form-input"
@@ -3528,7 +3528,7 @@ function ModalDriver({ onClose, onSave, editData }) {
             </option>
           ))}
         </select>
-      </div>
+      </div> */}
 
       <div className="form-row">
         <label className="form-label">Status</label>
@@ -4322,6 +4322,15 @@ function PageBuses({ showModal, showToast }) {
                   </td>
                   <td>
                     <button className="act-btn" onClick={() => showModal('bus', b, fetchBuses)}>Edit</button>
+                    <button
+    className="act-btn"
+    style={{ marginLeft: 6, color: 'var(--red)', borderColor: 'rgba(220,38,38,.2)' }}
+    onClick={async () => {
+      if (!window.confirm(`Delete bus ${b.busNumber}?`)) return;
+      try { await deleteBus(b._id); fetchBuses(); showToast('Bus deleted.'); }
+      catch (err) { showToast('Delete failed: ' + err.message); }
+    }}
+  >Delete</button>
                   </td>
                 </tr>
               ))}
@@ -4450,6 +4459,15 @@ function PageDrivers({ showModal, showToast }) {
             ))}
             <div style={{ marginTop: 10, textAlign: 'right' }}>
               <button className="act-btn" onClick={() => showModal('driver', d, fetchDrivers)}>Edit</button>
+              <button
+    className="act-btn"
+    style={{ color: 'var(--red)', borderColor: 'rgba(220,38,38,.2)' }}
+    onClick={async () => {
+      if (!window.confirm(`Delete driver ${d.name}?`)) return;
+      try { await deleteAdminDriver(d._id); fetchDrivers(); showToast('Driver deleted.'); }
+      catch (err) { showToast('Delete failed: ' + err.message); }
+    }}
+  >Delete</button>
             </div>
           </div>
         ))}
@@ -4553,6 +4571,15 @@ function PageRoutes({ showModal, showToast }) {
                   <div className="ch-right">
                     <span className="status-pill sp-green">{r.stops?.length || 0} stops</span>
                     <button className="act-btn" onClick={() => showModal('route', r, fetchRoutes)}>Edit</button>
+                    <button
+    className="act-btn"
+    style={{ color: 'var(--red)', borderColor: 'rgba(220,38,38,.2)' }}
+    onClick={async () => {
+      if (!window.confirm(`Delete route "${r.name}"?`)) return;
+      try { await deleteRoute(r._id); fetchRoutes(); showToast('Route deleted.'); }
+      catch (err) { showToast('Delete failed: ' + err.message); }
+    }}
+  >Delete</button>
                   </div>
                 </div>
                 <div style={{ padding: '16px 18px' }}>
@@ -4740,6 +4767,15 @@ function PageStudents({ showModal, showToast }) {
                     >
                       Edit
                     </button>
+                    <button
+    className="act-btn"
+    style={{ marginLeft: 6, color: 'var(--red)', borderColor: 'rgba(220,38,38,.2)' }}
+    onClick={async () => {
+      if (!window.confirm(`Delete student ${s.name}?`)) return;
+      try { await deleteAdminStudent(s._id); fetchStudents(); showToast('Student deleted.'); }
+      catch (err) { showToast('Delete failed: ' + err.message); }
+    }}
+  >Delete</button>
                   </td>
                 </tr>
               ))}
