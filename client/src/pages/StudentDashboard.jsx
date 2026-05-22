@@ -610,6 +610,7 @@
 // }
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { getMyInfo } from '../api/studentService';
 
 const css = `
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Mono:wght@400;500&display=swap');
@@ -766,15 +767,178 @@ const STOPS = [
 const MY_STOP_IDX = 3; // City Park
 
 // ─────────────────────────── PAGE HOME ───────────────────────────────────────
+// function PageHome({ showToast, setActivePage }) {
+//   return (
+//     <div className="page">
+//       <div className="page-header">
+//         <div>
+//           <div className="page-title">My Dashboard</div>
+//           <div className="page-subtitle">Welcome back, Aryan Reddy · Sunday, April 19, 2026</div>
+//         </div>
+//       </div>
+
+//       <div className="stat-grid">
+//         <div className="stat-card s-amber">
+//           <div className="stat-label">ETA to My Stop</div>
+//           <div className="stat-val amber">8 min</div>
+//           <div className="stat-sub">Bus arriving soon</div>
+//         </div>
+//         <div className="stat-card s-green">
+//           <div className="stat-label">Bus Status</div>
+//           <div className="stat-val green" style={{fontSize:18,marginTop:4}}>On Time</div>
+//           <div className="stat-sub">KA-01-B · Route A</div>
+//         </div>
+//         <div className="stat-card s-blue">
+//           <div className="stat-label">Stops Remaining</div>
+//           <div className="stat-val blue">4</div>
+//           <div className="stat-sub">Until your stop</div>
+//         </div>
+//         <div className="stat-card s-purple">
+//           <div className="stat-label">Today's Trips</div>
+//           <div className="stat-val purple">2</div>
+//           <div className="stat-sub">Morning + Evening</div>
+//         </div>
+//       </div>
+
+//       {/* Quick info cards */}
+//       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+//         <div className="card" style={{padding:20}}>
+//           <div style={{fontWeight:700,fontSize:14,marginBottom:14,display:'flex',alignItems:'center',gap:8}}>
+//             <span style={{fontSize:18}}>🌅</span> Morning Trip
+//           </div>
+//           {[['My Stop','City Park'],['Pickup Time','07:22 AM'],['Bus','KA-01-B'],['Driver','R. Kumar'],['Route','Route A — North Loop']].map(([k,v])=>(
+//             <div key={k} style={{display:'flex',justifyContent:'space-between',fontSize:13,paddingBottom:8,borderBottom:'1px solid var(--border)',marginBottom:6}}>
+//               <span style={{color:'var(--muted)'}}>{k}</span><span style={{fontWeight:600}}>{v}</span>
+//             </div>
+//           ))}
+//           <button className="fab-btn fab-primary" style={{width:'100%',justifyContent:'center',marginTop:8}} onClick={() => setActivePage('tracking')}>
+//             📍 Track Live
+//           </button>
+//         </div>
+//         <div className="card" style={{padding:20}}>
+//           <div style={{fontWeight:700,fontSize:14,marginBottom:14,display:'flex',alignItems:'center',gap:8}}>
+//             <span style={{fontSize:18}}>🌆</span> Evening Trip
+//           </div>
+//           {[['My Stop','City Park'],['Drop Time','05:22 PM'],['Bus','KA-01-B'],['Driver','R. Kumar'],['Route','Route A — South Return']].map(([k,v])=>(
+//             <div key={k} style={{display:'flex',justifyContent:'space-between',fontSize:13,paddingBottom:8,borderBottom:'1px solid var(--border)',marginBottom:6}}>
+//               <span style={{color:'var(--muted)'}}>{k}</span><span style={{fontWeight:600}}>{v}</span>
+//             </div>
+//           ))}
+//           <div style={{marginTop:8,padding:'10px 14px',background:'rgba(100,116,139,.06)',borderRadius:9,fontSize:12,color:'var(--muted)',fontWeight:600,textAlign:'center'}}>
+//             ⏰ Departs at 05:00 PM
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* Recent Notifications preview */}
+//       <div className="card">
+//         <div className="card-header">
+//           <span className="card-title">Recent Alerts</span>
+//           <div className="ch-right">
+//             <button className="fab-btn fab-secondary" style={{fontSize:11,padding:'5px 12px'}} onClick={() => setActivePage('notifications')}>View All</button>
+//           </div>
+//         </div>
+//         <div className="notif-list">
+//           {[
+//             {icon:'🚌',color:'amber',text:'<strong>Bus KA-01-B</strong> is arriving at City Park in 8 minutes',time:'09:14 AM',read:false},
+//             {icon:'⚠️',color:'red',text:'<strong>Route A</strong> delayed by 5 minutes due to traffic',time:'08:55 AM',read:false},
+//             {icon:'✅',color:'green',text:'<strong>Bus departed</strong> College Main Gate on time',time:'07:00 AM',read:true},
+//           ].map((n, i) => (
+//             <div key={i} className={`notif-item${n.read ? '' : ' unread'}`}>
+//               <div className={`notif-icon ni-${n.color}`}>{n.icon}</div>
+//               <div style={{flex:1}}>
+//                 <div className="notif-text" dangerouslySetInnerHTML={{__html:n.text}}/>
+//                 <div className="notif-time">{n.time}</div>
+//               </div>
+//               {!n.read && <div className="unread-dot"/>}
+//             </div>
+//           ))}
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+
 function PageHome({ showToast, setActivePage }) {
+  const [myInfo, setMyInfo] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getMyInfo()
+      .then(d => setMyInfo(d.student))
+      .catch(() => setMyInfo(null))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // Use real data if available, fall back to defaults
+  const routeName   = myInfo?.assignedRoute?.name    || 'Not assigned';
+  const routeId     = myInfo?.assignedRoute?.routeId || '—';
+  const pickupStop  = myInfo?.pickupStop             || 'Not assigned';
+  const studentName = myInfo?.name                   || 'Student';
+  const rollNo      = myInfo?.rollNo                 || '—';
+  const className   = myInfo?.className              || '—';
+  const parentPhone = myInfo?.parentContact          || '—';
+
   return (
     <div className="page">
       <div className="page-header">
         <div>
           <div className="page-title">My Dashboard</div>
-          <div className="page-subtitle">Welcome back, Aryan Reddy · Sunday, April 19, 2026</div>
+          <div className="page-subtitle">
+            Welcome back, {studentName} · {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          </div>
         </div>
       </div>
+
+      {/* Profile banner */}
+      {!loading && myInfo && (
+        <div style={{
+          background: 'linear-gradient(135deg,#1e293b,#334155)',
+          borderRadius: 13, padding: '18px 24px',
+          display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap'
+        }}>
+          <div style={{
+            width: 52, height: 52, borderRadius: '50%',
+            background: 'linear-gradient(135deg,var(--accent),var(--accent2))',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 18, fontWeight: 800, color: '#1a1a1a', flexShrink: 0
+          }}>
+            {studentName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
+          </div>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#e2e8f0' }}>{studentName}</div>
+            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
+              Roll: {rollNo} · Class: {className}
+            </div>
+          </div>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+            {[
+              ['Route',       `${routeId} — ${routeName}`, 'var(--accent)'],
+              ['Pickup Stop', pickupStop,                   'var(--green)'],
+              ['Contact',     parentPhone,                  '#94a3b8'],
+            ].map(([label, value, color]) => (
+              <div key={label} style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', letterSpacing: .5, marginBottom: 3 }}>{label}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color }}>{value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Not enrolled message */}
+      {!loading && !myInfo && (
+        <div style={{
+          background: '#fff', border: '1px solid var(--border)',
+          borderRadius: 13, padding: 24, textAlign: 'center'
+        }}>
+          <div style={{ fontSize: 32, marginBottom: 10 }}>🎓</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Not enrolled yet</div>
+          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6 }}>
+            Contact your admin to get assigned to a route.
+          </div>
+        </div>
+      )}
 
       <div className="stat-grid">
         <div className="stat-card s-amber">
@@ -784,13 +948,13 @@ function PageHome({ showToast, setActivePage }) {
         </div>
         <div className="stat-card s-green">
           <div className="stat-label">Bus Status</div>
-          <div className="stat-val green" style={{fontSize:18,marginTop:4}}>On Time</div>
-          <div className="stat-sub">KA-01-B · Route A</div>
+          <div className="stat-val green" style={{ fontSize: 18, marginTop: 4 }}>On Time</div>
+          <div className="stat-sub">Route {routeId}</div>
         </div>
         <div className="stat-card s-blue">
-          <div className="stat-label">Stops Remaining</div>
-          <div className="stat-val blue">4</div>
-          <div className="stat-sub">Until your stop</div>
+          <div className="stat-label">My Stop</div>
+          <div className="stat-val blue" style={{ fontSize: 16, marginTop: 4 }}>{pickupStop}</div>
+          <div className="stat-sub">{routeName}</div>
         </div>
         <div className="stat-card s-purple">
           <div className="stat-label">Today's Trips</div>
@@ -800,31 +964,46 @@ function PageHome({ showToast, setActivePage }) {
       </div>
 
       {/* Quick info cards */}
-      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
-        <div className="card" style={{padding:20}}>
-          <div style={{fontWeight:700,fontSize:14,marginBottom:14,display:'flex',alignItems:'center',gap:8}}>
-            <span style={{fontSize:18}}>🌅</span> Morning Trip
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+        <div className="card" style={{ padding: 20 }}>
+          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 18 }}>🌅</span> Morning Trip
           </div>
-          {[['My Stop','City Park'],['Pickup Time','07:22 AM'],['Bus','KA-01-B'],['Driver','R. Kumar'],['Route','Route A — North Loop']].map(([k,v])=>(
-            <div key={k} style={{display:'flex',justifyContent:'space-between',fontSize:13,paddingBottom:8,borderBottom:'1px solid var(--border)',marginBottom:6}}>
-              <span style={{color:'var(--muted)'}}>{k}</span><span style={{fontWeight:600}}>{v}</span>
+          {[
+            ['My Stop',    pickupStop],
+            ['Route',      `${routeId} — ${routeName}`],
+            ['Status',     myInfo?.status || 'Active'],
+          ].map(([k, v]) => (
+            <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, paddingBottom: 8, borderBottom: '1px solid var(--border)', marginBottom: 6 }}>
+              <span style={{ color: 'var(--muted)' }}>{k}</span>
+              <span style={{ fontWeight: 600 }}>{v}</span>
             </div>
           ))}
-          <button className="fab-btn fab-primary" style={{width:'100%',justifyContent:'center',marginTop:8}} onClick={() => setActivePage('tracking')}>
+          <button
+            className="fab-btn fab-primary"
+            style={{ width: '100%', justifyContent: 'center', marginTop: 8 }}
+            onClick={() => setActivePage('tracking')}
+          >
             📍 Track Live
           </button>
         </div>
-        <div className="card" style={{padding:20}}>
-          <div style={{fontWeight:700,fontSize:14,marginBottom:14,display:'flex',alignItems:'center',gap:8}}>
-            <span style={{fontSize:18}}>🌆</span> Evening Trip
+
+        <div className="card" style={{ padding: 20 }}>
+          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 18 }}>🌆</span> Evening Trip
           </div>
-          {[['My Stop','City Park'],['Drop Time','05:22 PM'],['Bus','KA-01-B'],['Driver','R. Kumar'],['Route','Route A — South Return']].map(([k,v])=>(
-            <div key={k} style={{display:'flex',justifyContent:'space-between',fontSize:13,paddingBottom:8,borderBottom:'1px solid var(--border)',marginBottom:6}}>
-              <span style={{color:'var(--muted)'}}>{k}</span><span style={{fontWeight:600}}>{v}</span>
+          {[
+            ['My Stop',  pickupStop],
+            ['Route',    `${routeId} — ${routeName}`],
+            ['Status',   myInfo?.status || 'Active'],
+          ].map(([k, v]) => (
+            <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, paddingBottom: 8, borderBottom: '1px solid var(--border)', marginBottom: 6 }}>
+              <span style={{ color: 'var(--muted)' }}>{k}</span>
+              <span style={{ fontWeight: 600 }}>{v}</span>
             </div>
           ))}
-          <div style={{marginTop:8,padding:'10px 14px',background:'rgba(100,116,139,.06)',borderRadius:9,fontSize:12,color:'var(--muted)',fontWeight:600,textAlign:'center'}}>
-            ⏰ Departs at 05:00 PM
+          <div style={{ marginTop: 8, padding: '10px 14px', background: 'rgba(100,116,139,.06)', borderRadius: 9, fontSize: 12, color: 'var(--muted)', fontWeight: 600, textAlign: 'center' }}>
+            ⏰ Check schedule with admin
           </div>
         </div>
       </div>
@@ -834,22 +1013,27 @@ function PageHome({ showToast, setActivePage }) {
         <div className="card-header">
           <span className="card-title">Recent Alerts</span>
           <div className="ch-right">
-            <button className="fab-btn fab-secondary" style={{fontSize:11,padding:'5px 12px'}} onClick={() => setActivePage('notifications')}>View All</button>
+            <button
+              className="fab-btn fab-secondary"
+              style={{ fontSize: 11, padding: '5px 12px' }}
+              onClick={() => setActivePage('notifications')}
+            >
+              View All
+            </button>
           </div>
         </div>
         <div className="notif-list">
           {[
-            {icon:'🚌',color:'amber',text:'<strong>Bus KA-01-B</strong> is arriving at City Park in 8 minutes',time:'09:14 AM',read:false},
-            {icon:'⚠️',color:'red',text:'<strong>Route A</strong> delayed by 5 minutes due to traffic',time:'08:55 AM',read:false},
-            {icon:'✅',color:'green',text:'<strong>Bus departed</strong> College Main Gate on time',time:'07:00 AM',read:true},
+            { icon: '🚌', color: 'amber', text: '<strong>Bus</strong> is arriving at your stop in 8 minutes', time: 'Just now', read: false },
+            { icon: '✅', color: 'green', text: '<strong>Bus departed</strong> on time this morning', time: '07:00 AM', read: true },
           ].map((n, i) => (
             <div key={i} className={`notif-item${n.read ? '' : ' unread'}`}>
               <div className={`notif-icon ni-${n.color}`}>{n.icon}</div>
-              <div style={{flex:1}}>
-                <div className="notif-text" dangerouslySetInnerHTML={{__html:n.text}}/>
+              <div style={{ flex: 1 }}>
+                <div className="notif-text" dangerouslySetInnerHTML={{ __html: n.text }} />
                 <div className="notif-time">{n.time}</div>
               </div>
-              {!n.read && <div className="unread-dot"/>}
+              {!n.read && <div className="unread-dot" />}
             </div>
           ))}
         </div>
@@ -857,6 +1041,7 @@ function PageHome({ showToast, setActivePage }) {
     </div>
   );
 }
+
 
 // ─────────────────────────── PAGE TRACKING ───────────────────────────────────
 function PageTracking({ favs, toggleFav, showToast }) {

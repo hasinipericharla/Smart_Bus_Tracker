@@ -2618,6 +2618,13 @@
 //   );
 // }
 
+import {
+  getAdminStudents, createAdminStudent, updateAdminStudent,
+  getBuses, createBus, updateBus,
+  getRoutes, createRoute, updateRoute,
+  getAdminDrivers, createAdminDriver, updateAdminDriver,
+} from '../api/adminService';
+
 import { useState, useEffect, useRef, useCallback } from "react";
 
 const css = `
@@ -3055,96 +3062,918 @@ function AddStopList() {
 }
 
 /* ─── MODALS ─────────────────────────────────────────────────────────── */
-function ModalBus({ onClose, onSave }) {
+// function ModalBus({ onClose, onSave }) {
+//   return (
+//     <div className="modal">
+//       <button className="close-btn" onClick={onClose}>×</button>
+//       <h3>Add / Edit Bus</h3>
+//       <div className="form-row"><label className="form-label">Bus Number</label><input className="form-input" placeholder="KA-XX-X" /></div>
+//       <div className="form-row"><label className="form-label">Assign Driver</label>
+//         <select className="form-input"><option>— Select driver —</option><option>R. Kumar</option><option>P. Sharma</option><option>M. Rao</option><option>S. Joshi</option></select>
+//       </div>
+//       <div className="form-row"><label className="form-label">Assign Route</label>
+//         <select className="form-input"><option>— Select route —</option><option>Route A — North Loop</option><option>Route B — East Connect</option><option>Route C — South Express</option><option>Route D — West Campus</option></select>
+//       </div>
+//       <div className="form-row2">
+//         <div className="form-row"><label className="form-label">Capacity</label><input className="form-input" placeholder="50" type="number" /></div>
+//         <div className="form-row"><label className="form-label">Status</label>
+//           <select className="form-input"><option>Active</option><option>Maintenance</option><option>Idle</option></select>
+//         </div>
+//       </div>
+//       <div className="modal-actions">
+//         <button className="btn-cancel" onClick={onClose}>Cancel</button>
+//         <button className="btn-save" onClick={() => onSave("Bus saved successfully!")}>Save Bus</button>
+//       </div>
+//     </div>
+//   );
+// }
+// function ModalBus({ onClose, onSave, editData }) {
+//   const [busNumber, setBusNumber]   = useState(editData?.busNumber || '');
+//   const [model, setModel]           = useState(editData?.model || '');
+//   const [capacity, setCapacity]     = useState(editData?.capacity || 50);
+//   const [status, setStatus]         = useState(editData?.status || 'active');
+//   const [saving, setSaving]         = useState(false);
+//   const [error, setError]           = useState('');
+
+//   const handleSave = async () => {
+//     if (!busNumber || !capacity) {
+//       setError('Bus number and capacity are required.');
+//       return;
+//     }
+//     setSaving(true);
+//     setError('');
+//     try {
+//       if (editData?._id) {
+//         await updateBus(editData._id, { busNumber, model, capacity: Number(capacity), status });
+//         onSave('Bus updated successfully!');
+//       } else {
+//         await createBus({ busNumber, model, capacity: Number(capacity), status });
+//         onSave('Bus saved successfully!');
+//       }
+//     } catch (err) {
+//       setError(err.message);
+//       setSaving(false);
+//     }
+//   };
+
+//   return (
+//     <div className="modal">
+//       <button className="close-btn" onClick={onClose}>×</button>
+//       <h3>{editData ? 'Edit Bus' : 'Add Bus'}</h3>
+
+//       {error && (
+//         <div style={{ background: '#fff0f0', border: '1px solid #fcc', borderRadius: 8, padding: '8px 12px', fontSize: 12.5, color: '#c00', marginBottom: 12 }}>
+//           ⚠️ {error}
+//         </div>
+//       )}
+
+//       <div className="form-row2">
+//         <div className="form-row">
+//           <label className="form-label">Bus Number</label>
+//           <input className="form-input" placeholder="KA-XX-X" value={busNumber} onChange={e => setBusNumber(e.target.value)} />
+//         </div>
+//         <div className="form-row">
+//           <label className="form-label">Model</label>
+//           <input className="form-input" placeholder="Tata Starbus" value={model} onChange={e => setModel(e.target.value)} />
+//         </div>
+//       </div>
+//       <div className="form-row2">
+//         <div className="form-row">
+//           <label className="form-label">Capacity</label>
+//           <input className="form-input" placeholder="50" type="number" value={capacity} onChange={e => setCapacity(e.target.value)} />
+//         </div>
+//         <div className="form-row">
+//           <label className="form-label">Status</label>
+//           <select className="form-input" value={status} onChange={e => setStatus(e.target.value)}>
+//             <option value="active">Active</option>
+//             <option value="maintenance">Maintenance</option>
+//             <option value="idle">Idle</option>
+//           </select>
+//         </div>
+//       </div>
+//       <div className="modal-actions">
+//         <button className="btn-cancel" onClick={onClose}>Cancel</button>
+//         <button className="btn-save" onClick={handleSave} disabled={saving}>
+//           {saving ? 'Saving...' : editData ? 'Update Bus' : 'Save Bus'}
+//         </button>
+//       </div>
+//     </div>
+//   );
+// }
+function ModalBus({ onClose, onSave, editData }) {
+  const [busNumber, setBusNumber] = useState(editData?.busNumber || '');
+  const [model, setModel]         = useState(editData?.model || '');
+  const [capacity, setCapacity]   = useState(editData?.capacity || 50);
+  const [status, setStatus]       = useState(editData?.status || 'active');
+  const [assignedDriver, setAssignedDriver] = useState(editData?.assignedDriver?._id || '');
+  const [assignedRoute, setAssignedRoute]   = useState(editData?.assignedRoute?._id || '');
+  const [drivers, setDrivers] = useState([]);
+  const [routes, setRoutes]   = useState([]);
+  const [saving, setSaving]   = useState(false);
+  const [error, setError]     = useState('');
+
+  // Fetch drivers and routes when modal opens
+  useEffect(() => {
+    getAdminDrivers().then(d => setDrivers(d.drivers || [])).catch(() => {});
+    getRoutes().then(r => setRoutes(r.routes || [])).catch(() => {});
+  }, []);
+
+  const handleSave = async () => {
+    if (!busNumber || !capacity) {
+      setError('Bus number and capacity are required.');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    try {
+      const payload = {
+        busNumber,
+        model,
+        capacity: Number(capacity),
+        status,
+        assignedDriver: assignedDriver || null,
+        assignedRoute:  assignedRoute  || null,
+      };
+      if (editData?._id) {
+        await updateBus(editData._id, payload);
+        onSave('Bus updated successfully!');
+      } else {
+        await createBus(payload);
+        onSave('Bus saved successfully!');
+      }
+    } catch (err) {
+      setError(err.message);
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="modal">
       <button className="close-btn" onClick={onClose}>×</button>
-      <h3>Add / Edit Bus</h3>
-      <div className="form-row"><label className="form-label">Bus Number</label><input className="form-input" placeholder="KA-XX-X" /></div>
-      <div className="form-row"><label className="form-label">Assign Driver</label>
-        <select className="form-input"><option>— Select driver —</option><option>R. Kumar</option><option>P. Sharma</option><option>M. Rao</option><option>S. Joshi</option></select>
-      </div>
-      <div className="form-row"><label className="form-label">Assign Route</label>
-        <select className="form-input"><option>— Select route —</option><option>Route A — North Loop</option><option>Route B — East Connect</option><option>Route C — South Express</option><option>Route D — West Campus</option></select>
-      </div>
+      <h3>{editData ? 'Edit Bus' : 'Add Bus'}</h3>
+
+      {error && (
+        <div style={{ background: '#fff0f0', border: '1px solid #fcc', borderRadius: 8, padding: '8px 12px', fontSize: 12.5, color: '#c00', marginBottom: 12 }}>
+          ⚠️ {error}
+        </div>
+      )}
+
       <div className="form-row2">
-        <div className="form-row"><label className="form-label">Capacity</label><input className="form-input" placeholder="50" type="number" /></div>
-        <div className="form-row"><label className="form-label">Status</label>
-          <select className="form-input"><option>Active</option><option>Maintenance</option><option>Idle</option></select>
+        <div className="form-row">
+          <label className="form-label">Bus Number</label>
+          <input className="form-input" placeholder="KA-XX-X" value={busNumber} onChange={e => setBusNumber(e.target.value)} />
+        </div>
+        <div className="form-row">
+          <label className="form-label">Model</label>
+          <input className="form-input" placeholder="Tata Starbus" value={model} onChange={e => setModel(e.target.value)} />
         </div>
       </div>
-      <div className="modal-actions">
-        <button className="btn-cancel" onClick={onClose}>Cancel</button>
-        <button className="btn-save" onClick={() => onSave("Bus saved successfully!")}>Save Bus</button>
-      </div>
-    </div>
-  );
-}
-function ModalDriver({ onClose, onSave }) {
-  return (
-    <div className="modal">
-      <button className="close-btn" onClick={onClose}>×</button>
-      <h3>Add / Edit Driver</h3>
-      <div className="form-row"><label className="form-label">Full Name</label><input className="form-input" placeholder="Driver full name" /></div>
-      <div className="form-row2">
-        <div className="form-row"><label className="form-label">License No.</label><input className="form-input" placeholder="DL-XXXX-XXXX" /></div>
-        <div className="form-row"><label className="form-label">Experience (yrs)</label><input className="form-input" placeholder="5" type="number" /></div>
-      </div>
-      <div className="form-row"><label className="form-label">Phone</label><input className="form-input" placeholder="+91 9XXXXXXXXX" /></div>
-      <div className="form-row"><label className="form-label">Assign Bus</label>
-        <select className="form-input"><option>— Select bus —</option><option>KA-01-B</option><option>KA-02-B</option><option>KA-03-C</option><option>KA-04-D</option></select>
-      </div>
-      <div className="form-row"><label className="form-label">Assign Route</label>
-        <select className="form-input"><option value="">— Select route (optional) —</option><option>Route A — North Loop</option><option>Route B — East Connect</option><option>Route C — South Express</option><option>Route D — West Campus</option></select>
-      </div>
-      <div className="modal-actions">
-        <button className="btn-cancel" onClick={onClose}>Cancel</button>
-        <button className="btn-save" onClick={() => onSave("Driver saved successfully!")}>Save Driver</button>
-      </div>
-    </div>
-  );
-}
-function ModalRoute({ onClose, onSave }) {
-  return (
-    <div className="modal">
-      <button className="close-btn" onClick={onClose}>×</button>
-      <h3>Create / Edit Route</h3>
-      <div className="form-row"><label className="form-label">Route Name</label><input className="form-input" placeholder="North Loop" /></div>
-      <div className="form-section-title">Stops</div>
-      <AddStopList />
-      <div className="form-row" style={{ marginTop: 14 }}><label className="form-label">Assign Buses</label>
-        <select className="form-input" multiple style={{ height: 90 }}>
-          <option>KA-01-B</option><option>KA-02-B</option><option>KA-03-C</option><option>KA-04-D</option><option>KA-05-E</option>
+
+      <div className="form-row">
+        <label className="form-label">Assign Driver</label>
+        <select className="form-input" value={assignedDriver} onChange={e => setAssignedDriver(e.target.value)}>
+          <option value="">— Select driver —</option>
+          {drivers.map(d => (
+            <option key={d._id} value={d._id}>{d.name} {d.phone ? `· ${d.phone}` : ''}</option>
+          ))}
         </select>
-        <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>Hold Ctrl/Cmd to select multiple buses</div>
       </div>
+
+      <div className="form-row">
+        <label className="form-label">Assign Route</label>
+        <select className="form-input" value={assignedRoute} onChange={e => setAssignedRoute(e.target.value)}>
+          <option value="">— Select route —</option>
+          {routes.map(r => (
+            <option key={r._id} value={r._id}>{r.routeId} — {r.name}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="form-row2">
+        <div className="form-row">
+          <label className="form-label">Capacity</label>
+          <input className="form-input" placeholder="50" type="number" value={capacity} onChange={e => setCapacity(e.target.value)} />
+        </div>
+        <div className="form-row">
+          <label className="form-label">Status</label>
+          <select className="form-input" value={status} onChange={e => setStatus(e.target.value)}>
+            <option value="active">Active</option>
+            <option value="maintenance">Maintenance</option>
+            <option value="idle">Idle</option>
+          </select>
+        </div>
+      </div>
+
       <div className="modal-actions">
         <button className="btn-cancel" onClick={onClose}>Cancel</button>
-        <button className="btn-save" onClick={() => onSave("Route created successfully!")}>Create Route</button>
+        <button className="btn-save" onClick={handleSave} disabled={saving}>
+          {saving ? 'Saving...' : editData ? 'Update Bus' : 'Save Bus'}
+        </button>
       </div>
     </div>
   );
 }
-function ModalStudent({ onClose, onSave }) {
+
+// function ModalDriver({ onClose, onSave }) {
+//   return (
+//     <div className="modal">
+//       <button className="close-btn" onClick={onClose}>×</button>
+//       <h3>Add / Edit Driver</h3>
+//       <div className="form-row"><label className="form-label">Full Name</label><input className="form-input" placeholder="Driver full name" /></div>
+//       <div className="form-row2">
+//         <div className="form-row"><label className="form-label">License No.</label><input className="form-input" placeholder="DL-XXXX-XXXX" /></div>
+//         <div className="form-row"><label className="form-label">Experience (yrs)</label><input className="form-input" placeholder="5" type="number" /></div>
+//       </div>
+//       <div className="form-row"><label className="form-label">Phone</label><input className="form-input" placeholder="+91 9XXXXXXXXX" /></div>
+//       <div className="form-row"><label className="form-label">Assign Bus</label>
+//         <select className="form-input"><option>— Select bus —</option><option>KA-01-B</option><option>KA-02-B</option><option>KA-03-C</option><option>KA-04-D</option></select>
+//       </div>
+//       <div className="form-row"><label className="form-label">Assign Route</label>
+//         <select className="form-input"><option value="">— Select route (optional) —</option><option>Route A — North Loop</option><option>Route B — East Connect</option><option>Route C — South Express</option><option>Route D — West Campus</option></select>
+//       </div>
+//       <div className="modal-actions">
+//         <button className="btn-cancel" onClick={onClose}>Cancel</button>
+//         <button className="btn-save" onClick={() => onSave("Driver saved successfully!")}>Save Driver</button>
+//       </div>
+//     </div>
+//   );
+//}
+
+// function ModalDriver({ onClose, onSave, editData }) {
+//   const [name, setName]         = useState(editData?.name || '');
+//   const [email, setEmail]       = useState(editData?.email || '');
+//   const [licenseNo, setLicenseNo] = useState(editData?.licenseNo || '');
+//   const [experience, setExperience] = useState(editData?.experience || '');
+//   const [phone, setPhone]       = useState(editData?.phone || '');
+//   const [status, setStatus]     = useState(editData?.status || 'active');
+//   const [saving, setSaving]     = useState(false);
+//   const [error, setError]       = useState('');
+
+//   const handleSave = async () => {
+//     if (!name || !email) {
+//       setError('Name and email are required.');
+//       return;
+//     }
+//     setSaving(true);
+//     setError('');
+//     try {
+//       if (editData?._id) {
+//         await updateAdminDriver(editData._id, { name, email, licenseNo, experience: Number(experience), phone, status });
+//         onSave('Driver updated successfully!');
+//       } else {
+//         await createAdminDriver({ name, email, licenseNo, experience: Number(experience), phone, status });
+//         onSave('Driver saved successfully!');
+//       }
+//     } catch (err) {
+//       setError(err.message);
+//       setSaving(false);
+//     }
+//   };
+
+//   return (
+//     <div className="modal">
+//       <button className="close-btn" onClick={onClose}>×</button>
+//       <h3>{editData ? 'Edit Driver' : 'Add Driver'}</h3>
+
+//       {error && (
+//         <div style={{ background: '#fff0f0', border: '1px solid #fcc', borderRadius: 8, padding: '8px 12px', fontSize: 12.5, color: '#c00', marginBottom: 12 }}>
+//           ⚠️ {error}
+//         </div>
+//       )}
+
+//       <div className="form-row">
+//         <label className="form-label">Full Name</label>
+//         <input className="form-input" placeholder="Driver full name" value={name} onChange={e => setName(e.target.value)} />
+//       </div>
+//       <div className="form-row">
+//         <label className="form-label">Email</label>
+//         <input className="form-input" placeholder="driver@busnav.com" value={email} onChange={e => setEmail(e.target.value)} />
+//       </div>
+//       <div className="form-row2">
+//         <div className="form-row">
+//           <label className="form-label">License No.</label>
+//           <input className="form-input" placeholder="DL-XXXX-XXXX" value={licenseNo} onChange={e => setLicenseNo(e.target.value)} />
+//         </div>
+//         <div className="form-row">
+//           <label className="form-label">Experience (yrs)</label>
+//           <input className="form-input" placeholder="5" type="number" value={experience} onChange={e => setExperience(e.target.value)} />
+//         </div>
+//       </div>
+//       <div className="form-row">
+//         <label className="form-label">Phone</label>
+//         <input className="form-input" placeholder="+91 9XXXXXXXXX" value={phone} onChange={e => setPhone(e.target.value)} />
+//       </div>
+//       <div className="form-row">
+//         <label className="form-label">Status</label>
+//         <select className="form-input" value={status} onChange={e => setStatus(e.target.value)}>
+//           <option value="active">Active</option>
+//           <option value="inactive">Inactive</option>
+//           <option value="on_leave">On Leave</option>
+//         </select>
+//       </div>
+//       <div className="modal-actions">
+//         <button className="btn-cancel" onClick={onClose}>Cancel</button>
+//         <button className="btn-save" onClick={handleSave} disabled={saving}>
+//           {saving ? 'Saving...' : editData ? 'Update Driver' : 'Save Driver'}
+//         </button>
+//       </div>
+//     </div>
+//   );
+// }
+function ModalDriver({ onClose, onSave, editData }) {
+  const [name, setName]             = useState(editData?.name || '');
+  const [email, setEmail]           = useState(editData?.email || '');
+  const [licenseNo, setLicenseNo]   = useState(editData?.licenseNo || '');
+  const [experience, setExperience] = useState(editData?.experience || '');
+  const [phone, setPhone]           = useState(editData?.phone || '');
+  const [status, setStatus]         = useState(editData?.status || 'active');
+  const [assignedBus, setAssignedBus]     = useState(editData?.assignedBus?._id || '');
+  const [assignedRoute, setAssignedRoute] = useState(editData?.assignedRoute?._id || '');
+  const [buses, setBuses]   = useState([]);
+  const [routes, setRoutes] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError]   = useState('');
+
+  // Fetch buses and routes when modal opens
+  useEffect(() => {
+    getBuses().then(d => setBuses(d.buses || [])).catch(() => {});
+    getRoutes().then(r => setRoutes(r.routes || [])).catch(() => {});
+  }, []);
+
+  const handleSave = async () => {
+    if (!name || !email) {
+      setError('Name and email are required.');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    try {
+      const payload = {
+        name,
+        email,
+        licenseNo,
+        experience: Number(experience) || 0,
+        phone,
+        status,
+        assignedBus:   assignedBus   || null,
+        assignedRoute: assignedRoute || null,
+      };
+      if (editData?._id) {
+        await updateAdminDriver(editData._id, payload);
+        onSave('Driver updated successfully!');
+      } else {
+        await createAdminDriver(payload);
+        onSave('Driver saved successfully!');
+      }
+    } catch (err) {
+      setError(err.message);
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="modal">
       <button className="close-btn" onClick={onClose}>×</button>
-      <h3>Add Student</h3>
-      <div className="form-row"><label className="form-label">Full Name</label><input className="form-input" placeholder="Student full name" /></div>
+      <h3>{editData ? 'Edit Driver' : 'Add Driver'}</h3>
+
+      {error && (
+        <div style={{
+          background: '#fff0f0', border: '1px solid #fcc',
+          borderRadius: 8, padding: '8px 12px',
+          fontSize: 12.5, color: '#c00', marginBottom: 12
+        }}>
+          ⚠️ {error}
+        </div>
+      )}
+
+      <div className="form-row">
+        <label className="form-label">Full Name</label>
+        <input
+          className="form-input"
+          placeholder="Driver full name"
+          value={name}
+          onChange={e => setName(e.target.value)}
+        />
+      </div>
+
+      <div className="form-row">
+        <label className="form-label">Email</label>
+        <input
+          className="form-input"
+          placeholder="driver@busnav.com"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+        />
+      </div>
+
       <div className="form-row2">
-        <div className="form-row"><label className="form-label">Roll No.</label><input className="form-input" placeholder="2024-XXX" /></div>
-        <div className="form-row"><label className="form-label">Class / Section</label><input className="form-input" placeholder="10-A" /></div>
+        <div className="form-row">
+          <label className="form-label">License No.</label>
+          <input
+            className="form-input"
+            placeholder="DL-XXXX-XXXX"
+            value={licenseNo}
+            onChange={e => setLicenseNo(e.target.value)}
+          />
+        </div>
+        <div className="form-row">
+          <label className="form-label">Experience (yrs)</label>
+          <input
+            className="form-input"
+            placeholder="5"
+            type="number"
+            value={experience}
+            onChange={e => setExperience(e.target.value)}
+          />
+        </div>
       </div>
-      <div className="form-row"><label className="form-label">Assign Route</label>
-        <select className="form-input"><option value="">— Select route —</option><option>Route A — North Loop</option><option>Route B — East Connect</option><option>Route C — South Express</option><option>Route D — West Campus</option></select>
+
+      <div className="form-row">
+        <label className="form-label">Phone</label>
+        <input
+          className="form-input"
+          placeholder="+91 9XXXXXXXXX"
+          value={phone}
+          onChange={e => setPhone(e.target.value)}
+        />
       </div>
-      <div className="form-row"><label className="form-label">Pickup Stop</label>
-        <select className="form-input"><option value="">— Select stop —</option><option>Main Gate</option><option>Market Square</option><option>North Bridge</option><option>City Park</option><option>East Market</option><option>Rail Station</option><option>Tilakwadi</option><option>Sadashiv Nagar</option><option>Campus A</option><option>Science Block</option></select>
+
+      <div className="form-row">
+        <label className="form-label">Assign Bus</label>
+        <select
+          className="form-input"
+          value={assignedBus}
+          onChange={e => setAssignedBus(e.target.value)}
+        >
+          <option value="">— Select bus —</option>
+          {buses.map(b => (
+            <option key={b._id} value={b._id}>
+              {b.busNumber} {b.model ? `· ${b.model}` : ''}
+            </option>
+          ))}
+        </select>
       </div>
-      <div className="form-row"><label className="form-label">Parent Contact</label><input className="form-input" placeholder="+91 9XXXXXXXXX" /></div>
+
+      <div className="form-row">
+        <label className="form-label">Assign Route</label>
+        <select
+          className="form-input"
+          value={assignedRoute}
+          onChange={e => setAssignedRoute(e.target.value)}
+        >
+          <option value="">— Select route —</option>
+          {routes.map(r => (
+            <option key={r._id} value={r._id}>
+              {r.routeId} — {r.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="form-row">
+        <label className="form-label">Status</label>
+        <select
+          className="form-input"
+          value={status}
+          onChange={e => setStatus(e.target.value)}
+        >
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+          <option value="on_leave">On Leave</option>
+        </select>
+      </div>
+
       <div className="modal-actions">
         <button className="btn-cancel" onClick={onClose}>Cancel</button>
-        <button className="btn-save" onClick={() => onSave("Student added successfully!")}>Save Student</button>
+        <button className="btn-save" onClick={handleSave} disabled={saving}>
+          {saving ? 'Saving...' : editData ? 'Update Driver' : 'Save Driver'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// function ModalRoute({ onClose, onSave }) {
+//   return (
+//     <div className="modal">
+//       <button className="close-btn" onClick={onClose}>×</button>
+//       <h3>Create / Edit Route</h3>
+//       <div className="form-row"><label className="form-label">Route Name</label><input className="form-input" placeholder="North Loop" /></div>
+//       <div className="form-section-title">Stops</div>
+//       <AddStopList />
+//       <div className="form-row" style={{ marginTop: 14 }}><label className="form-label">Assign Buses</label>
+//         <select className="form-input" multiple style={{ height: 90 }}>
+//           <option>KA-01-B</option><option>KA-02-B</option><option>KA-03-C</option><option>KA-04-D</option><option>KA-05-E</option>
+//         </select>
+//         <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>Hold Ctrl/Cmd to select multiple buses</div>
+//       </div>
+//       <div className="modal-actions">
+//         <button className="btn-cancel" onClick={onClose}>Cancel</button>
+//         <button className="btn-save" onClick={() => onSave("Route created successfully!")}>Create Route</button>
+//       </div>
+//     </div>
+//   );
+// }
+// function ModalStudent({ onClose, onSave }) {
+//   return (
+//     <div className="modal">
+//       <button className="close-btn" onClick={onClose}>×</button>
+//       <h3>Add Student</h3>
+//       <div className="form-row"><label className="form-label">Full Name</label><input className="form-input" placeholder="Student full name" /></div>
+//       <div className="form-row2">
+//         <div className="form-row"><label className="form-label">Roll No.</label><input className="form-input" placeholder="2024-XXX" /></div>
+//         <div className="form-row"><label className="form-label">Class / Section</label><input className="form-input" placeholder="10-A" /></div>
+//       </div>
+//       <div className="form-row"><label className="form-label">Assign Route</label>
+//         <select className="form-input"><option value="">— Select route —</option><option>Route A — North Loop</option><option>Route B — East Connect</option><option>Route C — South Express</option><option>Route D — West Campus</option></select>
+//       </div>
+//       <div className="form-row"><label className="form-label">Pickup Stop</label>
+//         <select className="form-input"><option value="">— Select stop —</option><option>Main Gate</option><option>Market Square</option><option>North Bridge</option><option>City Park</option><option>East Market</option><option>Rail Station</option><option>Tilakwadi</option><option>Sadashiv Nagar</option><option>Campus A</option><option>Science Block</option></select>
+//       </div>
+//       <div className="form-row"><label className="form-label">Parent Contact</label><input className="form-input" placeholder="+91 9XXXXXXXXX" /></div>
+//       <div className="modal-actions">
+//         <button className="btn-cancel" onClick={onClose}>Cancel</button>
+//         <button className="btn-save" onClick={() => onSave("Student added successfully!")}>Save Student</button>
+//       </div>
+//     </div>
+//   );
+// }
+
+function ModalRoute({ onClose, onSave, editData }) {
+  const [routeId, setRouteId]       = useState(editData?.routeId || '');
+  const [name, setName]             = useState(editData?.name || '');
+  const [description, setDescription] = useState(editData?.description || '');
+  const [stops, setStops]           = useState(editData?.stops?.map(s => s.name) || []);
+  const [stopInput, setStopInput]   = useState('');
+  const [saving, setSaving]         = useState(false);
+  const [error, setError]           = useState('');
+
+  const addStop = () => {
+    const s = stopInput.trim();
+    if (!s) return;
+    setStops(prev => [...prev, s]);
+    setStopInput('');
+  };
+  const removeStop = (i) => setStops(prev => prev.filter((_, idx) => idx !== i));
+
+  const handleSave = async () => {
+    if (!routeId || !name) {
+      setError('Route ID and name are required.');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    const stopsData = stops.map((s, i) => ({ name: s, order: i + 1 }));
+    try {
+      if (editData?._id) {
+        await updateRoute(editData._id, { routeId, name, description, stops: stopsData });
+        onSave('Route updated successfully!');
+      } else {
+        await createRoute({ routeId, name, description, stops: stopsData });
+        onSave('Route created successfully!');
+      }
+    } catch (err) {
+      setError(err.message);
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="modal">
+      <button className="close-btn" onClick={onClose}>×</button>
+      <h3>{editData ? 'Edit Route' : 'Create Route'}</h3>
+
+      {error && (
+        <div style={{ background: '#fff0f0', border: '1px solid #fcc', borderRadius: 8, padding: '8px 12px', fontSize: 12.5, color: '#c00', marginBottom: 12 }}>
+          ⚠️ {error}
+        </div>
+      )}
+
+      <div className="form-row2">
+        <div className="form-row">
+          <label className="form-label">Route ID</label>
+          <input className="form-input" placeholder="e.g. A" value={routeId} onChange={e => setRouteId(e.target.value)} />
+        </div>
+        <div className="form-row">
+          <label className="form-label">Route Name</label>
+          <input className="form-input" placeholder="North Loop" value={name} onChange={e => setName(e.target.value)} />
+        </div>
+      </div>
+      <div className="form-row">
+        <label className="form-label">Description</label>
+        <input className="form-input" placeholder="Short description..." value={description} onChange={e => setDescription(e.target.value)} />
+      </div>
+
+      <div className="form-section-title">Stops</div>
+      <div className="route-stop-list">
+        {stops.map((s, i) => (
+          <div className="stop-item" key={i}>
+            <div className="stop-num">{i + 1}</div>
+            <div className="stop-name-txt">{s}</div>
+            <button className="remove-stop" onClick={() => removeStop(i)}>×</button>
+          </div>
+        ))}
+      </div>
+      <div className="add-stop-row">
+        <input
+          className="add-stop-input"
+          placeholder="Add stop name..."
+          value={stopInput}
+          onChange={e => setStopInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && addStop()}
+        />
+        <button className="add-stop-btn" onClick={addStop}>+ Add</button>
+      </div>
+
+      <div className="modal-actions">
+        <button className="btn-cancel" onClick={onClose}>Cancel</button>
+        <button className="btn-save" onClick={handleSave} disabled={saving}>
+          {saving ? 'Saving...' : editData ? 'Update Route' : 'Create Route'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
+// function ModalStudent({ onClose, onSave, editData }) {
+//   const [name, setName]           = useState(editData?.name || '');
+//   const [rollNo, setRollNo]       = useState(editData?.rollNo || '');
+//   const [className, setClassName] = useState(editData?.className || '');
+//   const [route, setRoute]         = useState(editData?.assignedRoute?._id || '');
+//   const [pickupStop, setPickupStop] = useState(editData?.pickupStop || '');
+//   const [email, setEmail]         = useState(editData?.email || '');
+//   const [parentContact, setParentContact] = useState(editData?.parentContact || '');
+//   const [status, setStatus]       = useState(editData?.status || 'active');
+//   const [saving, setSaving]       = useState(false);
+//   const [error, setError]         = useState('');
+
+//   const handleSave = async () => {
+//     if (!name || !email || !rollNo) {
+//       setError('Name, email and roll number are required.');
+//       return;
+//     }
+//     setSaving(true);
+//     setError('');
+//     try {
+//       if (editData?._id) {
+//         await updateAdminStudent(editData._id, { name, rollNo, className, assignedRoute: route || null, pickupStop, email, parentContact, status });
+//         onSave('Student updated successfully!');
+//       } else {
+//         await createAdminStudent({ name, rollNo, className, assignedRoute: route || null, pickupStop, email, parentContact, status });
+//         onSave('Student added successfully!');
+//       }
+//     } catch (err) {
+//       setError(err.message);
+//       setSaving(false);
+//     }
+//   };
+
+//   return (
+//     <div className="modal">
+//       <button className="close-btn" onClick={onClose}>×</button>
+//       <h3>{editData ? 'Edit Student' : 'Add Student'}</h3>
+
+//       {error && (
+//         <div style={{ background: '#fff0f0', border: '1px solid #fcc', borderRadius: 8, padding: '8px 12px', fontSize: 12.5, color: '#c00', marginBottom: 12 }}>
+//           ⚠️ {error}
+//         </div>
+//       )}
+
+//       <div className="form-row">
+//         <label className="form-label">Full Name</label>
+//         <input className="form-input" placeholder="Student full name" value={name} onChange={e => setName(e.target.value)} />
+//       </div>
+//       <div className="form-row">
+//         <label className="form-label">Email</label>
+//         <input className="form-input" placeholder="student@college.edu" value={email} onChange={e => setEmail(e.target.value)} />
+//       </div>
+//       <div className="form-row2">
+//         <div className="form-row">
+//           <label className="form-label">Roll No.</label>
+//           <input className="form-input" placeholder="2024-XXX" value={rollNo} onChange={e => setRollNo(e.target.value)} />
+//         </div>
+//         <div className="form-row">
+//           <label className="form-label">Class / Section</label>
+//           <input className="form-input" placeholder="10-A" value={className} onChange={e => setClassName(e.target.value)} />
+//         </div>
+//       </div>
+//       <div className="form-row">
+//         <label className="form-label">Assign Route</label>
+//         <select className="form-input" value={route} onChange={e => setRoute(e.target.value)}>
+//           <option value="">— Select route —</option>
+//           <option value="route-a">Route A — North Loop</option>
+//           <option value="route-b">Route B — East Connect</option>
+//           <option value="route-c">Route C — South Express</option>
+//           <option value="route-d">Route D — West Campus</option>
+//         </select>
+//       </div>
+//       <div className="form-row">
+//         <label className="form-label">Pickup Stop</label>
+//         <input className="form-input" placeholder="e.g. City Park" value={pickupStop} onChange={e => setPickupStop(e.target.value)} />
+//       </div>
+//       <div className="form-row">
+//         <label className="form-label">Parent Contact</label>
+//         <input className="form-input" placeholder="+91 9XXXXXXXXX" value={parentContact} onChange={e => setParentContact(e.target.value)} />
+//       </div>
+//       <div className="form-row">
+//         <label className="form-label">Status</label>
+//         <select className="form-input" value={status} onChange={e => setStatus(e.target.value)}>
+//           <option value="active">Active</option>
+//           <option value="pending">Pending</option>
+//           <option value="inactive">Inactive</option>
+//         </select>
+//       </div>
+//       <div className="modal-actions">
+//         <button className="btn-cancel" onClick={onClose}>Cancel</button>
+//         <button className="btn-save" onClick={handleSave} disabled={saving}>
+//           {saving ? 'Saving...' : editData ? 'Update Student' : 'Save Student'}
+//         </button>
+//       </div>
+//     </div>
+//   );
+// }
+
+function ModalStudent({ onClose, onSave, editData }) {
+  const [name, setName]                   = useState(editData?.name || '');
+  const [email, setEmail]                 = useState(editData?.email || '');
+  const [rollNo, setRollNo]               = useState(editData?.rollNo || '');
+  const [className, setClassName]         = useState(editData?.className || '');
+  const [route, setRoute]                 = useState(editData?.assignedRoute?._id || '');
+  const [pickupStop, setPickupStop]       = useState(editData?.pickupStop || '');
+  const [parentContact, setParentContact] = useState(editData?.parentContact || '');
+  const [status, setStatus]               = useState(editData?.status || 'active');
+  const [routes, setRoutes]               = useState([]);
+  const [stops, setStops]                 = useState([]);
+  const [saving, setSaving]               = useState(false);
+  const [error, setError]                 = useState('');
+
+  // Fetch routes when modal opens
+  useEffect(() => {
+    getRoutes().then(r => setRoutes(r.routes || [])).catch(() => {});
+  }, []);
+
+  // When route changes, load its stops
+  useEffect(() => {
+    if (!route) { setStops([]); return; }
+    const selected = routes.find(r => r._id === route);
+    setStops(selected?.stops || []);
+  }, [route, routes]);
+
+  const handleSave = async () => {
+    if (!name || !email || !rollNo) {
+      setError('Name, email and roll number are required.');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    try {
+      const payload = {
+        name,
+        email,
+        rollNo,
+        className,
+        assignedRoute:  route         || null,
+        pickupStop,
+        parentContact,
+        status,
+      };
+      if (editData?._id) {
+        await updateAdminStudent(editData._id, payload);
+        onSave('Student updated successfully!');
+      } else {
+        await createAdminStudent(payload);
+        onSave('Student added successfully!');
+      }
+    } catch (err) {
+      setError(err.message);
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="modal">
+      <button className="close-btn" onClick={onClose}>×</button>
+      <h3>{editData ? 'Edit Student' : 'Add Student'}</h3>
+
+      {error && (
+        <div style={{
+          background: '#fff0f0', border: '1px solid #fcc',
+          borderRadius: 8, padding: '8px 12px',
+          fontSize: 12.5, color: '#c00', marginBottom: 12
+        }}>
+          ⚠️ {error}
+        </div>
+      )}
+
+      <div className="form-row">
+        <label className="form-label">Full Name</label>
+        <input
+          className="form-input"
+          placeholder="Student full name"
+          value={name}
+          onChange={e => setName(e.target.value)}
+        />
+      </div>
+
+      <div className="form-row">
+        <label className="form-label">Email</label>
+        <input
+          className="form-input"
+          placeholder="student@college.edu"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+        />
+      </div>
+
+      <div className="form-row2">
+        <div className="form-row">
+          <label className="form-label">Roll No.</label>
+          <input
+            className="form-input"
+            placeholder="2024-XXX"
+            value={rollNo}
+            onChange={e => setRollNo(e.target.value)}
+          />
+        </div>
+        <div className="form-row">
+          <label className="form-label">Class / Section</label>
+          <input
+            className="form-input"
+            placeholder="10-A"
+            value={className}
+            onChange={e => setClassName(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="form-row">
+        <label className="form-label">Assign Route</label>
+        <select
+          className="form-input"
+          value={route}
+          onChange={e => setRoute(e.target.value)}
+        >
+          <option value="">— Select route —</option>
+          {routes.map(r => (
+            <option key={r._id} value={r._id}>
+              {r.routeId} — {r.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="form-row">
+        <label className="form-label">Pickup Stop</label>
+        {stops.length > 0 ? (
+          <select
+            className="form-input"
+            value={pickupStop}
+            onChange={e => setPickupStop(e.target.value)}
+          >
+            <option value="">— Select stop —</option>
+            {stops.map((s, i) => (
+              <option key={i} value={s.name}>{s.name}</option>
+            ))}
+          </select>
+        ) : (
+          <input
+            className="form-input"
+            placeholder="Select a route first or type stop name"
+            value={pickupStop}
+            onChange={e => setPickupStop(e.target.value)}
+          />
+        )}
+      </div>
+
+      <div className="form-row">
+        <label className="form-label">Parent Contact</label>
+        <input
+          className="form-input"
+          placeholder="+91 9XXXXXXXXX"
+          value={parentContact}
+          onChange={e => setParentContact(e.target.value)}
+        />
+      </div>
+
+      <div className="form-row">
+        <label className="form-label">Status</label>
+        <select
+          className="form-input"
+          value={status}
+          onChange={e => setStatus(e.target.value)}
+        >
+          <option value="active">Active</option>
+          <option value="pending">Pending</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+
+      <div className="modal-actions">
+        <button className="btn-cancel" onClick={onClose}>Cancel</button>
+        <button className="btn-save" onClick={handleSave} disabled={saving}>
+          {saving ? 'Saving...' : editData ? 'Update Student' : 'Save Student'}
+        </button>
       </div>
     </div>
   );
@@ -3386,100 +4215,241 @@ function PageTracking({ showToast }) {
   );
 }
 
-function PageBuses({ showModal }) {
+// function PageBuses({ showModal }) {
+//   return (
+//     <div className="page">
+//       <div className="page-header">
+//         <div><div className="page-title">Buses</div><div className="page-subtitle">Manage fleet — 23 buses registered</div></div>
+//         <div className="fab-row">
+//           <div className="search-bar"><IconSearch /><input placeholder="Search buses..." /></div>
+//           <select className="filter-select"><option>All Routes</option><option>Route A</option><option>Route B</option><option>Route C</option><option>Route D</option></select>
+//           <button className="fab-btn fab-primary" onClick={() => showModal("bus")}>＋ Add Bus</button>
+//         </div>
+//       </div>
+//       <div className="table-card">
+//         <table className="data-table">
+//           <thead><tr><th>Bus No.</th><th>Driver</th><th>Assigned Route</th><th>Capacity</th><th>Status</th><th>Last Active</th><th></th></tr></thead>
+//           <tbody>
+//             {[["KA-01-B","#3b8bd4","RK","R. Kumar","sp-blue","Route A",50,"sp-green","On Time","09:12"],["KA-02-B","#8b5cf6","PS","P. Sharma","sp-green","Route B",48,"sp-amber","Delayed","09:08"],["KA-03-C","#3dc87a","MR","M. Rao","sp-amber","Route C",52,"sp-green","On Time","09:14"],["KA-04-D","#e05252","SJ","S. Joshi","sp-purple","Route D",45,"sp-gray","Idle","07:30"],["KA-05-E","#f5a623","AB","A. Baig","sp-blue","Route A",50,"sp-red","⚠ Warning","08:55"],["KA-06-F","#0ea5e9","VP","V. Patil","sp-green","Route B",48,"sp-green","On Time","09:10"],["KA-07-G","#14b8a6","DN","D. Nair","sp-amber","Route C",55,"sp-green","On Time","09:13"]].map(([bus,bg,init,drv,rsc,route,cap,sc,st,time]) => (
+//               <tr key={bus}><td><strong>{bus}</strong></td><td><span className="ava-sm" style={{ background: bg }}>{init}</span>{drv}</td><td><span className={`status-pill ${rsc}`}>{route}</span></td><td>{cap}</td><td><span className={`status-pill ${sc}`}>{st}</span></td><td style={{ color: "var(--muted)", fontSize: 11, fontFamily: "'DM Mono',monospace" }}>{time}</td><td><button className="act-btn" onClick={() => showModal("bus")}>Edit</button></td></tr>
+//             ))}
+//           </tbody>
+//         </table>
+//       </div>
+//     </div>
+//   );
+// }
+function PageBuses({ showModal, showToast }) {
+  const [buses, setBuses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+
+  const fetchBuses = async () => {
+    try {
+      setLoading(true);
+      const data = await getBuses();
+      setBuses(data.buses || []);
+    } catch (err) {
+      showToast('Failed to load buses: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchBuses(); }, []);
+
+  const filtered = buses.filter(b => {
+    const q = search.toLowerCase();
+    return !q || b.busNumber?.toLowerCase().includes(q) || b.model?.toLowerCase().includes(q);
+  });
+
+  const statusClass = s => s === 'active' ? 'sp-green' : s === 'maintenance' ? 'sp-amber' : 'sp-gray';
+
   return (
     <div className="page">
       <div className="page-header">
-        <div><div className="page-title">Buses</div><div className="page-subtitle">Manage fleet — 23 buses registered</div></div>
+        <div>
+          <div className="page-title">Buses</div>
+          <div className="page-subtitle">Manage fleet — {buses.length} buses registered</div>
+        </div>
         <div className="fab-row">
-          <div className="search-bar"><IconSearch /><input placeholder="Search buses..." /></div>
-          <select className="filter-select"><option>All Routes</option><option>Route A</option><option>Route B</option><option>Route C</option><option>Route D</option></select>
-          <button className="fab-btn fab-primary" onClick={() => showModal("bus")}>＋ Add Bus</button>
+          <div className="search-bar">
+            <IconSearch />
+            <input placeholder="Search buses..." value={search} onChange={e => setSearch(e.target.value)} />
+          </div>
+          <button className="fab-btn fab-primary" onClick={() => showModal('bus', null, fetchBuses)}>
+            ＋ Add Bus
+          </button>
         </div>
       </div>
+
       <div className="table-card">
-        <table className="data-table">
-          <thead><tr><th>Bus No.</th><th>Driver</th><th>Assigned Route</th><th>Capacity</th><th>Status</th><th>Last Active</th><th></th></tr></thead>
-          <tbody>
-            {[["KA-01-B","#3b8bd4","RK","R. Kumar","sp-blue","Route A",50,"sp-green","On Time","09:12"],["KA-02-B","#8b5cf6","PS","P. Sharma","sp-green","Route B",48,"sp-amber","Delayed","09:08"],["KA-03-C","#3dc87a","MR","M. Rao","sp-amber","Route C",52,"sp-green","On Time","09:14"],["KA-04-D","#e05252","SJ","S. Joshi","sp-purple","Route D",45,"sp-gray","Idle","07:30"],["KA-05-E","#f5a623","AB","A. Baig","sp-blue","Route A",50,"sp-red","⚠ Warning","08:55"],["KA-06-F","#0ea5e9","VP","V. Patil","sp-green","Route B",48,"sp-green","On Time","09:10"],["KA-07-G","#14b8a6","DN","D. Nair","sp-amber","Route C",55,"sp-green","On Time","09:13"]].map(([bus,bg,init,drv,rsc,route,cap,sc,st,time]) => (
-              <tr key={bus}><td><strong>{bus}</strong></td><td><span className="ava-sm" style={{ background: bg }}>{init}</span>{drv}</td><td><span className={`status-pill ${rsc}`}>{route}</span></td><td>{cap}</td><td><span className={`status-pill ${sc}`}>{st}</span></td><td style={{ color: "var(--muted)", fontSize: 11, fontFamily: "'DM Mono',monospace" }}>{time}</td><td><button className="act-btn" onClick={() => showModal("bus")}>Edit</button></td></tr>
-            ))}
-          </tbody>
-        </table>
+        {loading ? (
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>Loading buses...</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>
+            {search ? 'No buses match your search.' : 'No buses yet. Click + Add Bus.'}
+          </div>
+        ) : (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Bus No.</th>
+                <th>Model</th>
+                <th>Driver</th>
+                <th>Route</th>
+                <th>Capacity</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(b => (
+                <tr key={b._id}>
+                  <td><strong>{b.busNumber}</strong></td>
+                  <td>{b.model || '—'}</td>
+                  <td>{b.assignedDriver ? b.assignedDriver.name : <span style={{ color: 'var(--muted)' }}>Unassigned</span>}</td>
+                  <td>
+                    {b.assignedRoute
+                      ? <span className="status-pill sp-blue">{b.assignedRoute.name || b.assignedRoute.routeId}</span>
+                      : <span style={{ color: 'var(--muted)' }}>—</span>}
+                  </td>
+                  <td>{b.capacity}</td>
+                  <td>
+                    <span className={`status-pill ${statusClass(b.status)}`}>
+                      {b.status ? b.status.charAt(0).toUpperCase() + b.status.slice(1) : 'Active'}
+                    </span>
+                  </td>
+                  <td>
+                    <button className="act-btn" onClick={() => showModal('bus', b, fetchBuses)}>Edit</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );
 }
 
-function PageDrivers({ showModal }) {
-  const drivers = [
-    { bg:"#3b8bd4",init:"RK",name:"R. Kumar",id:"DL-5201-2019 · 8 yrs",sc:"sp-green",st:"Active",bus:"KA-01-B",route:"Route A — North Loop",phone:"+91 98765 43210",trips:"6 / 6",tc:"var(--green)" },
-    { bg:"#8b5cf6",init:"PS",name:"P. Sharma",id:"DL-3892-2017 · 10 yrs",sc:"sp-amber",st:"Delayed",bus:"KA-02-B",route:"Route B — East Connect",phone:"+91 91234 56789",trips:"4 / 6",tc:"var(--accent)" },
-    { bg:"#3dc87a",init:"MR",name:"M. Rao",id:"DL-1123-2020 · 6 yrs",sc:"sp-green",st:"Active",bus:"KA-03-C",route:"Route C — South Express",phone:"+91 90000 11223",trips:"5 / 6",tc:"var(--green)" },
-    { bg:"#e05252",init:"SJ",name:"S. Joshi",id:"DL-7741-2018 · 9 yrs",sc:"sp-gray",st:"Idle",bus:"KA-04-D",route:"Route D — West Campus",phone:"+91 99887 76655",trips:"2 / 6",tc:"var(--muted)" },
-    { bg:"#f5a623",init:"AB",name:"A. Baig",id:"DL-4456-2021 · 5 yrs",sc:"sp-red",st:"Warning",bus:"KA-05-E",route:"Route A — North Loop",phone:"+91 88001 23456",trips:"3 / 6",tc:"var(--red)" },
-    { bg:"#0ea5e9",init:"VP",name:"V. Patil",id:"DL-9920-2016 · 12 yrs",sc:"sp-green",st:"Active",bus:"KA-06-F",route:"Route B — East Connect",phone:"+91 97654 32109",trips:"6 / 6",tc:"var(--green)" },
-  ];
+// function PageDrivers({ showModal }) {
+//   const drivers = [
+//     { bg:"#3b8bd4",init:"RK",name:"R. Kumar",id:"DL-5201-2019 · 8 yrs",sc:"sp-green",st:"Active",bus:"KA-01-B",route:"Route A — North Loop",phone:"+91 98765 43210",trips:"6 / 6",tc:"var(--green)" },
+//     { bg:"#8b5cf6",init:"PS",name:"P. Sharma",id:"DL-3892-2017 · 10 yrs",sc:"sp-amber",st:"Delayed",bus:"KA-02-B",route:"Route B — East Connect",phone:"+91 91234 56789",trips:"4 / 6",tc:"var(--accent)" },
+//     { bg:"#3dc87a",init:"MR",name:"M. Rao",id:"DL-1123-2020 · 6 yrs",sc:"sp-green",st:"Active",bus:"KA-03-C",route:"Route C — South Express",phone:"+91 90000 11223",trips:"5 / 6",tc:"var(--green)" },
+//     { bg:"#e05252",init:"SJ",name:"S. Joshi",id:"DL-7741-2018 · 9 yrs",sc:"sp-gray",st:"Idle",bus:"KA-04-D",route:"Route D — West Campus",phone:"+91 99887 76655",trips:"2 / 6",tc:"var(--muted)" },
+//     { bg:"#f5a623",init:"AB",name:"A. Baig",id:"DL-4456-2021 · 5 yrs",sc:"sp-red",st:"Warning",bus:"KA-05-E",route:"Route A — North Loop",phone:"+91 88001 23456",trips:"3 / 6",tc:"var(--red)" },
+//     { bg:"#0ea5e9",init:"VP",name:"V. Patil",id:"DL-9920-2016 · 12 yrs",sc:"sp-green",st:"Active",bus:"KA-06-F",route:"Route B — East Connect",phone:"+91 97654 32109",trips:"6 / 6",tc:"var(--green)" },
+//   ];
+//   return (
+//     <div className="page">
+//       <div className="page-header">
+//         <div><div className="page-title">Drivers</div><div className="page-subtitle">21 drivers on duty today</div></div>
+//         <div className="fab-row">
+//           <div className="search-bar"><IconSearch /><input placeholder="Search drivers..." /></div>
+//           <button className="fab-btn fab-primary" onClick={() => showModal("driver")}>＋ Add Driver</button>
+//         </div>
+//       </div>
+//       <div className="driver-cards">
+//         {drivers.map(d => (
+//           <div className="driver-card" key={d.name}>
+//             <div className="dc-header">
+//               <div className="dc-avatar" style={{ background: d.bg }}>{d.init}</div>
+//               <div><div className="dc-name">{d.name}</div><div className="dc-id">{d.id}</div></div>
+//               <span className={`status-pill ${d.sc}`} style={{ marginLeft: "auto" }}>{d.st}</span>
+//             </div>
+//             {[["Assigned Bus", d.bus], ["Route", d.route], ["Phone", d.phone]].map(([k, v]) => (
+//               <div className="dc-row" key={k}><span className="dc-key">{k}</span><span className="dc-val">{v}</span></div>
+//             ))}
+//             <div className="dc-row" style={{ border: "none" }}><span className="dc-key">Trips Today</span><span className="dc-val" style={{ color: d.tc }}>{d.trips}</span></div>
+//           </div>
+//         ))}
+//       </div>
+//     </div>
+//   );
+// }
+
+function PageDrivers({ showModal, showToast }) {
+  const [drivers, setDrivers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch]   = useState('');
+
+  const fetchDrivers = async () => {
+    try {
+      setLoading(true);
+      const data = await getAdminDrivers();
+      setDrivers(data.drivers || []);
+    } catch (err) {
+      showToast('Failed to load drivers: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchDrivers(); }, []);
+
+  const filtered = drivers.filter(d => {
+    const q = search.toLowerCase();
+    return !q || d.name?.toLowerCase().includes(q) || d.email?.toLowerCase().includes(q);
+  });
+
+  const statusClass = s => s === 'active' ? 'sp-green' : s === 'on_leave' ? 'sp-amber' : 'sp-gray';
+
+  const avatarColors = ['#3b8bd4','#8b5cf6','#3dc87a','#e05252','#f5a623','#0ea5e9','#14b8a6'];
+  const getColor = (name = '') => avatarColors[name.charCodeAt(0) % avatarColors.length];
+  const initials = (name = '') => name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+
   return (
     <div className="page">
       <div className="page-header">
-        <div><div className="page-title">Drivers</div><div className="page-subtitle">21 drivers on duty today</div></div>
+        <div>
+          <div className="page-title">Drivers</div>
+          <div className="page-subtitle">{drivers.length} drivers registered</div>
+        </div>
         <div className="fab-row">
-          <div className="search-bar"><IconSearch /><input placeholder="Search drivers..." /></div>
-          <button className="fab-btn fab-primary" onClick={() => showModal("driver")}>＋ Add Driver</button>
+          <div className="search-bar">
+            <IconSearch />
+            <input placeholder="Search drivers..." value={search} onChange={e => setSearch(e.target.value)} />
+          </div>
+          <button className="fab-btn fab-primary" onClick={() => showModal('driver', null, fetchDrivers)}>
+            ＋ Add Driver
+          </button>
         </div>
       </div>
+
       <div className="driver-cards">
-        {drivers.map(d => (
-          <div className="driver-card" key={d.name}>
+        {loading ? (
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)', gridColumn: '1/-1' }}>Loading drivers...</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)', gridColumn: '1/-1' }}>
+            {search ? 'No drivers match your search.' : 'No drivers yet. Click + Add Driver.'}
+          </div>
+        ) : filtered.map(d => (
+          <div className="driver-card" key={d._id}>
             <div className="dc-header">
-              <div className="dc-avatar" style={{ background: d.bg }}>{d.init}</div>
-              <div><div className="dc-name">{d.name}</div><div className="dc-id">{d.id}</div></div>
-              <span className={`status-pill ${d.sc}`} style={{ marginLeft: "auto" }}>{d.st}</span>
+              <div className="dc-avatar" style={{ background: getColor(d.name) }}>{initials(d.name)}</div>
+              <div>
+                <div className="dc-name">{d.name}</div>
+                <div className="dc-id">{d.licenseNo || 'No license'} · {d.experience || 0} yrs</div>
+              </div>
+              <span className={`status-pill ${statusClass(d.status)}`} style={{ marginLeft: 'auto' }}>
+                {d.status ? d.status.charAt(0).toUpperCase() + d.status.slice(1) : 'Active'}
+              </span>
             </div>
-            {[["Assigned Bus", d.bus], ["Route", d.route], ["Phone", d.phone]].map(([k, v]) => (
-              <div className="dc-row" key={k}><span className="dc-key">{k}</span><span className="dc-val">{v}</span></div>
+            {[
+              ['Assigned Bus',   d.assignedBus   ? d.assignedBus.busNumber   : 'Unassigned'],
+              ['Route',          d.assignedRoute ? d.assignedRoute.name       : 'Unassigned'],
+              ['Phone',          d.phone         || '—'],
+              ['Email',          d.email         || '—'],
+            ].map(([k, v]) => (
+              <div className="dc-row" key={k}>
+                <span className="dc-key">{k}</span>
+                <span className="dc-val">{v}</span>
+              </div>
             ))}
-            <div className="dc-row" style={{ border: "none" }}><span className="dc-key">Trips Today</span><span className="dc-val" style={{ color: d.tc }}>{d.trips}</span></div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function PageRoutes({ showModal }) {
-  const routes = [
-    { letter:"A",name:"Route A — North Loop",sc:"sp-green",ont:"92% on-time",stops:12,buses:6,avg:"34 min",stopNames:["Main Gate","Market Circle","City Park","North Bridge"],more:"+8 more",col:"var(--blue2)",bg:"rgba(37,99,235,.12)",bd:"rgba(37,99,235,.2)" },
-    { letter:"B",name:"Route B — East Connect",sc:"sp-amber",ont:"67% on-time",stops:8,buses:4,avg:"28 min",stopNames:["Depot","East Market","Rail Station"],more:"+5 more",col:"var(--green)",bg:"rgba(22,163,74,.1)",bd:"rgba(22,163,74,.2)" },
-    { letter:"C",name:"Route C — South Express",sc:"sp-green",ont:"88% on-time",stops:10,buses:5,avg:"40 min",stopNames:["School Gate","Tilakwadi","Sadashiv Nagar"],more:"+7 more",col:"var(--accent)",bg:"rgba(245,166,35,.1)",bd:"rgba(245,166,35,.2)" },
-    { letter:"D",name:"Route D — West Campus",sc:"sp-gray",ont:"50% on-time",stops:6,buses:3,avg:"22 min",stopNames:["Campus A","Science Block","Hostel"],more:"+3 more",col:"#b07ef7",bg:"rgba(165,110,245,.1)",bd:"rgba(165,110,245,.2)" },
-  ];
-  return (
-    <div className="page">
-      <div className="page-header">
-        <div><div className="page-title">Routes</div><div className="page-subtitle">4 active routes — 36 stops total</div></div>
-        <button className="fab-btn fab-primary" onClick={() => showModal("route")}>＋ Create Route</button>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-        {routes.map(r => (
-          <div className="table-card" key={r.letter}>
-            <div className="card-header">
-              <div style={{ width: 26, height: 26, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, background: r.bg, color: r.col }}>{r.letter}</div>
-              <span className="card-title">{r.name}</span>
-              <div className="ch-right"><span className={`status-pill ${r.sc}`}>{r.ont}</span></div>
-            </div>
-            <div style={{ padding: "16px 18px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 14 }}>
-                <div><div className="stat-label">Stops</div><div style={{ fontSize: 18, fontWeight: 700 }}>{r.stops}</div></div>
-                <div><div className="stat-label">Buses</div><div style={{ fontSize: 18, fontWeight: 700, color: "var(--blue2)" }}>{r.buses}</div></div>
-                <div><div className="stat-label">Avg Time</div><div style={{ fontSize: 18, fontWeight: 700, color: r.col }}>{r.avg}</div></div>
-              </div>
-              <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5 }}>Stop Sequence</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {r.stopNames.map(s => <span key={s} style={{ fontSize: 11.5, padding: "3px 9px", background: r.bg, border: `1px solid ${r.bd}`, borderRadius: 6, color: r.col }}>{s}</span>)}
-                {r.more && <span style={{ fontSize: 11, color: "var(--muted)" }}>→ {r.more}</span>}
-              </div>
+            <div style={{ marginTop: 10, textAlign: 'right' }}>
+              <button className="act-btn" onClick={() => showModal('driver', d, fetchDrivers)}>Edit</button>
             </div>
           </div>
         ))}
@@ -3488,34 +4458,294 @@ function PageRoutes({ showModal }) {
   );
 }
 
-function PageStudents({ showModal }) {
-  const students = [
-    ["#3b8bd4","AR","Aryan Reddy","2024-001","10-A","sp-blue","Route A","North Bridge","sp-green","Active"],
-    ["#e05252","PS","Priya Singh","2024-002","9-B","sp-green","Route B","East Market","sp-green","Active"],
-    ["#f5a623","KN","Kartik Nair","2024-003","11-C","sp-amber","Route C","Tilakwadi","sp-green","Active"],
-    ["#8b5cf6","MV","Meera Verma","2024-004","8-A","sp-purple","Route D","Campus A","sp-amber","Pending"],
-    ["#14b8a6","RJ","Rahul Jain","2024-005","10-B","sp-blue","Route A","City Park","sp-green","Active"],
-    ["#ec4899","SM","Sneha More","2024-006","12-A","sp-green","Route B","Rail Station","sp-gray","Inactive"],
-  ];
+// function PageRoutes({ showModal }) {
+//   const routes = [
+//     { letter:"A",name:"Route A — North Loop",sc:"sp-green",ont:"92% on-time",stops:12,buses:6,avg:"34 min",stopNames:["Main Gate","Market Circle","City Park","North Bridge"],more:"+8 more",col:"var(--blue2)",bg:"rgba(37,99,235,.12)",bd:"rgba(37,99,235,.2)" },
+//     { letter:"B",name:"Route B — East Connect",sc:"sp-amber",ont:"67% on-time",stops:8,buses:4,avg:"28 min",stopNames:["Depot","East Market","Rail Station"],more:"+5 more",col:"var(--green)",bg:"rgba(22,163,74,.1)",bd:"rgba(22,163,74,.2)" },
+//     { letter:"C",name:"Route C — South Express",sc:"sp-green",ont:"88% on-time",stops:10,buses:5,avg:"40 min",stopNames:["School Gate","Tilakwadi","Sadashiv Nagar"],more:"+7 more",col:"var(--accent)",bg:"rgba(245,166,35,.1)",bd:"rgba(245,166,35,.2)" },
+//     { letter:"D",name:"Route D — West Campus",sc:"sp-gray",ont:"50% on-time",stops:6,buses:3,avg:"22 min",stopNames:["Campus A","Science Block","Hostel"],more:"+3 more",col:"#b07ef7",bg:"rgba(165,110,245,.1)",bd:"rgba(165,110,245,.2)" },
+//   ];
+//   return (
+//     <div className="page">
+//       <div className="page-header">
+//         <div><div className="page-title">Routes</div><div className="page-subtitle">4 active routes — 36 stops total</div></div>
+//         <button className="fab-btn fab-primary" onClick={() => showModal("route")}>＋ Create Route</button>
+//       </div>
+//       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+//         {routes.map(r => (
+//           <div className="table-card" key={r.letter}>
+//             <div className="card-header">
+//               <div style={{ width: 26, height: 26, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, background: r.bg, color: r.col }}>{r.letter}</div>
+//               <span className="card-title">{r.name}</span>
+//               <div className="ch-right"><span className={`status-pill ${r.sc}`}>{r.ont}</span></div>
+//             </div>
+//             <div style={{ padding: "16px 18px" }}>
+//               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 14 }}>
+//                 <div><div className="stat-label">Stops</div><div style={{ fontSize: 18, fontWeight: 700 }}>{r.stops}</div></div>
+//                 <div><div className="stat-label">Buses</div><div style={{ fontSize: 18, fontWeight: 700, color: "var(--blue2)" }}>{r.buses}</div></div>
+//                 <div><div className="stat-label">Avg Time</div><div style={{ fontSize: 18, fontWeight: 700, color: r.col }}>{r.avg}</div></div>
+//               </div>
+//               <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5 }}>Stop Sequence</div>
+//               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+//                 {r.stopNames.map(s => <span key={s} style={{ fontSize: 11.5, padding: "3px 9px", background: r.bg, border: `1px solid ${r.bd}`, borderRadius: 6, color: r.col }}>{s}</span>)}
+//                 {r.more && <span style={{ fontSize: 11, color: "var(--muted)" }}>→ {r.more}</span>}
+//               </div>
+//             </div>
+//           </div>
+//         ))}
+//       </div>
+//     </div>
+//   );
+// }
+
+function PageRoutes({ showModal, showToast }) {
+  const [routes, setRoutes] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchRoutes = async () => {
+    try {
+      setLoading(true);
+      const data = await getRoutes();
+      setRoutes(data.routes || []);
+    } catch (err) {
+      showToast('Failed to load routes: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchRoutes(); }, []);
+
+  const colors = {
+    0: { col: 'var(--blue2)',  bg: 'rgba(37,99,235,.12)',    bd: 'rgba(37,99,235,.2)'   },
+    1: { col: 'var(--green)',  bg: 'rgba(22,163,74,.1)',     bd: 'rgba(22,163,74,.2)'   },
+    2: { col: 'var(--accent)', bg: 'rgba(245,166,35,.1)',    bd: 'rgba(245,166,35,.2)'  },
+    3: { col: '#b07ef7',       bg: 'rgba(165,110,245,.1)',   bd: 'rgba(165,110,245,.2)' },
+  };
+
   return (
     <div className="page">
       <div className="page-header">
-        <div><div className="page-title">Students</div><div className="page-subtitle">1,248 students enrolled in bus service</div></div>
+        <div>
+          <div className="page-title">Routes</div>
+          <div className="page-subtitle">{routes.length} active routes</div>
+        </div>
+        <button className="fab-btn fab-primary" onClick={() => showModal('route', null, fetchRoutes)}>
+          ＋ Create Route
+        </button>
+      </div>
+
+      {loading ? (
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>Loading routes...</div>
+      ) : routes.length === 0 ? (
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>No routes yet. Click + Create Route.</div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          {routes.map((r, ri) => {
+            const c = colors[ri % 4];
+            return (
+              <div className="table-card" key={r._id}>
+                <div className="card-header">
+                  <div style={{ width: 26, height: 26, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, background: c.bg, color: c.col }}>
+                    {r.routeId}
+                  </div>
+                  <span className="card-title">{r.name}</span>
+                  <div className="ch-right">
+                    <span className="status-pill sp-green">{r.stops?.length || 0} stops</span>
+                    <button className="act-btn" onClick={() => showModal('route', r, fetchRoutes)}>Edit</button>
+                  </div>
+                </div>
+                <div style={{ padding: '16px 18px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+                    <div><div className="stat-label">Stops</div><div style={{ fontSize: 18, fontWeight: 700 }}>{r.stops?.length || 0}</div></div>
+                    <div><div className="stat-label">Buses</div><div style={{ fontSize: 18, fontWeight: 700, color: 'var(--blue2)' }}>{r.assignedBuses?.length || 0}</div></div>
+                  </div>
+                  {r.description && (
+                    <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 10 }}>{r.description}</div>
+                  )}
+                  <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: .5 }}>
+                    Stop Sequence
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {(r.stops || []).slice(0, 4).map((s, i) => (
+                      <span key={i} style={{ fontSize: 11.5, padding: '3px 9px', background: c.bg, border: `1px solid ${c.bd}`, borderRadius: 6, color: c.col }}>
+                        {s.name}
+                      </span>
+                    ))}
+                    {r.stops?.length > 4 && (
+                      <span style={{ fontSize: 11, color: 'var(--muted)' }}>→ +{r.stops.length - 4} more</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// function PageStudents({ showModal }) {
+//   const students = [
+//     ["#3b8bd4","AR","Aryan Reddy","2024-001","10-A","sp-blue","Route A","North Bridge","sp-green","Active"],
+//     ["#e05252","PS","Priya Singh","2024-002","9-B","sp-green","Route B","East Market","sp-green","Active"],
+//     ["#f5a623","KN","Kartik Nair","2024-003","11-C","sp-amber","Route C","Tilakwadi","sp-green","Active"],
+//     ["#8b5cf6","MV","Meera Verma","2024-004","8-A","sp-purple","Route D","Campus A","sp-amber","Pending"],
+//     ["#14b8a6","RJ","Rahul Jain","2024-005","10-B","sp-blue","Route A","City Park","sp-green","Active"],
+//     ["#ec4899","SM","Sneha More","2024-006","12-A","sp-green","Route B","Rail Station","sp-gray","Inactive"],
+//   ];
+//   return (
+//     <div className="page">
+//       <div className="page-header">
+//         <div><div className="page-title">Students</div><div className="page-subtitle">1,248 students enrolled in bus service</div></div>
+//         <div className="fab-row">
+//           <div className="search-bar"><IconSearch /><input placeholder="Search students..." /></div>
+//           <select className="filter-select"><option>All Routes</option><option>Route A</option><option>Route B</option><option>Route C</option><option>Route D</option></select>
+//           <button className="fab-btn fab-primary" onClick={() => showModal("student")}>＋ Add Student</button>
+//         </div>
+//       </div>
+//       <div className="table-card">
+//         <table className="data-table">
+//           <thead><tr><th>Name</th><th>Roll No.</th><th>Class</th><th>Route</th><th>Pickup Stop</th><th>Status</th><th></th></tr></thead>
+//           <tbody>
+//             {students.map(([bg,init,name,roll,cls,rsc,route,stop,sc,st]) => (
+//               <tr key={roll}><td><span className="ava-sm" style={{ background: bg }}>{init}</span><strong>{name}</strong></td><td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11 }}>{roll}</td><td>{cls}</td><td><span className={`status-pill ${rsc}`}>{route}</span></td><td>{stop}</td><td><span className={`status-pill ${sc}`}>{st}</span></td><td><button className="act-btn">Edit</button></td></tr>
+//             ))}
+//           </tbody>
+//         </table>
+//       </div>
+//     </div>
+//   );
+// }
+function PageStudents({ showModal, showToast }) {
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [routeFilter, setRouteFilter] = useState('');
+
+  const fetchStudents = async () => {
+    try {
+      setLoading(true);
+      const data = await getAdminStudents();
+      setStudents(data.students || []);
+    } catch (err) {
+      showToast('Failed to load students: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchStudents(); }, []);
+
+  const filtered = students.filter(s => {
+    const q = search.toLowerCase();
+    const matchSearch = !q || s.name?.toLowerCase().includes(q) || s.rollNo?.toLowerCase().includes(q);
+    const matchRoute  = !routeFilter || s.assignedRoute?.name?.includes(routeFilter);
+    return matchSearch && matchRoute;
+  });
+
+  const statusClass = (st) =>
+    st === 'active' ? 'sp-green' : st === 'pending' ? 'sp-amber' : 'sp-gray';
+
+  const initials = (name = '') => name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+
+  const avatarColors = ['#3b8bd4','#e05252','#f5a623','#8b5cf6','#14b8a6','#ec4899','#3dc87a'];
+  const getColor = (name = '') => avatarColors[name.charCodeAt(0) % avatarColors.length];
+
+  return (
+    <div className="page">
+      <div className="page-header">
+        <div>
+          <div className="page-title">Students</div>
+          <div className="page-subtitle">{students.length} students enrolled in bus service</div>
+        </div>
         <div className="fab-row">
-          <div className="search-bar"><IconSearch /><input placeholder="Search students..." /></div>
-          <select className="filter-select"><option>All Routes</option><option>Route A</option><option>Route B</option><option>Route C</option><option>Route D</option></select>
-          <button className="fab-btn fab-primary" onClick={() => showModal("student")}>＋ Add Student</button>
+          <div className="search-bar">
+            <IconSearch />
+            <input
+              placeholder="Search students..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+          <select
+            className="filter-select"
+            value={routeFilter}
+            onChange={e => setRouteFilter(e.target.value)}
+          >
+            <option value="">All Routes</option>
+            <option value="North Loop">Route A</option>
+            <option value="East Connect">Route B</option>
+            <option value="South Express">Route C</option>
+            <option value="West Campus">Route D</option>
+          </select>
+          <button
+            className="fab-btn fab-primary"
+            onClick={() => showModal('student', null, fetchStudents)}
+          >
+            ＋ Add Student
+          </button>
         </div>
       </div>
+
       <div className="table-card">
-        <table className="data-table">
-          <thead><tr><th>Name</th><th>Roll No.</th><th>Class</th><th>Route</th><th>Pickup Stop</th><th>Status</th><th></th></tr></thead>
-          <tbody>
-            {students.map(([bg,init,name,roll,cls,rsc,route,stop,sc,st]) => (
-              <tr key={roll}><td><span className="ava-sm" style={{ background: bg }}>{init}</span><strong>{name}</strong></td><td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11 }}>{roll}</td><td>{cls}</td><td><span className={`status-pill ${rsc}`}>{route}</span></td><td>{stop}</td><td><span className={`status-pill ${sc}`}>{st}</span></td><td><button className="act-btn">Edit</button></td></tr>
-            ))}
-          </tbody>
-        </table>
+        {loading ? (
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>
+            Loading students...
+          </div>
+        ) : filtered.length === 0 ? (
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>
+            {search ? 'No students match your search.' : 'No students yet. Click + Add Student.'}
+          </div>
+        ) : (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Roll No.</th>
+                <th>Class</th>
+                <th>Route</th>
+                <th>Pickup Stop</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(s => (
+                <tr key={s._id}>
+                  <td>
+                    <span className="ava-sm" style={{ background: getColor(s.name) }}>
+                      {initials(s.name)}
+                    </span>
+                    <strong>{s.name}</strong>
+                  </td>
+                  <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11 }}>{s.rollNo}</td>
+                  <td>{s.className || '—'}</td>
+                  <td>
+                    {s.assignedRoute
+                      ? <span className="status-pill sp-blue">{s.assignedRoute.name || s.assignedRoute.routeId}</span>
+                      : <span style={{ color: 'var(--muted)' }}>—</span>}
+                  </td>
+                  <td>{s.pickupStop || '—'}</td>
+                  <td>
+                    <span className={`status-pill ${statusClass(s.status)}`}>
+                      {s.status ? s.status.charAt(0).toUpperCase() + s.status.slice(1) : 'Active'}
+                    </span>
+                  </td>
+                  <td>
+                    <button
+                      className="act-btn"
+                      onClick={() => showModal('student', s, fetchStudents)}
+                    >
+                      Edit
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );
@@ -3692,7 +4922,10 @@ function PageProfile({ showToast }) {
 /* ─── MAIN APP ─────────────────────────────────────────────────────────── */
 export default function BusNavDashboard() {
   const [activePage, setActivePage] = useState("dashboard");
+  //const [modal, setModal] = useState(null);
   const [modal, setModal] = useState(null);
+  const [modalData, setModalData] = useState(null);
+  const [modalRefresh, setModalRefresh] = useState(null);
   const [toast, setToast] = useState(null);
   const [clock, setClock] = useState("");
   const [notifs, setNotifs] = useState(INITIAL_NOTIFS);
@@ -3704,10 +4937,24 @@ export default function BusNavDashboard() {
   }, []);
 
   const showToast = (msg) => { setToast(msg); clearTimeout(toastTimer.current); toastTimer.current = setTimeout(() => setToast(null), 2800); };
-  const showModal = (type) => setModal(type);
-  const hideModal = () => setModal(null);
-  const saveAndClose = (msg) => { hideModal(); showToast(msg); };
-
+  //const showModal = (type) => setModal(type);
+  //const hideModal = () => setModal(null);
+  //const saveAndClose = (msg) => { hideModal(); showToast(msg); };
+  const showModal = (type, data = null, refreshFn = null) => {
+    setModal(type);
+    setModalData(data);
+    setModalRefresh(() => refreshFn);
+  };
+  const hideModal = () => {
+    setModal(null);
+    setModalData(null);
+    setModalRefresh(null);
+  };
+  const saveAndClose = (msg) => {
+    hideModal();
+    showToast(msg);
+    if (modalRefresh) modalRefresh();
+  };
   const unreadCount = notifs.filter(n => !n.read).length;
 
   // Bell click → always navigate to notifications page
@@ -3747,10 +4994,14 @@ export default function BusNavDashboard() {
     switch (activePage) {
       case "dashboard":     return <PageDashboard showModal={showModal} unreadCount={unreadCount} onBellClick={handleBellNav} />;
       case "tracking":      return <PageTracking showToast={showToast} />;
-      case "buses":         return <PageBuses showModal={showModal} />;
-      case "drivers":       return <PageDrivers showModal={showModal} />;
-      case "routes":        return <PageRoutes showModal={showModal} />;
-      case "students":      return <PageStudents showModal={showModal} />;
+      //case "buses":         return <PageBuses showModal={showModal} />;
+      //case "drivers":       return <PageDrivers showModal={showModal} />;
+      //case "routes":        return <PageRoutes showModal={showModal} />;
+      //case "students":      return <PageStudents showModal={showModal} />;
+      case "buses":         return <PageBuses showModal={showModal} showToast={showToast} />;
+      case "drivers":       return <PageDrivers showModal={showModal} showToast={showToast} />;
+      case "routes":        return <PageRoutes showModal={showModal} showToast={showToast} />;
+      case "students":      return <PageStudents showModal={showModal} showToast={showToast} />;
       case "analytics":     return <PageAnalytics />;
       case "history":       return <PageHistory />;
       case "notifications": return <PageNotifications notifs={notifs} setNotifs={setNotifs} />;
@@ -3759,17 +5010,31 @@ export default function BusNavDashboard() {
     }
   };
 
+  // const renderModal = () => {
+  //   if (!modal) return null;
+  //   const props = { onClose: hideModal, onSave: saveAndClose };
+  //   const map = { bus: <ModalBus {...props} />, driver: <ModalDriver {...props} />, route: <ModalRoute {...props} />, student: <ModalStudent {...props} /> };
+  //   return (
+  //     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && hideModal()}>
+  //       {map[modal]}
+  //     </div>
+  //   );
+  // };
   const renderModal = () => {
     if (!modal) return null;
-    const props = { onClose: hideModal, onSave: saveAndClose };
-    const map = { bus: <ModalBus {...props} />, driver: <ModalDriver {...props} />, route: <ModalRoute {...props} />, student: <ModalStudent {...props} /> };
+    const props = { onClose: hideModal, onSave: saveAndClose, editData: modalData };
+    const map = {
+      bus:     <ModalBus     {...props} />,
+      driver:  <ModalDriver  {...props} />,
+      route:   <ModalRoute   {...props} />,
+      student: <ModalStudent {...props} />,
+    };
     return (
       <div className="modal-overlay" onClick={e => e.target === e.currentTarget && hideModal()}>
         {map[modal]}
       </div>
     );
   };
-
   return (
     <>
       <style>{css}</style>
