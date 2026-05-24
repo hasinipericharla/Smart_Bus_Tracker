@@ -2911,6 +2911,24 @@ body{font-family:'DM Sans',sans-serif;background:#f1f5f9;color:var(--text)}
 ::-webkit-scrollbar-thumb:hover{background:#94a3b8}
 `;
 
+const DELETE_MODAL_CSS = `
+.confirm-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;z-index:600;backdrop-filter:blur(4px);animation:fadeIn .18s ease}
+.confirm-box{background:#fff;border-radius:18px;width:400px;max-width:92vw;padding:32px 28px 24px;box-shadow:0 24px 64px rgba(0,0,0,.18);animation:slideUp .22s ease;position:relative;text-align:center}
+.confirm-icon{width:56px;height:56px;border-radius:50%;background:rgba(220,38,38,.1);display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+.confirm-icon svg{width:26px;height:26px;stroke:var(--red);stroke-width:2;fill:none}
+.confirm-title{font-size:17px;font-weight:700;color:var(--text);margin-bottom:8px;letter-spacing:-.2px}
+.confirm-desc{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:24px}
+.confirm-desc strong{color:var(--text);font-weight:600}
+.confirm-actions{display:flex;gap:10px}
+.confirm-cancel{flex:1;padding:11px;border-radius:10px;border:1.5px solid var(--border);background:#f8fafc;color:var(--muted);font-size:13.5px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
+.confirm-cancel:hover{border-color:#94a3b8;color:var(--text);background:#f1f5f9}
+.confirm-delete{flex:1.4;padding:11px;border-radius:10px;border:none;background:var(--red);color:#fff;font-size:13.5px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:7px}
+.confirm-delete:hover{background:#b91c1c;transform:translateY(-1px);box-shadow:0 6px 18px rgba(220,38,38,.35)}
+.confirm-delete:disabled{opacity:.65;cursor:not-allowed;transform:none;box-shadow:none}
+.confirm-delete .spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+`;
+
 /* ─── ICONS ─────────────────────────────────────────────────────────── */
 const IconDash   = () => <svg className="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>;
 const IconClock  = () => <svg className="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
@@ -4239,11 +4257,91 @@ function PageTracking({ showToast }) {
 //     </div>
 //   );
 // }
-function PageBuses({ showModal, showToast }) {
+// function ConfirmModal({ title, description, itemName, onCancel, onConfirm }) {
+//   const [deleting, setDeleting] = useState(false);
+ 
+//   const handleConfirm = async () => {
+//     setDeleting(true);
+//     await onConfirm();
+//     // onConfirm is expected to call onCancel/close after success or handle its own error
+//     setDeleting(false);
+//   };
+ 
+//   return (
+//     <div className="confirm-overlay" onClick={e => e.target === e.currentTarget && onCancel()}>
+//       <div className="confirm-box">
+//         {/* Red trash icon */}
+//         <div className="confirm-icon">
+//           <svg viewBox="0 0 24 24">
+//             <polyline points="3 6 5 6 21 6"/>
+//             <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+//             <path d="M10 11v6M14 11v6"/>
+//             <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+//           </svg>
+//         </div>
+ 
+//         <div className="confirm-title">{title}</div>
+//         <div className="confirm-desc">
+//           {description} <strong>{itemName}</strong>?
+//           <br />
+//           <span style={{ fontSize: 12, color: '#94a3b8', marginTop: 4, display: 'block' }}>
+//             This action cannot be undone.
+//           </span>
+//         </div>
+ 
+//         <div className="confirm-actions">
+//           <button className="confirm-cancel" onClick={onCancel} disabled={deleting}>
+//             Cancel
+//           </button>
+//           <button className="confirm-delete" onClick={handleConfirm} disabled={deleting}>
+//             {deleting ? (
+//               <>
+//                 <span className="spinner" />
+//                 Deleting…
+//               </>
+//             ) : (
+//               <>
+//                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+//                   <polyline points="3 6 5 6 21 6"/>
+//                   <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+//                 </svg>
+//                 Delete
+//               </>
+//             )}
+//           </button>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+
+function PageBuses({ showModal, showToast, requestConfirm }) {
   const [buses, setBuses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [routeFilter, setRouteFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
 
+  // const fetchBuses = async () => {
+  //   try {
+  //     setLoading(true);
+  //     const data = await getBuses();
+  //     setBuses(data.buses || []);
+  //   } catch (err) {
+  //     showToast('Failed to load buses: ' + err.message);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  // useEffect(() => { fetchBuses(); }, []);
+
+  // const filtered = buses.filter(b => {
+  //   const q = search.toLowerCase();
+  //   return !q || b.busNumber?.toLowerCase().includes(q) || b.model?.toLowerCase().includes(q);
+  // });
+
+  // const statusClass = s => s === 'active' ? 'sp-green' : s === 'maintenance' ? 'sp-amber' : 'sp-gray';
   const fetchBuses = async () => {
     try {
       setLoading(true);
@@ -4255,40 +4353,190 @@ function PageBuses({ showModal, showToast }) {
       setLoading(false);
     }
   };
-
+ 
   useEffect(() => { fetchBuses(); }, []);
-
+ 
   const filtered = buses.filter(b => {
-    const q = search.toLowerCase();
-    return !q || b.busNumber?.toLowerCase().includes(q) || b.model?.toLowerCase().includes(q);
+    const q = search.toLowerCase().trim();
+    const matchSearch =
+      !q ||
+      b.busNumber?.toLowerCase().includes(q) ||
+      b.model?.toLowerCase().includes(q) ||
+      b.assignedDriver?.name?.toLowerCase().includes(q) ||
+      b.assignedRoute?.name?.toLowerCase().includes(q) ||
+      b.assignedRoute?.routeId?.toLowerCase().includes(q) ||
+      b.status?.toLowerCase().includes(q);
+ 
+    const matchRoute =
+      !routeFilter ||
+      b.assignedRoute?.routeId === routeFilter ||
+      b.assignedRoute?.name?.toLowerCase().includes(routeFilter.toLowerCase());
+ 
+    const matchStatus = !statusFilter || b.status === statusFilter;
+ 
+    return matchSearch && matchRoute && matchStatus;
+  });
+ 
+  const statusClass = s =>
+    s === 'active' ? 'sp-green' : s === 'maintenance' ? 'sp-amber' : 'sp-gray';
+ 
+  // Collect unique routes from loaded buses for the filter dropdown
+  const uniqueRoutes = [];
+  const seenRoutes = new Set();
+  buses.forEach(b => {
+    if (b.assignedRoute && !seenRoutes.has(b.assignedRoute._id)) {
+      seenRoutes.add(b.assignedRoute._id);
+      uniqueRoutes.push(b.assignedRoute);
+    }
   });
 
-  const statusClass = s => s === 'active' ? 'sp-green' : s === 'maintenance' ? 'sp-amber' : 'sp-gray';
+//   return (
+//     <div className="page">
+//       <div className="page-header">
+//         <div>
+//           <div className="page-title">Buses</div>
+//           <div className="page-subtitle">Manage fleet — {buses.length} buses registered</div>
+//         </div>
+//         <div className="fab-row">
+//           <div className="search-bar">
+//             <IconSearch />
+//             <input placeholder="Search buses..." value={search} onChange={e => setSearch(e.target.value)} />
+//           </div>
+//           <button className="fab-btn fab-primary" onClick={() => showModal('bus', null, fetchBuses)}>
+//             ＋ Add Bus
+//           </button>
+//         </div>
+//       </div>
 
-  return (
+//       <div className="table-card">
+//         {loading ? (
+//           <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>Loading buses...</div>
+//         ) : filtered.length === 0 ? (
+//           <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>
+//             {search ? 'No buses match your search.' : 'No buses yet. Click + Add Bus.'}
+//           </div>
+//         ) : (
+//           <table className="data-table">
+//             <thead>
+//               <tr>
+//                 <th>Bus No.</th>
+//                 <th>Model</th>
+//                 <th>Driver</th>
+//                 <th>Route</th>
+//                 <th>Capacity</th>
+//                 <th>Status</th>
+//                 <th></th>
+//               </tr>
+//             </thead>
+//             <tbody>
+//               {filtered.map(b => (
+//                 <tr key={b._id}>
+//                   <td><strong>{b.busNumber}</strong></td>
+//                   <td>{b.model || '—'}</td>
+//                   <td>{b.assignedDriver ? b.assignedDriver.name : <span style={{ color: 'var(--muted)' }}>Unassigned</span>}</td>
+//                   <td>
+//                     {b.assignedRoute
+//                       ? <span className="status-pill sp-blue">{b.assignedRoute.name || b.assignedRoute.routeId}</span>
+//                       : <span style={{ color: 'var(--muted)' }}>—</span>}
+//                   </td>
+//                   <td>{b.capacity}</td>
+//                   <td>
+//                     <span className={`status-pill ${statusClass(b.status)}`}>
+//                       {b.status ? b.status.charAt(0).toUpperCase() + b.status.slice(1) : 'Active'}
+//                     </span>
+//                   </td>
+//                   <td>
+//                     <button className="act-btn" onClick={() => showModal('bus', b, fetchBuses)}>Edit</button>
+//                     <button
+//     className="act-btn"
+//     style={{ marginLeft: 6, color: 'var(--red)', borderColor: 'rgba(220,38,38,.2)' }}
+//     onClick={async () => {
+//       if (!window.confirm(`Delete bus ${b.busNumber}?`)) return;
+//       try { await deleteBus(b._id); fetchBuses(); showToast('Bus deleted.'); }
+//       catch (err) { showToast('Delete failed: ' + err.message); }
+//     }}
+//   >Delete</button>
+//                   </td>
+//                 </tr>
+//               ))}
+//             </tbody>
+//           </table>
+//         )}
+//       </div>
+//     </div>
+//   );
+// }
+const handleDelete = (b) => {
+    requestConfirm({
+      title: 'Delete Bus',
+      description: 'Are you sure you want to permanently delete bus',
+      itemName: b.busNumber,
+      onConfirm: async () => {
+        await deleteBus(b._id);
+        fetchBuses();
+        showToast(`Bus ${b.busNumber} deleted.`);
+      },
+    });
+  };
+return (
     <div className="page">
       <div className="page-header">
         <div>
           <div className="page-title">Buses</div>
-          <div className="page-subtitle">Manage fleet — {buses.length} buses registered</div>
+          <div className="page-subtitle">
+            Manage fleet — {buses.length} buses registered
+            {filtered.length !== buses.length && ` · ${filtered.length} shown`}
+          </div>
         </div>
         <div className="fab-row">
           <div className="search-bar">
             <IconSearch />
-            <input placeholder="Search buses..." value={search} onChange={e => setSearch(e.target.value)} />
+            <input
+              placeholder="Search by number, model, driver…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 16, lineHeight: 1, padding: 0 }}
+              >×</button>
+            )}
           </div>
+          <select
+            className="filter-select"
+            value={routeFilter}
+            onChange={e => setRouteFilter(e.target.value)}
+          >
+            <option value="">All Routes</option>
+            {uniqueRoutes.map(r => (
+              <option key={r._id} value={r.routeId}>{r.routeId} — {r.name}</option>
+            ))}
+          </select>
+          <select
+            className="filter-select"
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value)}
+          >
+            <option value="">All Statuses</option>
+            <option value="active">Active</option>
+            <option value="maintenance">Maintenance</option>
+            <option value="idle">Idle</option>
+          </select>
           <button className="fab-btn fab-primary" onClick={() => showModal('bus', null, fetchBuses)}>
             ＋ Add Bus
           </button>
         </div>
       </div>
-
+ 
       <div className="table-card">
         {loading ? (
-          <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>Loading buses...</div>
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>Loading buses…</div>
         ) : filtered.length === 0 ? (
           <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>
-            {search ? 'No buses match your search.' : 'No buses yet. Click + Add Bus.'}
+            {search || routeFilter || statusFilter
+              ? <>No buses match your filters. <button onClick={() => { setSearch(''); setRouteFilter(''); setStatusFilter(''); }} style={{ background: 'none', border: 'none', color: 'var(--blue2)', cursor: 'pointer', fontWeight: 600 }}>Clear filters</button></>
+              : 'No buses yet. Click + Add Bus.'}
           </div>
         ) : (
           <table className="data-table">
@@ -4308,7 +4556,11 @@ function PageBuses({ showModal, showToast }) {
                 <tr key={b._id}>
                   <td><strong>{b.busNumber}</strong></td>
                   <td>{b.model || '—'}</td>
-                  <td>{b.assignedDriver ? b.assignedDriver.name : <span style={{ color: 'var(--muted)' }}>Unassigned</span>}</td>
+                  <td>
+                    {b.assignedDriver
+                      ? b.assignedDriver.name
+                      : <span style={{ color: 'var(--muted)' }}>Unassigned</span>}
+                  </td>
                   <td>
                     {b.assignedRoute
                       ? <span className="status-pill sp-blue">{b.assignedRoute.name || b.assignedRoute.routeId}</span>
@@ -4323,14 +4575,14 @@ function PageBuses({ showModal, showToast }) {
                   <td>
                     <button className="act-btn" onClick={() => showModal('bus', b, fetchBuses)}>Edit</button>
                     <button
-    className="act-btn"
-    style={{ marginLeft: 6, color: 'var(--red)', borderColor: 'rgba(220,38,38,.2)' }}
-    onClick={async () => {
-      if (!window.confirm(`Delete bus ${b.busNumber}?`)) return;
-      try { await deleteBus(b._id); fetchBuses(); showToast('Bus deleted.'); }
-      catch (err) { showToast('Delete failed: ' + err.message); }
-    }}
-  >Delete</button>
+                      className="act-btn"
+                      style={{ marginLeft: 6, color: 'var(--red)', borderColor: 'rgba(220,38,38,.2)' }}
+                      onClick={async () => {
+                        if (!window.confirm(`Delete bus ${b.busNumber}?`)) return;
+                        try { await deleteBus(b._id); fetchBuses(); showToast('Bus deleted.'); }
+                        catch (err) { showToast('Delete failed: ' + err.message); }
+                      }}
+                    >Delete</button>
                   </td>
                 </tr>
               ))}
@@ -4341,7 +4593,6 @@ function PageBuses({ showModal, showToast }) {
     </div>
   );
 }
-
 // function PageDrivers({ showModal }) {
 //   const drivers = [
 //     { bg:"#3b8bd4",init:"RK",name:"R. Kumar",id:"DL-5201-2019 · 8 yrs",sc:"sp-green",st:"Active",bus:"KA-01-B",route:"Route A — North Loop",phone:"+91 98765 43210",trips:"6 / 6",tc:"var(--green)" },
@@ -4379,11 +4630,108 @@ function PageBuses({ showModal, showToast }) {
 //   );
 // }
 
-function PageDrivers({ showModal, showToast }) {
-  const [drivers, setDrivers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch]   = useState('');
+// function PageDrivers({ showModal, showToast }) {
+//   const [drivers, setDrivers] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [search, setSearch]   = useState('');
 
+//   const fetchDrivers = async () => {
+//     try {
+//       setLoading(true);
+//       const data = await getAdminDrivers();
+//       setDrivers(data.drivers || []);
+//     } catch (err) {
+//       showToast('Failed to load drivers: ' + err.message);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   useEffect(() => { fetchDrivers(); }, []);
+
+//   const filtered = drivers.filter(d => {
+//     const q = search.toLowerCase();
+//     return !q || d.name?.toLowerCase().includes(q) || d.email?.toLowerCase().includes(q);
+//   });
+
+//   const statusClass = s => s === 'active' ? 'sp-green' : s === 'on_leave' ? 'sp-amber' : 'sp-gray';
+
+//   const avatarColors = ['#3b8bd4','#8b5cf6','#3dc87a','#e05252','#f5a623','#0ea5e9','#14b8a6'];
+//   const getColor = (name = '') => avatarColors[name.charCodeAt(0) % avatarColors.length];
+//   const initials = (name = '') => name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+
+//   return (
+//     <div className="page">
+//       <div className="page-header">
+//         <div>
+//           <div className="page-title">Drivers</div>
+//           <div className="page-subtitle">{drivers.length} drivers registered</div>
+//         </div>
+//         <div className="fab-row">
+//           <div className="search-bar">
+//             <IconSearch />
+//             <input placeholder="Search drivers..." value={search} onChange={e => setSearch(e.target.value)} />
+//           </div>
+//           <button className="fab-btn fab-primary" onClick={() => showModal('driver', null, fetchDrivers)}>
+//             ＋ Add Driver
+//           </button>
+//         </div>
+//       </div>
+
+//       <div className="driver-cards">
+//         {loading ? (
+//           <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)', gridColumn: '1/-1' }}>Loading drivers...</div>
+//         ) : filtered.length === 0 ? (
+//           <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)', gridColumn: '1/-1' }}>
+//             {search ? 'No drivers match your search.' : 'No drivers yet. Click + Add Driver.'}
+//           </div>
+//         ) : filtered.map(d => (
+//           <div className="driver-card" key={d._id}>
+//             <div className="dc-header">
+//               <div className="dc-avatar" style={{ background: getColor(d.name) }}>{initials(d.name)}</div>
+//               <div>
+//                 <div className="dc-name">{d.name}</div>
+//                 <div className="dc-id">{d.licenseNo || 'No license'} · {d.experience || 0} yrs</div>
+//               </div>
+//               <span className={`status-pill ${statusClass(d.status)}`} style={{ marginLeft: 'auto' }}>
+//                 {d.status ? d.status.charAt(0).toUpperCase() + d.status.slice(1) : 'Active'}
+//               </span>
+//             </div>
+//             {[
+//               ['Assigned Bus',   d.assignedBus   ? d.assignedBus.busNumber   : 'Unassigned'],
+//               ['Route',          d.assignedRoute ? d.assignedRoute.name       : 'Unassigned'],
+//               ['Phone',          d.phone         || '—'],
+//               ['Email',          d.email         || '—'],
+//             ].map(([k, v]) => (
+//               <div className="dc-row" key={k}>
+//                 <span className="dc-key">{k}</span>
+//                 <span className="dc-val">{v}</span>
+//               </div>
+//             ))}
+//             <div style={{ marginTop: 10, textAlign: 'right' }}>
+//               <button className="act-btn" onClick={() => showModal('driver', d, fetchDrivers)}>Edit</button>
+//               <button
+//     className="act-btn"
+//     style={{ color: 'var(--red)', borderColor: 'rgba(220,38,38,.2)' }}
+//     onClick={async () => {
+//       if (!window.confirm(`Delete driver ${d.name}?`)) return;
+//       try { await deleteAdminDriver(d._id); fetchDrivers(); showToast('Driver deleted.'); }
+//       catch (err) { showToast('Delete failed: ' + err.message); }
+//     }}
+//   >Delete</button>
+//             </div>
+//           </div>
+//         ))}
+//       </div>
+//     </div>
+//   );
+// }
+function PageDrivers({ showModal, showToast }) {
+  const [drivers, setDrivers]     = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [search, setSearch]       = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+ 
   const fetchDrivers = async () => {
     try {
       setLoading(true);
@@ -4395,44 +4743,84 @@ function PageDrivers({ showModal, showToast }) {
       setLoading(false);
     }
   };
-
+ 
   useEffect(() => { fetchDrivers(); }, []);
-
+ 
   const filtered = drivers.filter(d => {
-    const q = search.toLowerCase();
-    return !q || d.name?.toLowerCase().includes(q) || d.email?.toLowerCase().includes(q);
+    const q = search.toLowerCase().trim();
+    const matchSearch =
+      !q ||
+      d.name?.toLowerCase().includes(q) ||
+      d.email?.toLowerCase().includes(q) ||
+      d.phone?.toLowerCase().includes(q) ||
+      d.licenseNo?.toLowerCase().includes(q) ||
+      d.assignedBus?.busNumber?.toLowerCase().includes(q) ||
+      d.assignedRoute?.name?.toLowerCase().includes(q) ||
+      d.status?.toLowerCase().includes(q);
+ 
+    const matchStatus = !statusFilter || d.status === statusFilter;
+ 
+    return matchSearch && matchStatus;
   });
-
-  const statusClass = s => s === 'active' ? 'sp-green' : s === 'on_leave' ? 'sp-amber' : 'sp-gray';
-
+ 
+  const statusClass = s =>
+    s === 'active' ? 'sp-green' : s === 'on_leave' ? 'sp-amber' : 'sp-gray';
+ 
   const avatarColors = ['#3b8bd4','#8b5cf6','#3dc87a','#e05252','#f5a623','#0ea5e9','#14b8a6'];
-  const getColor = (name = '') => avatarColors[name.charCodeAt(0) % avatarColors.length];
-  const initials = (name = '') => name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-
+  const getColor  = (name = '') => avatarColors[name.charCodeAt(0) % avatarColors.length];
+  const initials  = (name = '') => name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+ 
   return (
     <div className="page">
       <div className="page-header">
         <div>
           <div className="page-title">Drivers</div>
-          <div className="page-subtitle">{drivers.length} drivers registered</div>
+          <div className="page-subtitle">
+            {drivers.length} drivers registered
+            {filtered.length !== drivers.length && ` · ${filtered.length} shown`}
+          </div>
         </div>
         <div className="fab-row">
           <div className="search-bar">
             <IconSearch />
-            <input placeholder="Search drivers..." value={search} onChange={e => setSearch(e.target.value)} />
+            <input
+              placeholder="Search by name, license, bus…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 16, lineHeight: 1, padding: 0 }}
+              >×</button>
+            )}
           </div>
+          <select
+            className="filter-select"
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value)}
+          >
+            <option value="">All Statuses</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="on_leave">On Leave</option>
+          </select>
           <button className="fab-btn fab-primary" onClick={() => showModal('driver', null, fetchDrivers)}>
             ＋ Add Driver
           </button>
         </div>
       </div>
-
+ 
       <div className="driver-cards">
         {loading ? (
-          <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)', gridColumn: '1/-1' }}>Loading drivers...</div>
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)', gridColumn: '1/-1' }}>
+            Loading drivers…
+          </div>
         ) : filtered.length === 0 ? (
           <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)', gridColumn: '1/-1' }}>
-            {search ? 'No drivers match your search.' : 'No drivers yet. Click + Add Driver.'}
+            {search || statusFilter
+              ? <>No drivers match your filters. <button onClick={() => { setSearch(''); setStatusFilter(''); }} style={{ background: 'none', border: 'none', color: 'var(--blue2)', cursor: 'pointer', fontWeight: 600 }}>Clear filters</button></>
+              : 'No drivers yet. Click + Add Driver.'}
           </div>
         ) : filtered.map(d => (
           <div className="driver-card" key={d._id}>
@@ -4443,7 +4831,7 @@ function PageDrivers({ showModal, showToast }) {
                 <div className="dc-id">{d.licenseNo || 'No license'} · {d.experience || 0} yrs</div>
               </div>
               <span className={`status-pill ${statusClass(d.status)}`} style={{ marginLeft: 'auto' }}>
-                {d.status ? d.status.charAt(0).toUpperCase() + d.status.slice(1) : 'Active'}
+                {d.status === 'on_leave' ? 'On Leave' : d.status ? d.status.charAt(0).toUpperCase() + d.status.slice(1) : 'Active'}
               </span>
             </div>
             {[
@@ -4457,17 +4845,17 @@ function PageDrivers({ showModal, showToast }) {
                 <span className="dc-val">{v}</span>
               </div>
             ))}
-            <div style={{ marginTop: 10, textAlign: 'right' }}>
+            <div style={{ marginTop: 10, textAlign: 'right', display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
               <button className="act-btn" onClick={() => showModal('driver', d, fetchDrivers)}>Edit</button>
               <button
-    className="act-btn"
-    style={{ color: 'var(--red)', borderColor: 'rgba(220,38,38,.2)' }}
-    onClick={async () => {
-      if (!window.confirm(`Delete driver ${d.name}?`)) return;
-      try { await deleteAdminDriver(d._id); fetchDrivers(); showToast('Driver deleted.'); }
-      catch (err) { showToast('Delete failed: ' + err.message); }
-    }}
-  >Delete</button>
+                className="act-btn"
+                style={{ color: 'var(--red)', borderColor: 'rgba(220,38,38,.2)' }}
+                onClick={async () => {
+                  if (!window.confirm(`Delete driver ${d.name}?`)) return;
+                  try { await deleteAdminDriver(d._id); fetchDrivers(); showToast('Driver deleted.'); }
+                  catch (err) { showToast('Delete failed: ' + err.message); }
+                }}
+              >Delete</button>
             </div>
           </div>
         ))}
@@ -4476,50 +4864,147 @@ function PageDrivers({ showModal, showToast }) {
   );
 }
 
-// function PageRoutes({ showModal }) {
-//   const routes = [
-//     { letter:"A",name:"Route A — North Loop",sc:"sp-green",ont:"92% on-time",stops:12,buses:6,avg:"34 min",stopNames:["Main Gate","Market Circle","City Park","North Bridge"],more:"+8 more",col:"var(--blue2)",bg:"rgba(37,99,235,.12)",bd:"rgba(37,99,235,.2)" },
-//     { letter:"B",name:"Route B — East Connect",sc:"sp-amber",ont:"67% on-time",stops:8,buses:4,avg:"28 min",stopNames:["Depot","East Market","Rail Station"],more:"+5 more",col:"var(--green)",bg:"rgba(22,163,74,.1)",bd:"rgba(22,163,74,.2)" },
-//     { letter:"C",name:"Route C — South Express",sc:"sp-green",ont:"88% on-time",stops:10,buses:5,avg:"40 min",stopNames:["School Gate","Tilakwadi","Sadashiv Nagar"],more:"+7 more",col:"var(--accent)",bg:"rgba(245,166,35,.1)",bd:"rgba(245,166,35,.2)" },
-//     { letter:"D",name:"Route D — West Campus",sc:"sp-gray",ont:"50% on-time",stops:6,buses:3,avg:"22 min",stopNames:["Campus A","Science Block","Hostel"],more:"+3 more",col:"#b07ef7",bg:"rgba(165,110,245,.1)",bd:"rgba(165,110,245,.2)" },
-//   ];
+// // function PageRoutes({ showModal }) {
+// //   const routes = [
+// //     { letter:"A",name:"Route A — North Loop",sc:"sp-green",ont:"92% on-time",stops:12,buses:6,avg:"34 min",stopNames:["Main Gate","Market Circle","City Park","North Bridge"],more:"+8 more",col:"var(--blue2)",bg:"rgba(37,99,235,.12)",bd:"rgba(37,99,235,.2)" },
+// //     { letter:"B",name:"Route B — East Connect",sc:"sp-amber",ont:"67% on-time",stops:8,buses:4,avg:"28 min",stopNames:["Depot","East Market","Rail Station"],more:"+5 more",col:"var(--green)",bg:"rgba(22,163,74,.1)",bd:"rgba(22,163,74,.2)" },
+// //     { letter:"C",name:"Route C — South Express",sc:"sp-green",ont:"88% on-time",stops:10,buses:5,avg:"40 min",stopNames:["School Gate","Tilakwadi","Sadashiv Nagar"],more:"+7 more",col:"var(--accent)",bg:"rgba(245,166,35,.1)",bd:"rgba(245,166,35,.2)" },
+// //     { letter:"D",name:"Route D — West Campus",sc:"sp-gray",ont:"50% on-time",stops:6,buses:3,avg:"22 min",stopNames:["Campus A","Science Block","Hostel"],more:"+3 more",col:"#b07ef7",bg:"rgba(165,110,245,.1)",bd:"rgba(165,110,245,.2)" },
+// //   ];
+// //   return (
+// //     <div className="page">
+// //       <div className="page-header">
+// //         <div><div className="page-title">Routes</div><div className="page-subtitle">4 active routes — 36 stops total</div></div>
+// //         <button className="fab-btn fab-primary" onClick={() => showModal("route")}>＋ Create Route</button>
+// //       </div>
+// //       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+// //         {routes.map(r => (
+// //           <div className="table-card" key={r.letter}>
+// //             <div className="card-header">
+// //               <div style={{ width: 26, height: 26, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, background: r.bg, color: r.col }}>{r.letter}</div>
+// //               <span className="card-title">{r.name}</span>
+// //               <div className="ch-right"><span className={`status-pill ${r.sc}`}>{r.ont}</span></div>
+// //             </div>
+// //             <div style={{ padding: "16px 18px" }}>
+// //               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 14 }}>
+// //                 <div><div className="stat-label">Stops</div><div style={{ fontSize: 18, fontWeight: 700 }}>{r.stops}</div></div>
+// //                 <div><div className="stat-label">Buses</div><div style={{ fontSize: 18, fontWeight: 700, color: "var(--blue2)" }}>{r.buses}</div></div>
+// //                 <div><div className="stat-label">Avg Time</div><div style={{ fontSize: 18, fontWeight: 700, color: r.col }}>{r.avg}</div></div>
+// //               </div>
+// //               <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5 }}>Stop Sequence</div>
+// //               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+// //                 {r.stopNames.map(s => <span key={s} style={{ fontSize: 11.5, padding: "3px 9px", background: r.bg, border: `1px solid ${r.bd}`, borderRadius: 6, color: r.col }}>{s}</span>)}
+// //                 {r.more && <span style={{ fontSize: 11, color: "var(--muted)" }}>→ {r.more}</span>}
+// //               </div>
+// //             </div>
+// //           </div>
+// //         ))}
+// //       </div>
+// //     </div>
+// //   );
+// // }
+
+// function PageRoutes({ showModal, showToast }) {
+//   const [routes, setRoutes] = useState([]);
+//   const [loading, setLoading] = useState(true);
+
+//   const fetchRoutes = async () => {
+//     try {
+//       setLoading(true);
+//       const data = await getRoutes();
+//       setRoutes(data.routes || []);
+//     } catch (err) {
+//       showToast('Failed to load routes: ' + err.message);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   useEffect(() => { fetchRoutes(); }, []);
+
+//   const colors = {
+//     0: { col: 'var(--blue2)',  bg: 'rgba(37,99,235,.12)',    bd: 'rgba(37,99,235,.2)'   },
+//     1: { col: 'var(--green)',  bg: 'rgba(22,163,74,.1)',     bd: 'rgba(22,163,74,.2)'   },
+//     2: { col: 'var(--accent)', bg: 'rgba(245,166,35,.1)',    bd: 'rgba(245,166,35,.2)'  },
+//     3: { col: '#b07ef7',       bg: 'rgba(165,110,245,.1)',   bd: 'rgba(165,110,245,.2)' },
+//   };
+
 //   return (
 //     <div className="page">
 //       <div className="page-header">
-//         <div><div className="page-title">Routes</div><div className="page-subtitle">4 active routes — 36 stops total</div></div>
-//         <button className="fab-btn fab-primary" onClick={() => showModal("route")}>＋ Create Route</button>
+//         <div>
+//           <div className="page-title">Routes</div>
+//           <div className="page-subtitle">{routes.length} active routes</div>
+//         </div>
+//         <button className="fab-btn fab-primary" onClick={() => showModal('route', null, fetchRoutes)}>
+//           ＋ Create Route
+//         </button>
 //       </div>
-//       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-//         {routes.map(r => (
-//           <div className="table-card" key={r.letter}>
-//             <div className="card-header">
-//               <div style={{ width: 26, height: 26, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, background: r.bg, color: r.col }}>{r.letter}</div>
-//               <span className="card-title">{r.name}</span>
-//               <div className="ch-right"><span className={`status-pill ${r.sc}`}>{r.ont}</span></div>
-//             </div>
-//             <div style={{ padding: "16px 18px" }}>
-//               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 14 }}>
-//                 <div><div className="stat-label">Stops</div><div style={{ fontSize: 18, fontWeight: 700 }}>{r.stops}</div></div>
-//                 <div><div className="stat-label">Buses</div><div style={{ fontSize: 18, fontWeight: 700, color: "var(--blue2)" }}>{r.buses}</div></div>
-//                 <div><div className="stat-label">Avg Time</div><div style={{ fontSize: 18, fontWeight: 700, color: r.col }}>{r.avg}</div></div>
+
+//       {loading ? (
+//         <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>Loading routes...</div>
+//       ) : routes.length === 0 ? (
+//         <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>No routes yet. Click + Create Route.</div>
+//       ) : (
+//         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+//           {routes.map((r, ri) => {
+//             const c = colors[ri % 4];
+//             return (
+//               <div className="table-card" key={r._id}>
+//                 <div className="card-header">
+//                   <div style={{ width: 26, height: 26, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, background: c.bg, color: c.col }}>
+//                     {r.routeId}
+//                   </div>
+//                   <span className="card-title">{r.name}</span>
+//                   <div className="ch-right">
+//                     <span className="status-pill sp-green">{r.stops?.length || 0} stops</span>
+//                     <button className="act-btn" onClick={() => showModal('route', r, fetchRoutes)}>Edit</button>
+//                     <button
+//     className="act-btn"
+//     style={{ color: 'var(--red)', borderColor: 'rgba(220,38,38,.2)' }}
+//     onClick={async () => {
+//       if (!window.confirm(`Delete route "${r.name}"?`)) return;
+//       try { await deleteRoute(r._id); fetchRoutes(); showToast('Route deleted.'); }
+//       catch (err) { showToast('Delete failed: ' + err.message); }
+//     }}
+//   >Delete</button>
+//                   </div>
+//                 </div>
+//                 <div style={{ padding: '16px 18px' }}>
+//                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+//                     <div><div className="stat-label">Stops</div><div style={{ fontSize: 18, fontWeight: 700 }}>{r.stops?.length || 0}</div></div>
+//                     <div><div className="stat-label">Buses</div><div style={{ fontSize: 18, fontWeight: 700, color: 'var(--blue2)' }}>{r.assignedBuses?.length || 0}</div></div>
+//                   </div>
+//                   {r.description && (
+//                     <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 10 }}>{r.description}</div>
+//                   )}
+//                   <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: .5 }}>
+//                     Stop Sequence
+//                   </div>
+//                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+//                     {(r.stops || []).slice(0, 4).map((s, i) => (
+//                       <span key={i} style={{ fontSize: 11.5, padding: '3px 9px', background: c.bg, border: `1px solid ${c.bd}`, borderRadius: 6, color: c.col }}>
+//                         {s.name}
+//                       </span>
+//                     ))}
+//                     {r.stops?.length > 4 && (
+//                       <span style={{ fontSize: 11, color: 'var(--muted)' }}>→ +{r.stops.length - 4} more</span>
+//                     )}
+//                   </div>
+//                 </div>
 //               </div>
-//               <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5 }}>Stop Sequence</div>
-//               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-//                 {r.stopNames.map(s => <span key={s} style={{ fontSize: 11.5, padding: "3px 9px", background: r.bg, border: `1px solid ${r.bd}`, borderRadius: 6, color: r.col }}>{s}</span>)}
-//                 {r.more && <span style={{ fontSize: 11, color: "var(--muted)" }}>→ {r.more}</span>}
-//               </div>
-//             </div>
-//           </div>
-//         ))}
-//       </div>
+//             );
+//           })}
+//         </div>
+//       )}
 //     </div>
 //   );
 // }
-
 function PageRoutes({ showModal, showToast }) {
-  const [routes, setRoutes] = useState([]);
-  const [loading, setLoading] = useState(true);
-
+  const [routes, setRoutes]     = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [search, setSearch]     = useState('');
+ 
   const fetchRoutes = async () => {
     try {
       setLoading(true);
@@ -4531,36 +5016,77 @@ function PageRoutes({ showModal, showToast }) {
       setLoading(false);
     }
   };
-
+ 
   useEffect(() => { fetchRoutes(); }, []);
-
+ 
+  const filtered = routes.filter(r => {
+    const q = search.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      r.routeId?.toLowerCase().includes(q) ||
+      r.name?.toLowerCase().includes(q) ||
+      r.description?.toLowerCase().includes(q) ||
+      r.stops?.some(s => s.name?.toLowerCase().includes(q))
+    );
+  });
+ 
   const colors = {
-    0: { col: 'var(--blue2)',  bg: 'rgba(37,99,235,.12)',    bd: 'rgba(37,99,235,.2)'   },
-    1: { col: 'var(--green)',  bg: 'rgba(22,163,74,.1)',     bd: 'rgba(22,163,74,.2)'   },
-    2: { col: 'var(--accent)', bg: 'rgba(245,166,35,.1)',    bd: 'rgba(245,166,35,.2)'  },
-    3: { col: '#b07ef7',       bg: 'rgba(165,110,245,.1)',   bd: 'rgba(165,110,245,.2)' },
+    0: { col: 'var(--blue2)',  bg: 'rgba(37,99,235,.12)',  bd: 'rgba(37,99,235,.2)'  },
+    1: { col: 'var(--green)',  bg: 'rgba(22,163,74,.1)',   bd: 'rgba(22,163,74,.2)'  },
+    2: { col: 'var(--accent)', bg: 'rgba(245,166,35,.1)',  bd: 'rgba(245,166,35,.2)' },
+    3: { col: '#b07ef7',       bg: 'rgba(165,110,245,.1)', bd: 'rgba(165,110,245,.2)'},
   };
-
+ 
   return (
     <div className="page">
       <div className="page-header">
         <div>
           <div className="page-title">Routes</div>
-          <div className="page-subtitle">{routes.length} active routes</div>
+          <div className="page-subtitle">
+            {routes.length} active routes
+            {filtered.length !== routes.length && ` · ${filtered.length} shown`}
+          </div>
         </div>
-        <button className="fab-btn fab-primary" onClick={() => showModal('route', null, fetchRoutes)}>
-          ＋ Create Route
-        </button>
+        {/* ← Search bar added here */}
+        <div className="fab-row">
+          <div className="search-bar">
+            <IconSearch />
+            <input
+              placeholder="Search by route, stop name…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 16, lineHeight: 1, padding: 0 }}
+              >×</button>
+            )}
+          </div>
+          <button className="fab-btn fab-primary" onClick={() => showModal('route', null, fetchRoutes)}>
+            ＋ Create Route
+          </button>
+        </div>
       </div>
-
+ 
       {loading ? (
-        <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>Loading routes...</div>
-      ) : routes.length === 0 ? (
-        <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>No routes yet. Click + Create Route.</div>
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>Loading routes…</div>
+      ) : filtered.length === 0 ? (
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>
+          {search
+            ? <>No routes match "<strong>{search}</strong>". <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', color: 'var(--blue2)', cursor: 'pointer', fontWeight: 600 }}>Clear</button></>
+            : 'No routes yet. Click + Create Route.'}
+        </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-          {routes.map((r, ri) => {
+          {filtered.map((r, ri) => {
             const c = colors[ri % 4];
+            // Highlight matching stops when searching
+            const highlightStop = (stopName) => {
+              const q = search.toLowerCase().trim();
+              if (!q || !stopName.toLowerCase().includes(q)) return stopName;
+              return <strong style={{ background: 'rgba(245,166,35,.25)', borderRadius: 3, padding: '0 2px' }}>{stopName}</strong>;
+            };
             return (
               <div className="table-card" key={r._id}>
                 <div className="card-header">
@@ -4572,14 +5098,14 @@ function PageRoutes({ showModal, showToast }) {
                     <span className="status-pill sp-green">{r.stops?.length || 0} stops</span>
                     <button className="act-btn" onClick={() => showModal('route', r, fetchRoutes)}>Edit</button>
                     <button
-    className="act-btn"
-    style={{ color: 'var(--red)', borderColor: 'rgba(220,38,38,.2)' }}
-    onClick={async () => {
-      if (!window.confirm(`Delete route "${r.name}"?`)) return;
-      try { await deleteRoute(r._id); fetchRoutes(); showToast('Route deleted.'); }
-      catch (err) { showToast('Delete failed: ' + err.message); }
-    }}
-  >Delete</button>
+                      className="act-btn"
+                      style={{ color: 'var(--red)', borderColor: 'rgba(220,38,38,.2)' }}
+                      onClick={async () => {
+                        if (!window.confirm(`Delete route "${r.name}"?`)) return;
+                        try { await deleteRoute(r._id); fetchRoutes(); showToast('Route deleted.'); }
+                        catch (err) { showToast('Delete failed: ' + err.message); }
+                      }}
+                    >Delete</button>
                   </div>
                 </div>
                 <div style={{ padding: '16px 18px' }}>
@@ -4596,7 +5122,7 @@ function PageRoutes({ showModal, showToast }) {
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     {(r.stops || []).slice(0, 4).map((s, i) => (
                       <span key={i} style={{ fontSize: 11.5, padding: '3px 9px', background: c.bg, border: `1px solid ${c.bd}`, borderRadius: 6, color: c.col }}>
-                        {s.name}
+                        {highlightStop(s.name)}
                       </span>
                     ))}
                     {r.stops?.length > 4 && (
@@ -4645,67 +5171,303 @@ function PageRoutes({ showModal, showToast }) {
 //     </div>
 //   );
 // }
-function PageStudents({ showModal, showToast }) {
-  const [students, setStudents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [routeFilter, setRouteFilter] = useState('');
+// function PageStudents({ showModal, showToast }) {
+//   const [students, setStudents] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [search, setSearch] = useState('');
+//   const [routeFilter, setRouteFilter] = useState('');
 
+//   const fetchStudents = async () => {
+//     try {
+//       setLoading(true);
+//       const data = await getAdminStudents();
+//       setStudents(data.students || []);
+//     } catch (err) {
+//       showToast('Failed to load students: ' + err.message);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   useEffect(() => { fetchStudents(); }, []);
+
+//   const filtered = students.filter(s => {
+//     const q = search.toLowerCase();
+//     const matchSearch = !q || s.name?.toLowerCase().includes(q) || s.rollNo?.toLowerCase().includes(q);
+//     const matchRoute  = !routeFilter || s.assignedRoute?.name?.includes(routeFilter);
+//     return matchSearch && matchRoute;
+//   });
+
+//   const statusClass = (st) =>
+//     st === 'active' ? 'sp-green' : st === 'pending' ? 'sp-amber' : 'sp-gray';
+
+//   const initials = (name = '') => name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+
+//   const avatarColors = ['#3b8bd4','#e05252','#f5a623','#8b5cf6','#14b8a6','#ec4899','#3dc87a'];
+//   const getColor = (name = '') => avatarColors[name.charCodeAt(0) % avatarColors.length];
+
+//   return (
+//     <div className="page">
+//       <div className="page-header">
+//         <div>
+//           <div className="page-title">Students</div>
+//           <div className="page-subtitle">{students.length} students enrolled in bus service</div>
+//         </div>
+//         <div className="fab-row">
+//           <div className="search-bar">
+//             <IconSearch />
+//             <input
+//               placeholder="Search students..."
+//               value={search}
+//               onChange={e => setSearch(e.target.value)}
+//             />
+//           </div>
+//           <select
+//             className="filter-select"
+//             value={routeFilter}
+//             onChange={e => setRouteFilter(e.target.value)}
+//           >
+//             <option value="">All Routes</option>
+//             <option value="North Loop">Route A</option>
+//             <option value="East Connect">Route B</option>
+//             <option value="South Express">Route C</option>
+//             <option value="West Campus">Route D</option>
+//           </select>
+//           <button
+//             className="fab-btn fab-primary"
+//             onClick={() => showModal('student', null, fetchStudents)}
+//           >
+//             ＋ Add Student
+//           </button>
+//         </div>
+//       </div>
+
+//       <div className="table-card">
+//         {loading ? (
+//           <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>
+//             Loading students...
+//           </div>
+//         ) : filtered.length === 0 ? (
+//           <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>
+//             {search ? 'No students match your search.' : 'No students yet. Click + Add Student.'}
+//           </div>
+//         ) : (
+//           <table className="data-table">
+//             <thead>
+//               <tr>
+//                 <th>Name</th>
+//                 <th>Roll No.</th>
+//                 <th>Class</th>
+//                 <th>Route</th>
+//                 <th>Pickup Stop</th>
+//                 <th>Status</th>
+//                 <th></th>
+//               </tr>
+//             </thead>
+//             <tbody>
+//               {filtered.map(s => (
+//                 <tr key={s._id}>
+//                   <td>
+//                     <span className="ava-sm" style={{ background: getColor(s.name) }}>
+//                       {initials(s.name)}
+//                     </span>
+//                     <strong>{s.name}</strong>
+//                   </td>
+//                   <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11 }}>{s.rollNo}</td>
+//                   <td>{s.className || '—'}</td>
+//                   <td>
+//                     {s.assignedRoute
+//                       ? <span className="status-pill sp-blue">{s.assignedRoute.name || s.assignedRoute.routeId}</span>
+//                       : <span style={{ color: 'var(--muted)' }}>—</span>}
+//                   </td>
+//                   <td>{s.pickupStop || '—'}</td>
+//                   <td>
+//                     <span className={`status-pill ${statusClass(s.status)}`}>
+//                       {s.status ? s.status.charAt(0).toUpperCase() + s.status.slice(1) : 'Active'}
+//                     </span>
+//                   </td>
+//                   <td>
+//                     <button
+//                       className="act-btn"
+//                       onClick={() => showModal('student', s, fetchStudents)}
+//                     >
+//                       Edit
+//                     </button>
+//                     <button
+//     className="act-btn"
+//     style={{ marginLeft: 6, color: 'var(--red)', borderColor: 'rgba(220,38,38,.2)' }}
+//     onClick={async () => {
+//       if (!window.confirm(`Delete student ${s.name}?`)) return;
+//       try { await deleteAdminStudent(s._id); fetchStudents(); showToast('Student deleted.'); }
+//       catch (err) { showToast('Delete failed: ' + err.message); }
+//     }}
+//   >Delete</button>
+//                   </td>
+//                 </tr>
+//               ))}
+//             </tbody>
+//           </table>
+//         )}
+//       </div>
+//     </div>
+//   );
+// }
+
+// function PageAnalytics() {
+//   const weekBars = [{ h:"85%",c:"var(--green)",l:"Mon" },{ h:"92%",c:"var(--green)",l:"Tue" },{ h:"78%",c:"var(--accent)",l:"Wed" },{ h:"95%",c:"var(--green)",l:"Thu" },{ h:"88%",c:"var(--green)",l:"Fri" },{ h:"60%",c:"var(--muted)",l:"Sat" },{ h:"94%",c:"var(--green)",l:"Sun" }];
+//   const hourBars = [{ h:"30%",o:.4 },{ h:"95%",o:.8 },{ h:"100%",o:1 },{ h:"70%",o:.6 },{ h:"20%",o:.3 },{ h:"10%",o:.2 },{ h:"15%",o:.25 },{ h:"60%",o:.55 },{ h:"90%",o:.75 },{ h:"80%",o:.65 },{ h:"40%",o:.4 },{ h:"15%",o:.25 }];
+//   const hourLabels = ["6am","7am","8am","9am","10am","11am","12pm","1pm","2pm","3pm","4pm","5pm"];
+//   return (
+//     <div className="page">
+//       <div className="page-header">
+//         <div><div className="page-title">Analytics</div><div className="page-subtitle">Performance metrics — April 2026</div></div>
+//         <div className="fab-row">
+//           <select className="filter-select"><option>This Week</option><option>This Month</option><option>Last 3 Months</option></select>
+//           <button className="fab-btn fab-secondary">↓ Export</button>
+//         </div>
+//       </div>
+//       <div className="kpi-row">
+//         <div className="kpi-card"><div className="kpi-icon" style={{ background:"rgba(22,163,74,.12)" }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div><div><div className="kpi-val" style={{ color:"var(--green)" }}>94.2%</div><div className="kpi-lbl">On-Time Rate</div></div></div>
+//         <div className="kpi-card"><div className="kpi-icon" style={{ background:"rgba(37,99,235,.12)" }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue2)" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div><div className="kpi-val" style={{ color:"var(--blue2)" }}>6.2 min</div><div className="kpi-lbl">Avg Delay</div></div></div>
+//         <div className="kpi-card"><div className="kpi-icon" style={{ background:"rgba(124,58,237,.12)" }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div><div className="kpi-val" style={{ color:"var(--purple)" }}>1,248</div><div className="kpi-lbl">Students Transported</div></div></div>
+//       </div>
+//       <div className="analytics-grid">
+//         <div className="chart-card" style={{ gridColumn:"span 2" }}>
+//           <div className="chart-title">Daily On-Time Performance — This Week</div>
+//           <div className="bar-chart" style={{ height:120 }}>
+//             {weekBars.map(b => <div key={b.l} className="bar-col"><div className="bar-fill" style={{ height:b.h, background:`linear-gradient(to top,${b.c},${b.c}66)` }}/><div className="bar-label">{b.l}</div></div>)}
+//           </div>
+//         </div>
+//         <div className="chart-card">
+//           <div className="chart-title">Route Load Distribution</div>
+//           <div className="donut-wrap">
+//             <svg width="90" height="90" viewBox="0 0 36 36">
+//               <circle cx="18" cy="18" r="15.9" fill="transparent" stroke="rgba(0,0,0,.05)" strokeWidth="4"/>
+//               <circle cx="18" cy="18" r="15.9" fill="transparent" stroke="var(--blue2)" strokeWidth="4" strokeDasharray="37 63" strokeDashoffset="25"/>
+//               <circle cx="18" cy="18" r="15.9" fill="transparent" stroke="var(--green)" strokeWidth="4" strokeDasharray="28 72" strokeDashoffset="-12"/>
+//               <circle cx="18" cy="18" r="15.9" fill="transparent" stroke="var(--accent)" strokeWidth="4" strokeDasharray="22 78" strokeDashoffset="-40"/>
+//               <circle cx="18" cy="18" r="15.9" fill="transparent" stroke="var(--purple)" strokeWidth="4" strokeDasharray="13 87" strokeDashoffset="-62"/>
+//             </svg>
+//             <div className="donut-legend">
+//               {[["var(--blue2)","Route A (37%)"],["var(--green)","Route B (28%)"],["var(--accent)","Route C (22%)"],["var(--purple)","Route D (13%)"]].map(([c,l]) => (
+//                 <div className="donut-leg-item" key={l}><div className="donut-leg-dot" style={{ background:c }}/>{l}</div>
+//               ))}
+//             </div>
+//           </div>
+//         </div>
+//         <div className="chart-card" style={{ gridColumn:"span 3" }}>
+//           <div className="chart-title">Hourly Dispatch Volume — Today</div>
+//           <div className="bar-chart" style={{ height:80, gap:5 }}>
+//             {hourBars.map((b,i) => <div key={i} className="bar-col"><div className="bar-fill" style={{ height:b.h, background:`rgba(59,139,212,${b.o})` }}/><div className="bar-label">{hourLabels[i]}</div></div>)}
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+function PageStudents({ showModal, showToast }) {
+  const [students, setStudents]     = useState([]);
+  const [routes, setRoutes]         = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [search, setSearch]         = useState('');
+  const [routeFilter, setRouteFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+ 
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      const data = await getAdminStudents();
-      setStudents(data.students || []);
+      const [studData, routeData] = await Promise.all([
+        getAdminStudents(),
+        getRoutes(),
+      ]);
+      setStudents(studData.students || []);
+      setRoutes(routeData.routes   || []);
     } catch (err) {
       showToast('Failed to load students: ' + err.message);
     } finally {
       setLoading(false);
     }
   };
-
+ 
   useEffect(() => { fetchStudents(); }, []);
-
+ 
   const filtered = students.filter(s => {
-    const q = search.toLowerCase();
-    const matchSearch = !q || s.name?.toLowerCase().includes(q) || s.rollNo?.toLowerCase().includes(q);
-    const matchRoute  = !routeFilter || s.assignedRoute?.name?.includes(routeFilter);
-    return matchSearch && matchRoute;
+    const q = search.toLowerCase().trim();
+    const matchSearch =
+      !q ||
+      s.name?.toLowerCase().includes(q) ||
+      s.rollNo?.toLowerCase().includes(q) ||
+      s.className?.toLowerCase().includes(q) ||
+      s.pickupStop?.toLowerCase().includes(q) ||
+      s.assignedRoute?.name?.toLowerCase().includes(q) ||
+      s.assignedRoute?.routeId?.toLowerCase().includes(q) ||
+      s.email?.toLowerCase().includes(q) ||
+      s.parentContact?.toLowerCase().includes(q);
+ 
+    // routeFilter holds the route _id — compare against assignedRoute._id
+    const matchRoute =
+      !routeFilter ||
+      s.assignedRoute?._id === routeFilter;
+ 
+    const matchStatus = !statusFilter || s.status === statusFilter;
+ 
+    return matchSearch && matchRoute && matchStatus;
   });
-
-  const statusClass = (st) =>
+ 
+  const statusClass = st =>
     st === 'active' ? 'sp-green' : st === 'pending' ? 'sp-amber' : 'sp-gray';
-
-  const initials = (name = '') => name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-
+ 
   const avatarColors = ['#3b8bd4','#e05252','#f5a623','#8b5cf6','#14b8a6','#ec4899','#3dc87a'];
   const getColor = (name = '') => avatarColors[name.charCodeAt(0) % avatarColors.length];
-
+  const initials = (name = '') => name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+ 
+  const hasFilters = search || routeFilter || statusFilter;
+ 
   return (
     <div className="page">
       <div className="page-header">
         <div>
           <div className="page-title">Students</div>
-          <div className="page-subtitle">{students.length} students enrolled in bus service</div>
+          <div className="page-subtitle">
+            {students.length} students enrolled in bus service
+            {filtered.length !== students.length && ` · ${filtered.length} shown`}
+          </div>
         </div>
         <div className="fab-row">
           <div className="search-bar">
             <IconSearch />
             <input
-              placeholder="Search students..."
+              placeholder="Search by name, roll no, stop…"
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 16, lineHeight: 1, padding: 0 }}
+              >×</button>
+            )}
           </div>
+          {/* Route filter built from real API data → no more brittle name matching */}
           <select
             className="filter-select"
             value={routeFilter}
             onChange={e => setRouteFilter(e.target.value)}
           >
             <option value="">All Routes</option>
-            <option value="North Loop">Route A</option>
-            <option value="East Connect">Route B</option>
-            <option value="South Express">Route C</option>
-            <option value="West Campus">Route D</option>
+            {routes.map(r => (
+              <option key={r._id} value={r._id}>{r.routeId} — {r.name}</option>
+            ))}
+          </select>
+          <select
+            className="filter-select"
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value)}
+          >
+            <option value="">All Statuses</option>
+            <option value="active">Active</option>
+            <option value="pending">Pending</option>
+            <option value="inactive">Inactive</option>
           </select>
           <button
             className="fab-btn fab-primary"
@@ -4715,15 +5477,17 @@ function PageStudents({ showModal, showToast }) {
           </button>
         </div>
       </div>
-
+ 
       <div className="table-card">
         {loading ? (
           <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>
-            Loading students...
+            Loading students…
           </div>
         ) : filtered.length === 0 ? (
           <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>
-            {search ? 'No students match your search.' : 'No students yet. Click + Add Student.'}
+            {hasFilters
+              ? <>No students match your filters. <button onClick={() => { setSearch(''); setRouteFilter(''); setStatusFilter(''); }} style={{ background: 'none', border: 'none', color: 'var(--blue2)', cursor: 'pointer', fontWeight: 600 }}>Clear all</button></>
+              : 'No students yet. Click + Add Student.'}
           </div>
         ) : (
           <table className="data-table">
@@ -4764,77 +5528,22 @@ function PageStudents({ showModal, showToast }) {
                     <button
                       className="act-btn"
                       onClick={() => showModal('student', s, fetchStudents)}
-                    >
-                      Edit
-                    </button>
+                    >Edit</button>
                     <button
-    className="act-btn"
-    style={{ marginLeft: 6, color: 'var(--red)', borderColor: 'rgba(220,38,38,.2)' }}
-    onClick={async () => {
-      if (!window.confirm(`Delete student ${s.name}?`)) return;
-      try { await deleteAdminStudent(s._id); fetchStudents(); showToast('Student deleted.'); }
-      catch (err) { showToast('Delete failed: ' + err.message); }
-    }}
-  >Delete</button>
+                      className="act-btn"
+                      style={{ marginLeft: 6, color: 'var(--red)', borderColor: 'rgba(220,38,38,.2)' }}
+                      onClick={async () => {
+                        if (!window.confirm(`Delete student ${s.name}?`)) return;
+                        try { await deleteAdminStudent(s._id); fetchStudents(); showToast('Student deleted.'); }
+                        catch (err) { showToast('Delete failed: ' + err.message); }
+                      }}
+                    >Delete</button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
-      </div>
-    </div>
-  );
-}
-
-function PageAnalytics() {
-  const weekBars = [{ h:"85%",c:"var(--green)",l:"Mon" },{ h:"92%",c:"var(--green)",l:"Tue" },{ h:"78%",c:"var(--accent)",l:"Wed" },{ h:"95%",c:"var(--green)",l:"Thu" },{ h:"88%",c:"var(--green)",l:"Fri" },{ h:"60%",c:"var(--muted)",l:"Sat" },{ h:"94%",c:"var(--green)",l:"Sun" }];
-  const hourBars = [{ h:"30%",o:.4 },{ h:"95%",o:.8 },{ h:"100%",o:1 },{ h:"70%",o:.6 },{ h:"20%",o:.3 },{ h:"10%",o:.2 },{ h:"15%",o:.25 },{ h:"60%",o:.55 },{ h:"90%",o:.75 },{ h:"80%",o:.65 },{ h:"40%",o:.4 },{ h:"15%",o:.25 }];
-  const hourLabels = ["6am","7am","8am","9am","10am","11am","12pm","1pm","2pm","3pm","4pm","5pm"];
-  return (
-    <div className="page">
-      <div className="page-header">
-        <div><div className="page-title">Analytics</div><div className="page-subtitle">Performance metrics — April 2026</div></div>
-        <div className="fab-row">
-          <select className="filter-select"><option>This Week</option><option>This Month</option><option>Last 3 Months</option></select>
-          <button className="fab-btn fab-secondary">↓ Export</button>
-        </div>
-      </div>
-      <div className="kpi-row">
-        <div className="kpi-card"><div className="kpi-icon" style={{ background:"rgba(22,163,74,.12)" }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div><div><div className="kpi-val" style={{ color:"var(--green)" }}>94.2%</div><div className="kpi-lbl">On-Time Rate</div></div></div>
-        <div className="kpi-card"><div className="kpi-icon" style={{ background:"rgba(37,99,235,.12)" }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue2)" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div><div className="kpi-val" style={{ color:"var(--blue2)" }}>6.2 min</div><div className="kpi-lbl">Avg Delay</div></div></div>
-        <div className="kpi-card"><div className="kpi-icon" style={{ background:"rgba(124,58,237,.12)" }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div><div className="kpi-val" style={{ color:"var(--purple)" }}>1,248</div><div className="kpi-lbl">Students Transported</div></div></div>
-      </div>
-      <div className="analytics-grid">
-        <div className="chart-card" style={{ gridColumn:"span 2" }}>
-          <div className="chart-title">Daily On-Time Performance — This Week</div>
-          <div className="bar-chart" style={{ height:120 }}>
-            {weekBars.map(b => <div key={b.l} className="bar-col"><div className="bar-fill" style={{ height:b.h, background:`linear-gradient(to top,${b.c},${b.c}66)` }}/><div className="bar-label">{b.l}</div></div>)}
-          </div>
-        </div>
-        <div className="chart-card">
-          <div className="chart-title">Route Load Distribution</div>
-          <div className="donut-wrap">
-            <svg width="90" height="90" viewBox="0 0 36 36">
-              <circle cx="18" cy="18" r="15.9" fill="transparent" stroke="rgba(0,0,0,.05)" strokeWidth="4"/>
-              <circle cx="18" cy="18" r="15.9" fill="transparent" stroke="var(--blue2)" strokeWidth="4" strokeDasharray="37 63" strokeDashoffset="25"/>
-              <circle cx="18" cy="18" r="15.9" fill="transparent" stroke="var(--green)" strokeWidth="4" strokeDasharray="28 72" strokeDashoffset="-12"/>
-              <circle cx="18" cy="18" r="15.9" fill="transparent" stroke="var(--accent)" strokeWidth="4" strokeDasharray="22 78" strokeDashoffset="-40"/>
-              <circle cx="18" cy="18" r="15.9" fill="transparent" stroke="var(--purple)" strokeWidth="4" strokeDasharray="13 87" strokeDashoffset="-62"/>
-            </svg>
-            <div className="donut-legend">
-              {[["var(--blue2)","Route A (37%)"],["var(--green)","Route B (28%)"],["var(--accent)","Route C (22%)"],["var(--purple)","Route D (13%)"]].map(([c,l]) => (
-                <div className="donut-leg-item" key={l}><div className="donut-leg-dot" style={{ background:c }}/>{l}</div>
-              ))}
-            </div>
-          </div>
-        </div>
-        <div className="chart-card" style={{ gridColumn:"span 3" }}>
-          <div className="chart-title">Hourly Dispatch Volume — Today</div>
-          <div className="bar-chart" style={{ height:80, gap:5 }}>
-            {hourBars.map((b,i) => <div key={i} className="bar-col"><div className="bar-fill" style={{ height:b.h, background:`rgba(59,139,212,${b.o})` }}/><div className="bar-label">{hourLabels[i]}</div></div>)}
-          </div>
-        </div>
       </div>
     </div>
   );
