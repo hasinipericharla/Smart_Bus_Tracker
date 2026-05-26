@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { clearDriverSession } from './DriverLogin';
+import { getMyDriverInfo } from '../api/driverService';
 
 const css = `
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Mono:wght@400;500&display=swap');
@@ -130,11 +131,14 @@ const ROUTE_STOPS = [
   {id:8,name:'Tilakwadi',        time:'07:52 AM'},
 ];
 
-function PageHome({ tripActive, currentStop, totalPassengers, setActivePage, startTrip, endTrip, markStop, driverStatus, setDriverStatus, showToast }) {
+function PageHome({ tripActive, currentStop, totalPassengers, setActivePage, startTrip, endTrip, markStop, driverStatus, setDriverStatus, showToast, driverInfo }) {
+  const name      = driverInfo?.name || 'Driver';
+  const busNumber = driverInfo?.assignedBus?.busNumber || '—';
+  const routeName = driverInfo?.assignedRoute?.name    || '—';
   return (
     <div className="page">
       <div className="page-header">
-        <div><div className="page-title">Driver Dashboard</div><div className="page-subtitle">R. Kumar · KA-01-B · Route A — North Loop</div></div>
+        <div><div className="page-title">Driver Dashboard</div><div className="page-subtitle">{name} . {busNumber} . {routeName}</div></div>
         <div style={{display:'flex',gap:8}}>
           {!tripActive
             ? <button className="fab-btn fab-green" onClick={startTrip}>▶ Start Trip</button>
@@ -330,7 +334,14 @@ function PageHistory() {
   );
 }
 
-function PageProfile({ navigate }) {
+function PageProfile({ navigate,driverInfo }) {
+  const name       = driverInfo?.name       || 'Driver';
+  const licenseNo  = driverInfo?.licenseNo  || '—';
+  const experience = driverInfo?.experience || '—';
+  const phone      = driverInfo?.phone      || '—';
+  const busNumber  = driverInfo?.assignedBus?.busNumber   || '—';
+  const routeName  = driverInfo?.assignedRoute?.name      || '—';
+  const initials   = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
   return (
     <div className="page">
       <div className="page-header">
@@ -338,11 +349,11 @@ function PageProfile({ navigate }) {
       </div>
       <div style={{display:'grid',gridTemplateColumns:'280px 1fr',gap:14}}>
         <div className="profile-card">
-          <div className="profile-avatar">RK</div>
-          <div className="profile-name">R. Kumar</div>
-          <div className="profile-id">DRV-5201-2019</div>
+          <div className="profile-avatar">{initials}</div>
+          <div className="profile-name">{name}</div>
+          <div className="profile-id">{licenseNo}</div>
           <span className="status-pill sp-green">Active</span>
-          {[['Bus','KA-01-B'],['Route','Route A'],['License','DL-5201-2019'],['Experience','8 years'],['Phone','+91 98765 43210'],['Trips Today','6 / 6']].map(([k,v]) => (
+          {[['Bus',busNumber],['Route',routeName],['License',licenseNo],['Experience','${experience} yrs'],['Phone',phone]].map(([k,v]) => (
             <div key={k} className="profile-row"><span className="profile-key">{k}</span><span className="profile-val">{v}</span></div>
           ))}
           <button className="fab-btn fab-secondary" style={{width:'100%',justifyContent:'center',marginTop:6}} onClick={() => { clearDriverSession(); navigate('/driver/login'); }}>← Logout</button>
@@ -379,6 +390,15 @@ function PageProfile({ navigate }) {
 export default function DriverDashboard() {
   const navigate = useNavigate();
   const [activePage, setActivePage] = useState('home');
+
+  const [driverInfo, setDriverInfo] = useState(null);
+
+  useEffect(() => {
+    getMyDriverInfo()  // ✅ replace with your actual API function name
+      .then(d => setDriverInfo(d.driver))
+      .catch(() => setDriverInfo(null));
+  }, []);
+
   const [tripActive, setTripActive] = useState(false);
   const [currentStop, setCurrentStop] = useState(0);
   const [totalPassengers, setTotalPassengers] = useState(34);
@@ -427,13 +447,14 @@ export default function DriverDashboard() {
   ];
 
   const renderPage = () => {
-    const props = { tripActive, currentStop, totalPassengers, setActivePage, startTrip, endTrip, markStop, driverStatus, setDriverStatus, showToast };
+    const props = { tripActive, currentStop, totalPassengers, setActivePage, startTrip, endTrip, markStop, driverStatus, setDriverStatus, showToast, driverInfo };
     switch(activePage) {
       case 'home':    return <PageHome {...props}/>;
       case 'map':     return <PageLiveMap tripActive={tripActive} currentStop={currentStop}/>;
       case 'route':   return <PageRoute/>;
       case 'history': return <PageHistory/>;
-      case 'profile': return <PageProfile navigate={navigate}/>;
+      // case 'profile': return <PageProfile navigate={navigate}/>;
+      case 'profile': return <PageProfile navigate={navigate} driverInfo={driverInfo}/>;
       default:        return <PageHome {...props}/>;
     }
   };
@@ -456,7 +477,8 @@ export default function DriverDashboard() {
           <div className="spacer"/>
           <div className="topbar-right">
             <div className="topbar-time">{clock}</div>
-            <div className="avatar">RK</div>
+            {/* <div className="avatar">RK</div> */}
+            <div className="avatar">{driverInfo ? driverInfo.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() : '?'}</div>
           </div>
         </div>
         <div className="body-wrap">
