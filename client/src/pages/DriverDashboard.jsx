@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { clearDriverSession } from './DriverLogin';
 
 const css = `
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Mono:wght@400;500&display=swap');
@@ -344,7 +345,7 @@ function PageProfile({ navigate }) {
           {[['Bus','KA-01-B'],['Route','Route A'],['License','DL-5201-2019'],['Experience','8 years'],['Phone','+91 98765 43210'],['Trips Today','6 / 6']].map(([k,v]) => (
             <div key={k} className="profile-row"><span className="profile-key">{k}</span><span className="profile-val">{v}</span></div>
           ))}
-          <button className="fab-btn fab-secondary" style={{width:'100%',justifyContent:'center',marginTop:6}} onClick={() => navigate('/')}>← Logout</button>
+          <button className="fab-btn fab-secondary" style={{width:'100%',justifyContent:'center',marginTop:6}} onClick={() => { clearDriverSession(); navigate('/driver/login'); }}>← Logout</button>
         </div>
         <div style={{display:'flex',flexDirection:'column',gap:14}}>
           <div className="card" style={{padding:18}}>
@@ -471,7 +472,11 @@ export default function DriverDashboard() {
               </div>
             ))}
             <div className="sidebar-bottom">
-              <button className="nav-item" style={{color:'#64748b'}} onClick={() => navigate('/')}><IconLogout/> Logout</button>
+              {/* <button className="nav-item" style={{color:'#64748b'}} onClick={() => navigate('/')}><IconLogout/> Logout</button> */}
+              <button className="nav-item" style={{color:'#64748b'}} onClick={() => {
+  clearDriverSession();
+  navigate('/driver/login');
+}}><IconLogout/> Logout</button>
             </div>
           </div>
           <div className="main">{renderPage()}</div>

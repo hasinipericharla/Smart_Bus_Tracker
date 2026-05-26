@@ -449,7 +449,7 @@
 //     </button>
 //   );
 // }
-import { useState } from 'react';
+import { useState,useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { driverLogin, driverForgotPassword, driverVerifyResetOtp, driverResetPassword, driverResendOtp } from '../api/auth';
 
@@ -476,8 +476,34 @@ const labelStyle = {
   letterSpacing: '0.04em', textTransform: 'uppercase',
 };
 
+// ── Session helpers ───────────────────────────────────────────────────────────
+export function saveDriverSession(token, remember = false) {
+  const storage = remember ? localStorage : sessionStorage;
+  storage.setItem('driver_token', token);
+  localStorage.setItem('driver_remember', remember ? '1' : '0');
+}
+
+export function getDriverSession() {
+  const remember = localStorage.getItem('driver_remember') === '1';
+  const storage = remember ? localStorage : sessionStorage;
+  return storage.getItem('driver_token');
+}
+
+export function clearDriverSession() {
+  localStorage.removeItem('driver_token');
+  sessionStorage.removeItem('driver_token');
+  localStorage.removeItem('driver_remember');
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function DriverLogin() {
   const navigate = useNavigate();
+  
+  useEffect(() => {
+    if (getDriverSession()) {
+      navigate('/driver/dashboard', { replace: true });
+    }
+  }, [navigate]);
 
   // ── login state ──────────────────────────────────────────────────────────
   const [identifier, setIdentifier] = useState('');
@@ -600,6 +626,7 @@ export default function DriverLogin() {
       setError(data.message);
       return;
     }
+    saveDriverSession(data.token, remember);
     navigate('/driver/dashboard');
   } catch (err) {
     setError(err.message);

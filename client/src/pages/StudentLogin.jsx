@@ -943,11 +943,9 @@
 //     </button>
 //   );
 // }
-import { useState } from 'react';
+import { useState,useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-// import {
-//   login, forgotPassword, verifyResetOtp, resetPassword, resendOtp,
-// } from '../server/studentAuthService';
+
 import { login, forgotPassword, verifyResetOtp, resetPassword, resendOtp } from '../api/studentAuthService';
 
 const inputStyle = {
@@ -960,8 +958,35 @@ const focusStyle = (e) => { e.target.style.borderColor = '#F5A623'; e.target.sty
 const blurStyle  = (e) => { e.target.style.borderColor = '#D8E2EE'; e.target.style.boxShadow = 'none'; e.target.style.background = '#F7FAFD'; };
 const labelStyle = { fontSize: '12px', fontWeight: '700', color: '#2D4A7A', letterSpacing: '0.04em', textTransform: 'uppercase' };
 
+// ── Session helpers ───────────────────────────────────────────────────────────
+export function saveStudentSession(token, remember = false) {
+  const storage = remember ? localStorage : sessionStorage;
+  storage.setItem('student_token', token);
+  localStorage.setItem('student_remember', remember ? '1' : '0');
+}
+
+export function getStudentSession() {
+  const remember = localStorage.getItem('student_remember') === '1';
+  const storage = remember ? localStorage : sessionStorage;
+  return storage.getItem('student_token');
+}
+
+export function clearStudentSession() {
+  localStorage.removeItem('student_token');
+  sessionStorage.removeItem('student_token');
+  localStorage.removeItem('student_remember');
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function StudentLogin() {
   const navigate = useNavigate();
+ 
+  // ✅ Auto-redirect if already logged in
+  useEffect(() => {
+    if (getStudentSession()) {
+      navigate('/student/dashboard', { replace: true });
+    }
+  }, [navigate]);
 
   // ── Login state ───────────────────────────────────────────────────────────
   const [identifier, setIdentifier] = useState('');
@@ -1007,6 +1032,7 @@ export default function StudentLogin() {
         setUnverifiedEmail(data.email);
         setError('Email not verified. Check your inbox for a new OTP and complete signup.');
       } else {
+        saveStudentSession(data.token, remember); 
         navigate('/student/dashboard');
       }
     } catch (err) {

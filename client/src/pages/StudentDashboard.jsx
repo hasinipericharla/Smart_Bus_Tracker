@@ -611,6 +611,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { getMyInfo } from '../api/studentService';
+import { clearStudentSession } from './StudentLogin';
 
 const css = `
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Mono:wght@400;500&display=swap');
@@ -1398,7 +1399,7 @@ function PageProfile({ navigate }) {
           {[['Class','10-A'],['Route','Route A'],['Pickup Stop','City Park'],['Bus','KA-01-B'],['Driver','R. Kumar'],['Parent Contact','+91 98765 43210']].map(([k,v]) => (
             <div key={k} className="profile-row"><span className="profile-key">{k}</span><span className="profile-val">{v}</span></div>
           ))}
-          <button className="fab-btn fab-secondary" style={{width:'100%',justifyContent:'center',marginTop:6}} onClick={() => navigate('/')}>← Logout</button>
+          <button className="fab-btn fab-secondary" style={{width:'100%',justifyContent:'center',marginTop:6}} onClick={() => { clearStudentSession(); navigate('/student/login'); }}>← Logout</button>
         </div>
 
         {/* Right: week trips below details */}
@@ -1514,7 +1515,11 @@ export default function StudentDashboard() {
               </div>
             ))}
             <div className="sidebar-bottom">
-              <button className="nav-item" style={{color:'#64748b'}} onClick={() => navigate('/')}><IconLogout/> Logout</button>
+              {/* <button className="nav-item" style={{color:'#64748b'}} onClick={() => navigate('/')}><IconLogout/> Logout</button> */}
+              <button className="nav-item" style={{color:'#64748b'}} onClick={() => {
+  clearStudentSession();
+  navigate('/student/login');
+}}><IconLogout/> Logout</button>
             </div>
           </div>
           <div className="main">{renderPage()}</div>

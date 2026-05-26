@@ -2634,6 +2634,8 @@ import {
 } from '../api/adminService';
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { clearSession } from './AdminLogin';
+import { useNavigate } from 'react-router-dom';
 
 const css = `
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Mono:wght@400;500&display=swap');
@@ -6169,6 +6171,7 @@ function PageProfile({ showToast }) {
 
 /* ─── MAIN APP ─────────────────────────────────────────────────────────── */
 export default function BusNavDashboard() {
+  const navigate = useNavigate(); 
   const [activePage, setActivePage] = useState("dashboard");
   //const [modal, setModal] = useState(null);
   const [modal, setModal] = useState(null);
@@ -6236,7 +6239,14 @@ export default function BusNavDashboard() {
     notifications:"Notifications", profile:"My Profile"
   };
 
-  const handleLogout = () => { showToast("Logged out successfully!"); setTimeout(() => setActivePage("dashboard"), 1200); };
+  // const handleLogout = () => { showToast("Logged out successfully!"); setTimeout(() => setActivePage("dashboard"), 1200); };
+  const handleLogout = () => {
+  clearSession();                          // clears the saved token
+  showToast("Logged out successfully!");
+  setTimeout(() => {
+    navigate('/admin/login');              // redirect to login
+  }, 1200);
+};
 
   const renderPage = () => {
     switch (activePage) {
