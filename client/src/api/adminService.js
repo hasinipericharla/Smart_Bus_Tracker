@@ -46,3 +46,13 @@ export const getAdminNotifications   = ()     => request('/admin/notifications')
 export const createAdminNotification = (body) => request('/admin/notifications', { method: 'POST', body });
 export const deleteAdminNotification = (id)   => request(`/admin/notifications/${id}`, { method: 'DELETE' });
 
+// ── TRIPS ──────────────────────────────────────────────
+export const getTrips   = (date, busId) => {
+  const params = new URLSearchParams();
+  if (date)  params.append('date',  date);
+  if (busId) params.append('busId', busId);
+  return request(`/admin/trips?${params.toString()}`);
+};
+export const createTrip = (body)    => request('/admin/trips', { method: 'POST', body });
+export const updateTrip = (id, body)=> request(`/admin/trips/${id}`, { method: 'PUT', body });
+export const deleteTrip = (id)      => request(`/admin/trips/${id}`, { method: 'DELETE' });

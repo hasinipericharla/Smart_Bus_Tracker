@@ -5,7 +5,7 @@ const busSchema = new mongoose.Schema({
   model:      { type: String, trim: true },
   capacity:   { type: Number, required: true, default: 50 },
   status:     { type: String, enum: ['active', 'maintenance', 'idle'], default: 'active' },
-  assignedDriver: { type: mongoose.Schema.Types.ObjectId, ref: 'Driver', default: null },
+  assignedDriver: { type: mongoose.Schema.Types.ObjectId, ref: 'AdminDriver', default: null },
   assignedRoute:  { type: mongoose.Schema.Types.ObjectId, ref: 'Route', default: null },
   lastActive: { type: Date },
 }, { timestamps: true });

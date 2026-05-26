@@ -2618,11 +2618,19 @@
 //   );
 // }
 
+// import {
+//   getAdminStudents, createAdminStudent, updateAdminStudent,deleteAdminStudent,
+//   getBuses, createBus, updateBus,deleteBus,
+//   getRoutes, createRoute, updateRoute,deleteRoute,
+//   getAdminDrivers, createAdminDriver, updateAdminDriver,deleteAdminDriver,
+// } from '../api/adminService';
+
 import {
-  getAdminStudents, createAdminStudent, updateAdminStudent,deleteAdminStudent,
-  getBuses, createBus, updateBus,deleteBus,
-  getRoutes, createRoute, updateRoute,deleteRoute,
-  getAdminDrivers, createAdminDriver, updateAdminDriver,deleteAdminDriver,
+  getAdminStudents, createAdminStudent, updateAdminStudent, deleteAdminStudent,
+  getBuses, createBus, updateBus, deleteBus,
+  getRoutes, createRoute, updateRoute, deleteRoute,
+  getAdminDrivers, createAdminDriver, updateAdminDriver, deleteAdminDriver,
+  getTrips,
 } from '../api/adminService';
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -3185,7 +3193,7 @@ function ModalBus({ onClose, onSave, editData }) {
   const [status, setStatus]       = useState(editData?.status || 'active');
   // const [assignedDriver, setAssignedDriver] = useState(editData?.assignedDriver?._id || '');
   const [assignedRoute, setAssignedRoute]   = useState(editData?.assignedRoute?._id || '');
-  // const [drivers, setDrivers] = useState([]);
+  const [drivers, setDrivers] = useState([]);
   const [routes, setRoutes]   = useState([]);
   const [saving, setSaving]   = useState(false);
   const [error, setError]     = useState('');
@@ -3413,10 +3421,10 @@ function ModalDriver({ onClose, onSave, editData }) {
   const [error, setError]   = useState('');
 
   // Fetch buses and routes when modal opens
-  // useEffect(() => {
-  //   getBuses().then(d => setBuses(d.buses || [])).catch(() => {});
+  useEffect(() => {
+    getBuses().then(d => setBuses(d.buses || [])).catch(() => {});
   //   // getRoutes().then(r => setRoutes(r.routes || [])).catch(() => {});
-  // }, []);
+  }, []);
 
   const handleSave = async () => {
     if (!name || !email) {
@@ -4000,6 +4008,13 @@ function ModalStudent({ onClose, onSave, editData }) {
 /* ─── PAGES ─────────────────────────────────────────────────────────── */
 
 function PageDashboard({ showModal, unreadCount, onBellClick }) {
+  const [buses, setBuses] = useState([]);
+  useEffect(() => {
+  fetch("http://localhost:5000/api/admin/buses")
+    .then((res) => res.json())
+    .then((data) => setBuses(data.buses))
+    .catch((err) => console.error(err));
+}, []);
   const [activePill, setActivePill] = useState("All");
   const pills = ["All", "Route A", "Route B", "Route C"];
   return (
@@ -4073,6 +4088,315 @@ function PageDashboard({ showModal, unreadCount, onBellClick }) {
     </div>
   );
 }
+
+// function PageDashboard({ showModal }) {
+
+//   const [buses, setBuses] = useState([]);
+
+//   useEffect(() => {
+//     fetch("http://localhost:5000/api/admin/buses")
+//       .then((res) => res.json())
+//       .then((data) => setBuses(data.buses))
+//       .catch((err) => console.error(err));
+//   }, []);
+
+//   const [activePill, setActivePill] = useState("All");
+//   const [activeRoute, setActiveRoute] = useState(0);
+
+//   const pills = ["All", "Route A", "Route B", "Route C"];
+
+//   const routes = [
+//     {
+//       cls: "rc-a",
+//       name: "Route A — North Loop",
+//       meta: "12 stops · 6 buses · 34 min",
+//       pct: 92,
+//       color: "var(--green)"
+//     },
+//     {
+//       cls: "rc-b",
+//       name: "Route B — East Connect",
+//       meta: "8 stops · 4 buses · 28 min",
+//       pct: 67,
+//       color: "var(--accent)"
+//     },
+//     {
+//       cls: "rc-c",
+//       name: "Route C — South Express",
+//       meta: "10 stops · 5 buses · 40 min",
+//       pct: 88,
+//       color: "var(--green)"
+//     },
+//     {
+//       cls: "rc-d",
+//       name: "Route D — West Campus",
+//       meta: "6 stops · 3 buses · 22 min",
+//       pct: 50,
+//       color: "var(--muted)"
+//     },
+//   ];
+
+//   return (
+//     <div className="page">
+
+//       <div className="page-header">
+//         <div>
+//           <div className="page-title">Dashboard</div>
+//           <div className="page-subtitle">
+//             Good morning — Sunday, April 19, 2026
+//           </div>
+//         </div>
+
+//         <div className="fab-row">
+//           <button
+//             className="fab-btn fab-primary"
+//             onClick={() => showModal("bus")}
+//           >
+//             ＋ Add Bus
+//           </button>
+
+//           <button
+//             className="fab-btn fab-secondary"
+//             onClick={() => showModal("driver")}
+//           >
+//             ＋ Add Driver
+//           </button>
+
+//           <button
+//             className="fab-btn fab-secondary"
+//             onClick={() => showModal("route")}
+//           >
+//             ＋ Create Route
+//           </button>
+
+//           <button
+//             className="fab-btn fab-secondary"
+//             onClick={() => showModal("student")}
+//           >
+//             ＋ Add Student
+//           </button>
+//         </div>
+//       </div>
+
+//       <div className="table-card">
+
+//         <div className="card-header">
+//           <span className="card-title">Buses</span>
+
+//           <div className="ch-right">
+//             <button
+//               className="fab-btn fab-primary"
+//               style={{ padding: "5px 12px", fontSize: 11 }}
+//               onClick={() => showModal("bus")}
+//             >
+//               ＋ Add
+//             </button>
+//           </div>
+//         </div>
+
+//         <table className="data-table">
+
+//           <thead>
+//             <tr>
+//               <th>Bus</th>
+//               <th>Driver</th>
+//               <th>Route</th>
+//               <th>Status</th>
+//               <th></th>
+//             </tr>
+//           </thead>
+
+//           <tbody>
+//             {buses.map((bus) => (
+//               <tr key={bus._id}>
+
+//                 <td>
+//                   <strong>{bus.busNumber}</strong>
+//                 </td>
+
+//                 <td>
+//                   {bus.assignedDriver
+//                     ? bus.assignedDriver.name
+//                     : "Unassigned"}
+//                 </td>
+
+//                 <td>
+//                   {bus.assignedRoute?.name || "No Route"}
+//                 </td>
+
+//                 <td>
+//                   <span className="status-pill sp-green">
+//                     {bus.status}
+//                   </span>
+//                 </td>
+
+//                 <td>
+//                   <button
+//                     className="act-btn"
+//                     onClick={() => showModal("bus")}
+//                   >
+//                     Edit
+//                   </button>
+//                 </td>
+
+//               </tr>
+//             ))}
+//           </tbody>
+
+//         </table>
+//       </div>
+//     </div>
+//   );
+// }
+
+// function PageDashboard({ showModal }) {
+
+//   const [buses, setBuses] = useState([]);
+
+//   useEffect(() => {
+//     fetch("http://localhost:5000/api/admin/buses")
+//       .then((res) => res.json())
+//       .then((data) => {
+//         console.log(data); // check API response
+//         setBuses(data.buses);
+//       })
+//       .catch((err) => console.error(err));
+//   }, []);
+
+//   return (
+//     <div className="page">
+
+//       <div className="page-header">
+//         <div>
+//           <div className="page-title">Dashboard</div>
+
+//           <div className="page-subtitle">
+//             Good morning — Sunday, April 19, 2026
+//           </div>
+//         </div>
+
+//         <div className="fab-row">
+
+//           <button
+//             className="fab-btn fab-primary"
+//             onClick={() => showModal("bus")}
+//           >
+//             ＋ Add Bus
+//           </button>
+
+//           <button
+//             className="fab-btn fab-secondary"
+//             onClick={() => showModal("driver")}
+//           >
+//             ＋ Add Driver
+//           </button>
+
+//           <button
+//             className="fab-btn fab-secondary"
+//             onClick={() => showModal("route")}
+//           >
+//             ＋ Create Route
+//           </button>
+
+//           <button
+//             className="fab-btn fab-secondary"
+//             onClick={() => showModal("student")}
+//           >
+//             ＋ Add Student
+//           </button>
+
+//         </div>
+//       </div>
+
+//       <div className="table-card">
+
+//         <div className="card-header">
+
+//           <span className="card-title">
+//             Buses
+//           </span>
+
+//           <div className="ch-right">
+
+//             <button
+//               className="fab-btn fab-primary"
+//               style={{ padding: "5px 12px", fontSize: 11 }}
+//               onClick={() => showModal("bus")}
+//             >
+//               ＋ Add
+//             </button>
+
+//           </div>
+//         </div>
+
+//         <table className="data-table">
+
+//           <thead>
+//             <tr>
+//               <th>Bus</th>
+//               <th>Driver</th>
+//               <th>Route</th>
+//               <th>Status</th>
+//               <th></th>
+//             </tr>
+//           </thead>
+
+//           <tbody>
+
+//             {buses.length > 0 ? (
+//               buses.map((bus) => (
+
+//                 <tr key={bus._id}>
+
+//                   <td>
+//                     <strong>{bus.busNumber}</strong>
+//                   </td>
+
+//                   <td>
+//                     {bus.assignedDriver?.name || "Unassigned"}
+//                   </td>
+
+//                   <td>
+//                     {bus.assignedRoute?.name || "No Route"}
+//                   </td>
+
+//                   <td>
+//                     <span className="status-pill sp-green">
+//                       {bus.status}
+//                     </span>
+//                   </td>
+
+//                   <td>
+
+//                     <button
+//                       className="act-btn"
+//                       onClick={() => showModal("bus")}
+//                     >
+//                       Edit
+//                     </button>
+
+//                   </td>
+
+//                 </tr>
+
+//               ))
+//             ) : (
+//               <tr>
+//                 <td colSpan="5" style={{ textAlign: "center" }}>
+//                   No buses found
+//                 </td>
+//               </tr>
+//             )}
+
+//           </tbody>
+
+//         </table>
+
+//       </div>
+
+//     </div>
+//   );
+// }
 
 function PageTracking({ showToast }) {
   const canvasRef = useRef(null);
@@ -5549,36 +5873,215 @@ function PageStudents({ showModal, showToast }) {
   );
 }
 
-function PageHistory() {
+// function PageHistory() {
+//   return (
+//     <div className="page">
+//       <div className="page-header">
+//         <div><div className="page-title">Bus History</div><div className="page-subtitle">Trip logs and journey history</div></div>
+//         <div className="fab-row">
+//           <div className="search-bar"><IconSearch /><input placeholder="Search by bus or route..." /></div>
+//           <input type="date" className="filter-select" defaultValue="2026-04-21" />
+//           <select className="filter-select"><option>All Buses</option><option>KA-01-B</option><option>KA-02-B</option><option>KA-03-C</option></select>
+//           <button className="fab-btn fab-secondary">↓ Export CSV</button>
+//         </div>
+//       </div>
+//       <div className="history-full">
+//         <table className="data-table">
+//           <thead><tr><th>Bus</th><th>Route</th><th>Driver</th><th>Trip Start</th><th>Trip End</th><th>Stops Completed</th><th>Delay</th><th>Status</th></tr></thead>
+//           <tbody>
+//             {[
+//               ["KA-01-B","Route A","R. Kumar","07:00 AM","07:34 AM","12 / 12","0 min","var(--green)","sp-green","Completed"],
+//               ["KA-01-B","Route A","R. Kumar","08:00 AM","08:38 AM","12 / 12","+4 min","var(--accent)","sp-amber","Minor Delay"],
+//               ["KA-02-B","Route B","P. Sharma","07:00 AM","07:28 AM","8 / 8","0 min","var(--green)","sp-green","Completed"],
+//               ["KA-02-B","Route B","P. Sharma","08:00 AM","In Progress","4 / 8","+12 min","var(--red)","sp-red","Delayed"],
+//               ["KA-03-C","Route C","M. Rao","07:00 AM","07:42 AM","10 / 10","0 min","var(--green)","sp-green","Completed"],
+//               ["KA-04-D","Route D","S. Joshi","07:00 AM","07:22 AM","6 / 6","0 min","var(--green)","sp-green","Completed"],
+//               ["KA-05-E","Route A","A. Baig","07:30 AM","Stopped","3 / 12","Engine warning","var(--red)","sp-red","⚠ Incident"],
+//               ["KA-06-F","Route B","V. Patil","08:00 AM","08:26 AM","8 / 8","0 min","var(--green)","sp-green","Completed"],
+//             ].map(([bus,route,drv,start,end,stops,delay,dc,sc,st],i) => (
+//               <tr key={i}><td><strong>{bus}</strong></td><td>{route}</td><td>{drv}</td><td style={{ fontFamily:"'DM Mono',monospace",fontSize:11 }}>{start}</td><td style={{ fontFamily:"'DM Mono',monospace",fontSize:11 }}>{end}</td><td>{stops}</td><td style={{ color:dc }}>{delay}</td><td><span className={`status-pill ${sc}`}>{st}</span></td></tr>
+//             ))}
+//           </tbody>
+//         </table>
+//       </div>
+//     </div>
+//   );
+// }
+
+function PageHistory({ showToast }) {
+  const [trips, setTrips]       = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [search, setSearch]     = useState('');
+  const [dateFilter, setDateFilter] = useState('');
+  const [busFilter, setBusFilter]   = useState('all');
+  const [buses, setBuses]       = useState([]);
+
+  const fetchTrips = async () => {
+    try {
+      setLoading(true);
+      const data = await getTrips(dateFilter, busFilter);
+      setTrips(data.trips || []);
+    } catch (err) {
+      showToast('Failed to load trips: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    getBuses().then(d => setBuses(d.buses || [])).catch(() => {});
+  }, []);
+
+  useEffect(() => { fetchTrips(); }, [dateFilter, busFilter]);
+
+  const filtered = trips.filter(t => {
+    const q = search.toLowerCase();
+    return !q
+      || t.bus?.busNumber?.toLowerCase().includes(q)
+      || t.route?.name?.toLowerCase().includes(q)
+      || t.driver?.name?.toLowerCase().includes(q);
+  });
+
+  const statusClass = s => {
+    if (s === 'completed')   return 'sp-green';
+    if (s === 'delayed')     return 'sp-red';
+    if (s === 'minor_delay') return 'sp-amber';
+    if (s === 'incident')    return 'sp-red';
+    if (s === 'in_progress') return 'sp-blue';
+    return 'sp-gray';
+  };
+
+  const statusLabel = s => {
+    if (s === 'completed')   return 'Completed';
+    if (s === 'delayed')     return 'Delayed';
+    if (s === 'minor_delay') return 'Minor Delay';
+    if (s === 'incident')    return '⚠ Incident';
+    if (s === 'in_progress') return 'In Progress';
+    return s;
+  };
+
+  const formatTime = d => d ? new Date(d).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—';
+  const formatDelay = (mins, reason) => {
+    if (reason) return reason;
+    if (!mins)  return '0 min';
+    return `+${mins} min`;
+  };
+  const delayColor = (mins, reason) => {
+    if (reason) return 'var(--red)';
+    if (!mins)  return 'var(--green)';
+    return 'var(--accent)';
+  };
+
   return (
     <div className="page">
       <div className="page-header">
-        <div><div className="page-title">Bus History</div><div className="page-subtitle">Trip logs and journey history</div></div>
+        <div>
+          <div className="page-title">Bus History</div>
+          <div className="page-subtitle">Trip logs and journey history</div>
+        </div>
         <div className="fab-row">
-          <div className="search-bar"><IconSearch /><input placeholder="Search by bus or route..." /></div>
-          <input type="date" className="filter-select" defaultValue="2026-04-21" />
-          <select className="filter-select"><option>All Buses</option><option>KA-01-B</option><option>KA-02-B</option><option>KA-03-C</option></select>
-          <button className="fab-btn fab-secondary">↓ Export CSV</button>
+          <div className="search-bar">
+            <IconSearch />
+            <input
+              placeholder="Search by bus or route..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+          <input
+            type="date"
+            className="filter-select"
+            value={dateFilter}
+            onChange={e => setDateFilter(e.target.value)}
+          />
+          <select
+            className="filter-select"
+            value={busFilter}
+            onChange={e => setBusFilter(e.target.value)}
+          >
+            <option value="all">All Buses</option>
+            {buses.map(b => (
+              <option key={b._id} value={b._id}>{b.busNumber}</option>
+            ))}
+          </select>
+          <button
+            className="fab-btn fab-secondary"
+            onClick={() => {
+              const csv = [
+                ['Bus','Route','Driver','Trip Start','Trip End','Stops','Delay','Status'],
+                ...filtered.map(t => [
+                  t.bus?.busNumber,
+                  t.route?.name,
+                  t.driver?.name,
+                  formatTime(t.tripStart),
+                  formatTime(t.tripEnd),
+                  `${t.stopsCompleted}/${t.totalStops}`,
+                  formatDelay(t.delayMinutes, t.delayReason),
+                  statusLabel(t.status),
+                ])
+              ].map(r => r.join(',')).join('\n');
+              const blob = new Blob([csv], { type: 'text/csv' });
+              const url  = URL.createObjectURL(blob);
+              const a    = document.createElement('a');
+              a.href     = url;
+              a.download = 'bus_history.csv';
+              a.click();
+            }}
+          >
+            ↓ Export CSV
+          </button>
         </div>
       </div>
+
       <div className="history-full">
-        <table className="data-table">
-          <thead><tr><th>Bus</th><th>Route</th><th>Driver</th><th>Trip Start</th><th>Trip End</th><th>Stops Completed</th><th>Delay</th><th>Status</th></tr></thead>
-          <tbody>
-            {[
-              ["KA-01-B","Route A","R. Kumar","07:00 AM","07:34 AM","12 / 12","0 min","var(--green)","sp-green","Completed"],
-              ["KA-01-B","Route A","R. Kumar","08:00 AM","08:38 AM","12 / 12","+4 min","var(--accent)","sp-amber","Minor Delay"],
-              ["KA-02-B","Route B","P. Sharma","07:00 AM","07:28 AM","8 / 8","0 min","var(--green)","sp-green","Completed"],
-              ["KA-02-B","Route B","P. Sharma","08:00 AM","In Progress","4 / 8","+12 min","var(--red)","sp-red","Delayed"],
-              ["KA-03-C","Route C","M. Rao","07:00 AM","07:42 AM","10 / 10","0 min","var(--green)","sp-green","Completed"],
-              ["KA-04-D","Route D","S. Joshi","07:00 AM","07:22 AM","6 / 6","0 min","var(--green)","sp-green","Completed"],
-              ["KA-05-E","Route A","A. Baig","07:30 AM","Stopped","3 / 12","Engine warning","var(--red)","sp-red","⚠ Incident"],
-              ["KA-06-F","Route B","V. Patil","08:00 AM","08:26 AM","8 / 8","0 min","var(--green)","sp-green","Completed"],
-            ].map(([bus,route,drv,start,end,stops,delay,dc,sc,st],i) => (
-              <tr key={i}><td><strong>{bus}</strong></td><td>{route}</td><td>{drv}</td><td style={{ fontFamily:"'DM Mono',monospace",fontSize:11 }}>{start}</td><td style={{ fontFamily:"'DM Mono',monospace",fontSize:11 }}>{end}</td><td>{stops}</td><td style={{ color:dc }}>{delay}</td><td><span className={`status-pill ${sc}`}>{st}</span></td></tr>
-            ))}
-          </tbody>
-        </table>
+        {loading ? (
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>
+            Loading trips...
+          </div>
+        ) : filtered.length === 0 ? (
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>
+            No trip records found.
+          </div>
+        ) : (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Bus</th>
+                <th>Route</th>
+                <th>Driver</th>
+                <th>Trip Start</th>
+                <th>Trip End</th>
+                <th>Stops Completed</th>
+                <th>Delay</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(t => (
+                <tr key={t._id}>
+                  <td><strong>{t.bus?.busNumber || '—'}</strong></td>
+                  <td>{t.route?.name || '—'}</td>
+                  <td>{t.driver?.name || '—'}</td>
+                  <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11 }}>
+                    {formatTime(t.tripStart)}
+                  </td>
+                  <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11 }}>
+                    {t.status === 'in_progress' ? 'In Progress' : formatTime(t.tripEnd)}
+                  </td>
+                  <td>{t.stopsCompleted} / {t.totalStops}</td>
+                  <td style={{ color: delayColor(t.delayMinutes, t.delayReason) }}>
+                    {formatDelay(t.delayMinutes, t.delayReason)}
+                  </td>
+                  <td>
+                    <span className={`status-pill ${statusClass(t.status)}`}>
+                      {statusLabel(t.status)}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );
@@ -5748,7 +6251,8 @@ export default function BusNavDashboard() {
       case "routes":        return <PageRoutes showModal={showModal} showToast={showToast} />;
       case "students":      return <PageStudents showModal={showModal} showToast={showToast} />;
       case "analytics":     return <PageAnalytics />;
-      case "history":       return <PageHistory />;
+      //case "history":       return <PageHistory />;
+      case "history": return <PageHistory showToast={showToast} />;
       case "notifications": return <PageNotifications notifs={notifs} setNotifs={setNotifs} />;
       case "profile":       return <PageProfile showToast={showToast} />;
       default:              return <PageDashboard showModal={showModal} unreadCount={unreadCount} onBellClick={handleBellNav} />;

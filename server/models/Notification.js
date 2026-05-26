@@ -19,4 +19,8 @@ const notificationSchema = new mongoose.Schema({
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin' },
 }, { timestamps: true });
 
+notificationSchema.index({ targetRole: 1 });
+notificationSchema.index({ targetId: 1 });
+notificationSchema.index({ createdAt: -1 });
+
 module.exports = mongoose.model('Notification', notificationSchema);

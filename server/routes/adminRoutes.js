@@ -39,7 +39,6 @@
 // router.get('/notifications',        getAllNotifications);
 // router.post('/notifications',       createNotification);
 // router.delete('/notifications/:id', deleteNotification);
-
 // module.exports = router;
 
 const express = require('express');
@@ -51,6 +50,7 @@ const { getAllRoutes, createRoute, updateRoute, deleteRoute } = require('../cont
 const { getAllStudents, createStudent, updateStudent, deleteStudent } = require('../controllers/adminStudentController');
 const { getAllDrivers, createDriver, updateDriver, deleteDriver } = require('../controllers/adminDriverController');
 const { createNotification, getAllNotifications, deleteNotification } = require('../controllers/notificationController');
+const { getAllTrips, createTrip, updateTrip, deleteTrip } = require('../controllers/tripController');
 
 // All routes require admin auth
 router.use(protect);
@@ -85,3 +85,8 @@ router.post('/notifications',       createNotification);
 router.delete('/notifications/:id', deleteNotification);
 
 module.exports = router;
+
+router.get('/trips',        getAllTrips);
+router.post('/trips',       createTrip);
+router.put('/trips/:id',    updateTrip);
+router.delete('/trips/:id', deleteTrip);
