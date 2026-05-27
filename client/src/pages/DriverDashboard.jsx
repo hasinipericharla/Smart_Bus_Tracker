@@ -176,7 +176,11 @@ function PageHome({ tripActive, currentStop, totalPassengers, setActivePage, sta
         <div>
           <div style={{fontSize:13,fontWeight:700,color:'#e2e8f0'}}>{tripActive ? `Currently at: ${ROUTE_STOPS[currentStop]?.name || 'Trip Complete'}` : 'Ready to start your trip'}</div>
           <div style={{fontSize:11.5,color:'#94a3b8',marginTop:4}}>
-            {tripActive ? `Next: ${ROUTE_STOPS[currentStop+1]?.name || 'Last stop'}` : 'KA-01-B · Route A — North Loop · 8 stops'}
+            {/* {tripActive ? `Next: ${ROUTE_STOPS[currentStop+1]?.name || 'Last stop'}` : 'KA-01-B · Route A — North Loop · 8 stops'} */}
+            {tripActive 
+  ? `Next: ${ROUTE_STOPS[currentStop+1]?.name || 'Last stop'}` 
+  : `${driverInfo?.assignedBus?.busNumber || '—'} · ${driverInfo?.assignedRoute?.name || '—'} · ${driverInfo?.assignedRoute?.stops?.length || 0} stops`
+}
           </div>
         </div>
         {tripActive && currentStop < ROUTE_STOPS.length && (
@@ -276,30 +280,103 @@ function PageLiveMap({ tripActive, currentStop }) {
   );
 }
 
-function PageRoute() {
+// function PageRoute() {
+//   return (
+//     <div className="page">
+//       <div className="page-header">
+//         <div><div className="page-title">My Route</div><div className="page-subtitle">Route A — North Loop · 8 stops</div></div>
+//       </div>
+//       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+//         <div className="card">
+//           <div className="card-header"><span className="card-title">Route Details</span></div>
+//           <div style={{padding:'16px 18px',display:'flex',flexDirection:'column',gap:10}}>
+//             {[['Route','Route A — North Loop'],['Bus','KA-01-B'],['Capacity','50 passengers'],['Total Stops','8'],['Total Distance','8.9 km'],['Avg Trip Time','52 minutes'],['First Trip','07:00 AM'],['Last Trip','05:00 PM']].map(([k,v]) => (
+//               <div key={k} style={{display:'flex',justifyContent:'space-between',fontSize:13,paddingBottom:8,borderBottom:'1px solid var(--border)'}}>
+//                 <span style={{color:'var(--muted)'}}>{k}</span>
+//                 <span style={{fontWeight:600}}>{v}</span>
+//               </div>
+//             ))}
+//           </div>
+//         </div>
+//         <div className="card">
+//           <div className="card-header"><span className="card-title">All Stops</span></div>
+//           {ROUTE_STOPS.map((stop, i) => (
+//             <div key={stop.id} className="stop-row">
+//               <div className="stop-circle sc-gray">{i+1}</div>
+//               <div><div className="stop-name">{stop.name}</div><div className="stop-meta">{stop.time}</div></div>
+//             </div>
+//           ))}
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+function PageRoute({ driverInfo }) {
+  const route = driverInfo?.assignedRoute;
+  const bus   = driverInfo?.assignedBus;
+
+  if (!route) {
+    return (
+      <div className="page">
+        <div className="page-header">
+          <div><div className="page-title">My Route</div><div className="page-subtitle">No route assigned yet</div></div>
+        </div>
+        <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>
+          <div style={{ fontSize: 32, marginBottom: 12 }}>🚌</div>
+          <div style={{ fontWeight: 600, marginBottom: 6 }}>No route assigned</div>
+          <div style={{ fontSize: 12.5 }}>Contact your admin to get a route assigned to you.</div>
+        </div>
+      </div>
+    );
+  }
+
+  const stops = route.stops || [];
+
+  // Build route detail rows from real data
+  const details = [
+    ['Route ID',       route.routeId   || '—'],
+    ['Route Name',     route.name      || '—'],
+    ['Description',    route.description || '—'],
+    ['Bus',            bus?.busNumber  || '—'],
+    ['Capacity',       bus?.capacity   ? `${bus.capacity} passengers` : '—'],
+    ['Total Stops',    stops.length    || '—'],
+    ['First Stop',     stops[0]?.name  || '—'],
+    ['Last Stop',      stops[stops.length - 1]?.name || '—'],
+  ];
+
   return (
     <div className="page">
       <div className="page-header">
-        <div><div className="page-title">My Route</div><div className="page-subtitle">Route A — North Loop · 8 stops</div></div>
+        <div>
+          <div className="page-title">My Route</div>
+          <div className="page-subtitle">{route.name} · {stops.length} stops</div>
+        </div>
       </div>
-      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         <div className="card">
           <div className="card-header"><span className="card-title">Route Details</span></div>
-          <div style={{padding:'16px 18px',display:'flex',flexDirection:'column',gap:10}}>
-            {[['Route','Route A — North Loop'],['Bus','KA-01-B'],['Capacity','50 passengers'],['Total Stops','8'],['Total Distance','8.9 km'],['Avg Trip Time','52 minutes'],['First Trip','07:00 AM'],['Last Trip','05:00 PM']].map(([k,v]) => (
-              <div key={k} style={{display:'flex',justifyContent:'space-between',fontSize:13,paddingBottom:8,borderBottom:'1px solid var(--border)'}}>
-                <span style={{color:'var(--muted)'}}>{k}</span>
-                <span style={{fontWeight:600}}>{v}</span>
+          <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {details.map(([k, v]) => (
+              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>
+                <span style={{ color: 'var(--muted)' }}>{k}</span>
+                <span style={{ fontWeight: 600 }}>{v}</span>
               </div>
             ))}
           </div>
         </div>
         <div className="card">
           <div className="card-header"><span className="card-title">All Stops</span></div>
-          {ROUTE_STOPS.map((stop, i) => (
-            <div key={stop.id} className="stop-row">
-              <div className="stop-circle sc-gray">{i+1}</div>
-              <div><div className="stop-name">{stop.name}</div><div className="stop-meta">{stop.time}</div></div>
+          {stops.length === 0 ? (
+            <div style={{ padding: 24, textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>
+              No stops defined for this route yet.
+            </div>
+          ) : stops.map((stop, i) => (
+            <div key={i} className="stop-row">
+              <div className="stop-circle sc-gray">{i + 1}</div>
+              <div>
+                <div className="stop-name">{stop.name}</div>
+                {stop.time && <div className="stop-meta">{stop.time}</div>}
+              </div>
             </div>
           ))}
         </div>
@@ -307,7 +384,6 @@ function PageRoute() {
     </div>
   );
 }
-
 function PageHistory() {
   return (
     <div className="page">
@@ -451,7 +527,7 @@ export default function DriverDashboard() {
     switch(activePage) {
       case 'home':    return <PageHome {...props}/>;
       case 'map':     return <PageLiveMap tripActive={tripActive} currentStop={currentStop}/>;
-      case 'route':   return <PageRoute/>;
+      case 'route':   return <PageRoute driverInfo={driverInfo}/>;
       case 'history': return <PageHistory/>;
       // case 'profile': return <PageProfile navigate={navigate}/>;
       case 'profile': return <PageProfile navigate={navigate} driverInfo={driverInfo}/>;

@@ -2238,6 +2238,7 @@ function PageProfile({ showToast }) {
 
 /* ─── MAIN APP ─────────────────────────────────────────────────────────── */
 export default function BusNavDashboard() {
+  
   const navigate = useNavigate(); 
   const [activePage, setActivePage] = useState("dashboard");
   //const [modal, setModal] = useState(null);
@@ -2289,7 +2290,7 @@ export default function BusNavDashboard() {
       { id: "buses",    icon: <IconBus />,    label: "Buses" },
       { id: "drivers",  icon: <IconUser />,   label: "Drivers" },
       { id: "routes",   icon: <IconRoute />,  label: "Routes" },
-      { id: "students", icon: <IconPeople />, label: "Students", badge: "12", warn: true },
+      { id: "students", icon: <IconPeople />, label: "Students" },
     ]},
     { label: "Analytics", items: [
       { id: "analytics",     icon: <IconBar />,  label: "Analytics" },
