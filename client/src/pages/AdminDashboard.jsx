@@ -3,7 +3,7 @@ import {
   getBuses, createBus, updateBus, deleteBus,
   getRoutes, createRoute, updateRoute, deleteRoute,
   getAdminDrivers, createAdminDriver, updateAdminDriver, deleteAdminDriver,
-  getTrips,
+  getTrips, getAdminProfile, updateAdminProfile,
 } from '../api/adminService';
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -2156,13 +2156,415 @@ function PageHistory({ showToast }) {
   );
 }
 
+
+function PageAnalytics() {
+  const [busData, setBusData] = useState(null);
+  const [routeData, setRouteData] = useState(null);
+  const [studentData, setStudentData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch buses data
+        const busRes = await fetch('http://localhost:8000/api/admin/buses');
+        const busesData = await busRes.json();
+        
+        // Fetch routes data
+        const routeRes = await fetch('http://localhost:8000/api/admin/routes');
+        const routesData = await routeRes.json();
+        
+        // Fetch students data
+        const studentRes = await fetch('http://localhost:8000/api/admin/students');
+        const studentsData = await studentRes.json();
+
+        // Process bus data
+        const buses = busesData.buses || [];
+        const activeBuses = buses.filter(b => b.status === 'active').length;
+        const maintenanceBuses = buses.filter(b => b.status === 'maintenance').length;
+        const idleBuses = buses.filter(b => b.status === 'idle').length;
+
+        setBusData({
+          total: buses.length,
+          active: activeBuses,
+          maintenance: maintenanceBuses,
+          idle: idleBuses,
+          utilization: buses.length > 0 ? Math.round((activeBuses / buses.length) * 100) : 0,
+        });
+
+        // Process route data
+        const routes = routesData.routes || [];
+        setRouteData({
+          total: routes.length,
+          busesPerRoute: routes.map(r => ({
+            name: r.name,
+            buses: r.assignedBuses?.length || 0,
+          })),
+          avgStopsPerRoute: routes.length > 0 
+            ? Math.round(routes.reduce((sum, r) => sum + (r.stops?.length || 0), 0) / routes.length)
+            : 0,
+        });
+
+        // Process student data
+        const students = studentsData.students || [];
+        const activeStudents = students.filter(s => s.status === 'active').length;
+        const pendingStudents = students.filter(s => s.status === 'pending').length;
+
+        setStudentData({
+          total: students.length,
+          active: activeStudents,
+          pending: pendingStudents,
+          inactive: students.length - activeStudents - pendingStudents,
+        });
+
+        setLoading(false);
+      } catch (err) {
+        console.error('Failed to load analytics:', err);
+        setLoading(false);
+      }
+    };
+
+    fetchAnalytics();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="page">
+        <div className="page-header">
+          <div>
+            <div className="page-title">Analytics</div>
+            <div className="page-subtitle">Fleet and operations analytics</div>
+          </div>
+        </div>
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>
+          Loading analytics...
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="page">
+      <div className="page-header">
+        <div>
+          <div className="page-title">Analytics</div>
+          <div className="page-subtitle">Fleet and operations overview</div>
+        </div>
+      </div>
+
+      {/* BUS ANALYTICS */}
+      <div style={{ marginBottom: 20 }}>
+        <div className="page-title" style={{ fontSize: 16, marginBottom: 14 }}>🚌 Bus Fleet Analytics</div>
+        <div className="stat-grid">
+          <div className="stat-card s-blue">
+            <div className="stat-label">Total Buses</div>
+            <div className="stat-val blue">{busData?.total || 0}</div>
+            <div className="stat-sub">Fleet size</div>
+          </div>
+          <div className="stat-card s-green">
+            <div className="stat-label">Active Buses</div>
+            <div className="stat-val green">{busData?.active || 0}</div>
+            <div className="stat-sub">
+              <span className="stat-trend up">{busData?.utilization || 0}%</span> utilization
+            </div>
+          </div>
+          <div className="stat-card s-amber">
+            <div className="stat-label">In Maintenance</div>
+            <div className="stat-val amber">{busData?.maintenance || 0}</div>
+            <div className="stat-sub">Unavailable</div>
+          </div>
+          <div className="stat-card s-purple">
+            <div className="stat-label">Idle Buses</div>
+            <div className="stat-val purple">{busData?.idle || 0}</div>
+            <div className="stat-sub">Not in use</div>
+          </div>
+        </div>
+      </div>
+
+      {/* ROUTE ANALYTICS */}
+      <div style={{ marginBottom: 20 }}>
+        <div className="page-title" style={{ fontSize: 16, marginBottom: 14 }}>🗺️ Route Analytics</div>
+        <div className="stat-grid">
+          <div className="stat-card s-blue">
+            <div className="stat-label">Total Routes</div>
+            <div className="stat-val blue">{routeData?.total || 0}</div>
+            <div className="stat-sub">Active routes</div>
+          </div>
+          <div className="stat-card s-green">
+            <div className="stat-label">Avg Stops Per Route</div>
+            <div className="stat-val green">{routeData?.avgStopsPerRoute || 0}</div>
+            <div className="stat-sub">Coverage</div>
+          </div>
+        </div>
+
+        {routeData?.busesPerRoute && routeData.busesPerRoute.length > 0 && (
+          <div className="table-card" style={{ marginTop: 14 }}>
+            <div className="card-header">
+              <span className="card-title">Buses per Route</span>
+            </div>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Route Name</th>
+                  <th>Assigned Buses</th>
+                </tr>
+              </thead>
+              <tbody>
+                {routeData.busesPerRoute.map((route, idx) => (
+                  <tr key={idx}>
+                    <td><strong>{route.name}</strong></td>
+                    <td>
+                      <span className="status-pill sp-blue">{route.buses} buses</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* STUDENT ANALYTICS */}
+      <div>
+        <div className="page-title" style={{ fontSize: 16, marginBottom: 14 }}>👥 Student Analytics</div>
+        <div className="stat-grid">
+          <div className="stat-card s-purple">
+            <div className="stat-label">Total Students</div>
+            <div className="stat-val purple">{studentData?.total || 0}</div>
+            <div className="stat-sub">Enrolled</div>
+          </div>
+          <div className="stat-card s-green">
+            <div className="stat-label">Active Students</div>
+            <div className="stat-val green">{studentData?.active || 0}</div>
+            <div className="stat-sub">Using service</div>
+          </div>
+          <div className="stat-card s-amber">
+            <div className="stat-label">Pending Approval</div>
+            <div className="stat-val amber">{studentData?.pending || 0}</div>
+            <div className="stat-sub">Awaiting verification</div>
+          </div>
+          <div className="stat-card s-blue">
+            <div className="stat-label">Inactive</div>
+            <div className="stat-val blue">{studentData?.inactive || 0}</div>
+            <div className="stat-sub">Not active</div>
+          </div>
+        </div>
+      </div>
+
+      {/* SUMMARY */}
+      <div className="table-card" style={{ marginTop: 20 }}>
+        <div className="card-header">
+          <span className="card-title">📊 Quick Summary</span>
+        </div>
+        <div style={{ padding: '18px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, fontSize: 13 }}>
+            <div>
+              <div style={{ color: 'var(--muted)', marginBottom: 4 }}>Fleet Efficiency</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--green)' }}>
+                {busData?.utilization || 0}%
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
+                Active buses out of total fleet
+              </div>
+            </div>
+            <div>
+              <div style={{ color: 'var(--muted)', marginBottom: 4 }}>Student Coverage</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--blue2)' }}>
+                {studentData?.total || 0}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
+                Students enrolled in bus service
+              </div>
+            </div>
+            <div>
+              <div style={{ color: 'var(--muted)', marginBottom: 4 }}>Network Reach</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--accent)' }}>
+                {routeData?.total || 0} Routes
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
+                Covering {routeData?.avgStopsPerRoute || 0} stops average
+              </div>
+            </div>
+            <div>
+              <div style={{ color: 'var(--muted)', marginBottom: 4 }}>Maintenance Status</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--red)' }}>
+                {busData?.maintenance || 0}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
+                Buses in maintenance
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+
+
+// function PageProfile({ showToast }) {
+//   const [editing, setEditing] = useState(false);
+//   const [name, setName] = useState("Admin User");
+//   const [email, setEmail] = useState("admin@school.edu");
+//   const [phone, setPhone] = useState("+91 98765 00001");
+//   const [dept, setDept] = useState("Transport Management");
+//   const handleSave = () => { setEditing(false); showToast("Profile updated successfully!"); };
+//   const activities = [
+//     { dot:"var(--green)",  text:"Added new bus KA-09-I to Route D",           time:"Today, 09:22 AM" },
+//     { dot:"var(--accent)", text:"Updated driver P. Sharma's route assignment",  time:"Today, 08:45 AM" },
+//     { dot:"var(--blue2)",  text:"Generated April analytics report",             time:"Yesterday, 05:10 PM" },
+//     { dot:"var(--purple)", text:"Created Route E — East Extension",             time:"Apr 19, 03:40 PM" },
+//     { dot:"var(--red)",    text:"Resolved bus KA-05-E engine warning",          time:"Apr 19, 11:15 AM" },
+//     { dot:"var(--green)",  text:"Added 12 new students to Route B",             time:"Apr 18, 02:30 PM" },
+//   ];
+//   return (
+//     <div className="page">
+//       <div className="page-header">
+//         <div><div className="page-title">My Profile</div><div className="page-subtitle">Manage your account and preferences</div></div>
+//         {!editing
+//           ? <button className="fab-btn fab-secondary" onClick={() => setEditing(true)}>✎ Edit Profile</button>
+//           : <div className="fab-row"><button className="fab-btn fab-secondary" onClick={() => setEditing(false)}>Cancel</button><button className="fab-btn fab-primary" onClick={handleSave}>Save Changes</button></div>
+//         }
+//       </div>
+//       <div className="profile-grid">
+//         <div className="profile-card">
+//           <div className="profile-avatar-lg">AD</div>
+//           <div className="profile-name">{name}</div>
+//           <div className="profile-role"><span className="status-pill sp-amber">Super Admin</span></div>
+//           <div className="profile-divider" />
+//           <div className="profile-stat-row">
+//             <div className="profile-stat"><div className="profile-stat-val">23</div><div className="profile-stat-lbl">Buses</div></div>
+//             <div className="profile-stat"><div className="profile-stat-val">21</div><div className="profile-stat-lbl">Drivers</div></div>
+//             <div className="profile-stat"><div className="profile-stat-val">4</div><div className="profile-stat-lbl">Routes</div></div>
+//           </div>
+//           <div className="profile-divider" />
+//           <div style={{ width: "100%", fontSize: 12, color: "var(--muted)", lineHeight: 1.8 }}>
+//             <div style={{ display: "flex", justifyContent: "space-between" }}><span>Member since</span><span style={{ color: "var(--text)", fontWeight: 600 }}>Jan 2024</span></div>
+//             <div style={{ display: "flex", justifyContent: "space-between" }}><span>Last login</span><span style={{ color: "var(--text)", fontWeight: 600 }}>Today, 08:02 AM</span></div>
+//             <div style={{ display: "flex", justifyContent: "space-between" }}><span>Sessions</span><span style={{ color: "var(--text)", fontWeight: 600 }}>Active</span></div>
+//           </div>
+//         </div>
+//         <div className="profile-info-card">
+//           <div className="profile-section">
+//             <div className="profile-section-title">Personal Information</div>
+//             <div className="profile-field-row">
+//               <div className="profile-field"><label>Full Name</label>{editing ? <input value={name} onChange={e => setName(e.target.value)} /> : <div className="field-val">{name}</div>}</div>
+//               <div className="profile-field"><label>Email</label>{editing ? <input value={email} onChange={e => setEmail(e.target.value)} /> : <div className="field-val">{email}</div>}</div>
+//               <div className="profile-field"><label>Phone</label>{editing ? <input value={phone} onChange={e => setPhone(e.target.value)} /> : <div className="field-val">{phone}</div>}</div>
+//               <div className="profile-field"><label>Department</label>{editing ? <input value={dept} onChange={e => setDept(e.target.value)} /> : <div className="field-val">{dept}</div>}</div>
+//             </div>
+//           </div>
+//           <div className="profile-section" style={{ borderTop: "1px solid var(--border)" }}>
+//             <div className="profile-section-title">Security</div>
+//             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0" }}>
+//               <div><div style={{ fontSize: 13, fontWeight: 600 }}>Password</div><div style={{ fontSize: 11.5, color: "var(--muted)" }}>Last changed 3 months ago</div></div>
+//               <button className="fab-btn fab-secondary" style={{ padding: "6px 14px", fontSize: 12 }}>Change Password</button>
+//             </div>
+//             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0" }}>
+//               <div><div style={{ fontSize: 13, fontWeight: 600 }}>Two-Factor Authentication</div><div style={{ fontSize: 11.5, color: "var(--muted)" }}>Protect your account with 2FA</div></div>
+//               <span className="status-pill sp-green" style={{ fontSize: 10 }}>Enabled</span>
+//             </div>
+//           </div>
+//           <div className="profile-section" style={{ borderTop: "1px solid var(--border)", paddingBottom: 0 }}>
+//             <div className="profile-section-title">Recent Activity</div>
+//           </div>
+//           <div className="activity-list">
+//             {activities.map((a, i) => (
+//               <div className="activity-item" key={i}>
+//                 <div className="activity-dot" style={{ background: a.dot }} />
+//                 <div><div className="activity-text">{a.text}</div><div className="activity-time">{a.time}</div></div>
+//               </div>
+//             ))}
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+
 function PageProfile({ showToast }) {
   const [editing, setEditing] = useState(false);
-  const [name, setName] = useState("Admin User");
-  const [email, setEmail] = useState("admin@school.edu");
-  const [phone, setPhone] = useState("+91 98765 00001");
-  const [dept, setDept] = useState("Transport Management");
-  const handleSave = () => { setEditing(false); showToast("Profile updated successfully!"); };
+  const [loading, setLoading] = useState(true);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [dept, setDept] = useState("");
+  const [adminId, setAdminId] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  // Fetch admin profile on mount
+  useEffect(() => {
+    const fetchAdminProfile = async () => {
+      try {
+        setLoading(true);
+        const data = await getAdminProfile();
+        
+        if (data.admin) {
+          setAdminId(data.admin._id);
+          setName(data.admin.name || "");
+          setEmail(data.admin.email || "");
+          setPhone(data.admin.phone || "");
+          setDept(data.admin.department || "");
+        }
+      } catch (err) {
+        console.error('Failed to load admin profile:', err);
+        setError('Failed to load profile');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAdminProfile();
+  }, []);
+
+  // Save profile changes
+  const handleSave = async () => {
+    if (!name || !email) {
+      setError("Name and email are required");
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+    
+    try {
+      await updateAdminProfile({
+        name,
+        email,
+        phone,
+        department: dept,
+      });
+      
+      setEditing(false);
+      showToast("Profile updated successfully!");
+    } catch (err) {
+      setError(err.message || "Failed to update profile");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="page">
+        <div className="page-header">
+          <div>
+            <div className="page-title">My Profile</div>
+            <div className="page-subtitle">Loading...</div>
+          </div>
+        </div>
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>
+          Loading your profile...
+        </div>
+      </div>
+    );
+  }
+
   const activities = [
     { dot:"var(--green)",  text:"Added new bus KA-09-I to Route D",           time:"Today, 09:22 AM" },
     { dot:"var(--accent)", text:"Updated driver P. Sharma's route assignment",  time:"Today, 08:45 AM" },
@@ -2171,19 +2573,35 @@ function PageProfile({ showToast }) {
     { dot:"var(--red)",    text:"Resolved bus KA-05-E engine warning",          time:"Apr 19, 11:15 AM" },
     { dot:"var(--green)",  text:"Added 12 new students to Route B",             time:"Apr 18, 02:30 PM" },
   ];
+
   return (
     <div className="page">
       <div className="page-header">
-        <div><div className="page-title">My Profile</div><div className="page-subtitle">Manage your account and preferences</div></div>
+        <div>
+          <div className="page-title">My Profile</div>
+          <div className="page-subtitle">Manage your account and preferences</div>
+        </div>
         {!editing
           ? <button className="fab-btn fab-secondary" onClick={() => setEditing(true)}>✎ Edit Profile</button>
-          : <div className="fab-row"><button className="fab-btn fab-secondary" onClick={() => setEditing(false)}>Cancel</button><button className="fab-btn fab-primary" onClick={handleSave}>Save Changes</button></div>
+          : <div className="fab-row">
+              <button className="fab-btn fab-secondary" onClick={() => setEditing(false)} disabled={saving}>Cancel</button>
+              <button className="fab-btn fab-primary" onClick={handleSave} disabled={saving}>
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
         }
       </div>
+
+      {error && (
+        <div style={{ background: '#fff0f0', border: '1px solid #fcc', borderRadius: 8, padding: '12px 16px', fontSize: 12.5, color: '#c00', marginBottom: 16 }}>
+          ⚠️ {error}
+        </div>
+      )}
+
       <div className="profile-grid">
         <div className="profile-card">
-          <div className="profile-avatar-lg">AD</div>
-          <div className="profile-name">{name}</div>
+          <div className="profile-avatar-lg">{name.slice(0, 2).toUpperCase() || 'AD'}</div>
+          <div className="profile-name">{name || 'Admin User'}</div>
           <div className="profile-role"><span className="status-pill sp-amber">Super Admin</span></div>
           <div className="profile-divider" />
           <div className="profile-stat-row">
@@ -2202,10 +2620,54 @@ function PageProfile({ showToast }) {
           <div className="profile-section">
             <div className="profile-section-title">Personal Information</div>
             <div className="profile-field-row">
-              <div className="profile-field"><label>Full Name</label>{editing ? <input value={name} onChange={e => setName(e.target.value)} /> : <div className="field-val">{name}</div>}</div>
-              <div className="profile-field"><label>Email</label>{editing ? <input value={email} onChange={e => setEmail(e.target.value)} /> : <div className="field-val">{email}</div>}</div>
-              <div className="profile-field"><label>Phone</label>{editing ? <input value={phone} onChange={e => setPhone(e.target.value)} /> : <div className="field-val">{phone}</div>}</div>
-              <div className="profile-field"><label>Department</label>{editing ? <input value={dept} onChange={e => setDept(e.target.value)} /> : <div className="field-val">{dept}</div>}</div>
+              <div className="profile-field">
+                <label>Full Name</label>
+                {editing ? (
+                  <input 
+                    className="form-input"
+                    value={name} 
+                    onChange={e => setName(e.target.value)} 
+                  />
+                ) : (
+                  <div className="field-val">{name || '—'}</div>
+                )}
+              </div>
+              <div className="profile-field">
+                <label>Email</label>
+                {editing ? (
+                  <input 
+                    className="form-input"
+                    value={email} 
+                    onChange={e => setEmail(e.target.value)} 
+                  />
+                ) : (
+                  <div className="field-val">{email || '—'}</div>
+                )}
+              </div>
+              <div className="profile-field">
+                <label>Phone</label>
+                {editing ? (
+                  <input 
+                    className="form-input"
+                    value={phone} 
+                    onChange={e => setPhone(e.target.value)} 
+                  />
+                ) : (
+                  <div className="field-val">{phone || '—'}</div>
+                )}
+              </div>
+              <div className="profile-field">
+                <label>Department</label>
+                {editing ? (
+                  <input 
+                    className="form-input"
+                    value={dept} 
+                    onChange={e => setDept(e.target.value)} 
+                  />
+                ) : (
+                  <div className="field-val">{dept || '—'}</div>
+                )}
+              </div>
             </div>
           </div>
           <div className="profile-section" style={{ borderTop: "1px solid var(--border)" }}>
@@ -2235,6 +2697,7 @@ function PageProfile({ showToast }) {
     </div>
   );
 }
+
 
 /* ─── MAIN APP ─────────────────────────────────────────────────────────── */
 export default function BusNavDashboard() {
@@ -2383,7 +2846,15 @@ export default function BusNavDashboard() {
               </svg>
               {unreadCount > 0 && <span className="dot" />}
             </div>
-            <div className="avatar" title="My Profile" onClick={() => setActivePage("profile")}>AD</div>
+            
+            <div 
+              className="avatar" 
+              title="My Profile" 
+              onClick={() => setActivePage("profile")}
+              style={{ cursor: 'pointer' }}
+            >
+              AD
+            </div>
           </div>
         </div>
 

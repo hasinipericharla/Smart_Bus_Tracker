@@ -1083,7 +1083,15 @@ const getInitials = (name) =>
           <div className="topbar-right">
             <div className="topbar-time">{clock}</div>
             <div className="badge-notif" onClick={() => setActivePage('notifications')}><IconBellTop/>{unreadCount > 0 && <span className="dot"/>}</div>
-            <div className="avatar">{getInitials(studentName)}</div>
+            <div
+              className="avatar"
+              title="My Profile"
+              onClick={() => setActivePage('profile')}
+              style={{ cursor: 'pointer' }}
+            >
+              {getInitials(studentName)}
+            </div>
+            
           </div>
         </div>
         <div className="body-wrap">

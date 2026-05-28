@@ -554,7 +554,16 @@ export default function DriverDashboard() {
           <div className="topbar-right">
             <div className="topbar-time">{clock}</div>
             {/* <div className="avatar">RK</div> */}
-            <div className="avatar">{driverInfo ? driverInfo.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() : '?'}</div>
+            <div
+              className="avatar"
+              title="My Profile"
+              onClick={() => setActivePage('profile')}
+              style={{ cursor: 'pointer' }}
+            >
+              {driverInfo
+                ? driverInfo.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+                : '?'}
+            </div>
           </div>
         </div>
         <div className="body-wrap">

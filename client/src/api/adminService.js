@@ -56,3 +56,6 @@ export const getTrips   = (date, busId) => {
 export const createTrip = (body)    => request('/admin/trips', { method: 'POST', body });
 export const updateTrip = (id, body)=> request(`/admin/trips/${id}`, { method: 'PUT', body });
 export const deleteTrip = (id)      => request(`/admin/trips/${id}`, { method: 'DELETE' });
+
+export const getAdminProfile = () => request('/admin/profile');
+export const updateAdminProfile = (body) => request('/admin/profile', { method: 'PUT', body });
