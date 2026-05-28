@@ -23,6 +23,15 @@ const adminSchema = new mongoose.Schema(
       minlength: [6, 'Password must be at least 6 characters'],
       select: false, // Don't return password by default
     },
+    phone: {
+      type: String,
+      trim: true,
+    },
+    department: {
+      type: String,
+      trim: true,
+    },
+
     isVerified: {
       type: Boolean,
       default: false,

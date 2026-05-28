@@ -57,5 +57,45 @@ export const createTrip = (body)    => request('/admin/trips', { method: 'POST',
 export const updateTrip = (id, body)=> request(`/admin/trips/${id}`, { method: 'PUT', body });
 export const deleteTrip = (id)      => request(`/admin/trips/${id}`, { method: 'DELETE' });
 
-export const getAdminProfile = () => request('/admin/profile');
-export const updateAdminProfile = (body) => request('/admin/profile', { method: 'PUT', body });
+//export const getAdminProfile = () => request('/admin/profile');
+//export const updateAdminProfile = (body) => request('/admin/profile', { method: 'PUT', body });
+
+
+
+// GET ADMIN PROFILE
+export const getAdminProfile = async () => {
+  try {
+    const response = await fetch(`${BASE_URL}/admin/auth/profile`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+      },
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Failed to fetch profile');
+    return data;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+// UPDATE ADMIN PROFILE
+export const updateAdminProfile = async (body) => {
+  try {
+    const response = await fetch(`${BASE_URL}/admin/auth/profile`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+      },
+      body: JSON.stringify(body),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Failed to update profile');
+    return data;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
