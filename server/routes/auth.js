@@ -124,4 +124,40 @@ router.put('/profile', protect, async (req, res) => {
 });
 // ====== END OF NEW ENDPOINTS ======
 
+
+// CHANGE PASSWORD
+router.put('/change-password', protect, async (req, res) => {
+  try {
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({ success: false, message: 'All fields are required.' });
+    }
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ success: false, message: 'New passwords do not match.' });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters.' });
+    }
+
+    const admin = await Admin.findById(req.admin._id).select('+password');
+    if (!admin) {
+      return res.status(404).json({ success: false, message: 'Admin not found.' });
+    }
+
+    const isMatch = await admin.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: 'Current password is incorrect.' });
+    }
+
+    admin.password = newPassword;
+    await admin.save();
+
+    res.json({ success: true, message: 'Password changed successfully.' });
+  } catch (err) {
+    console.error('Change password error:', err);
+    res.status(500).json({ success: false, message: 'Failed to change password.' });
+  }
+});
+
 module.exports = router;

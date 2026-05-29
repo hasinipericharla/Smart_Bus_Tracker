@@ -99,3 +99,42 @@ export const updateAdminProfile = async (body) => {
   }
 };
 
+// CHANGE PASSWORD
+// export const changeAdminPassword = async (body) => {
+//   try {
+//     //const response = await fetch(`${BASE_URL}/admin/change-password`, {
+//     // CORRECT:
+//     const response = await fetch(`${BASE_URL}/admin/change-password`, {
+//       method: 'PUT',
+//       headers: {
+//         'Content-Type': 'application/json',
+//         'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+//       },
+//       body: JSON.stringify(body),
+//     });
+//     const data = await response.json();
+//     if (!response.ok) throw new Error(data.message || 'Failed to change password');
+//     return data;
+//   } catch (err) {
+//     throw new Error(err.message);
+//   }
+// };
+
+// CHANGE PASSWORD
+export const changeAdminPassword = async (body) => {
+  try {
+    const response = await fetch(`${BASE_URL}/admin/auth/change-password`, {  // ← /auth/ added
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+      },
+      body: JSON.stringify(body),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Failed to change password');
+    return data;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};

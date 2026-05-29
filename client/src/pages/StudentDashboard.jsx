@@ -982,6 +982,7 @@ function PageProfile({ navigate, studentName, myInfo }) {
     parentContact: '',
   });
   const [pwdForm, setPwdForm] = useState({ current: '', newPwd: '', confirm: '' });
+  const [showPwd, setShowPwd] = useState({ current: false, newPwd: false, confirm: false });
   const [pwdError, setPwdError] = useState('');
   const [toast2, setToast2] = useState('');
   const [pwdLoading, setPwdLoading] = useState(false);
@@ -1245,15 +1246,22 @@ function PageProfile({ navigate, studentName, myInfo }) {
             {[['current', 'Current Password'], ['newPwd', 'New Password'], ['confirm', 'Confirm New Password']].map(([field, label]) => (
               <div key={field} style={{ marginBottom: 14 }}>
                 <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: .5, marginBottom: 5 }}>{label}</div>
-                <input
-                  type="password"
-                  style={{ ...inputStyle, background: '#f8fafc', cursor: 'text' }}
-                  value={pwdForm[field]}
-                  onChange={e => setPwdForm(f => ({ ...f, [field]: e.target.value }))}
-                  placeholder={label}
-                  onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-                  onBlur={e => e.target.style.borderColor = 'var(--border)'}
-                />
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showPwd[field] ? 'text' : 'password'}
+                    style={{ ...inputStyle, background: '#f8fafc', cursor: 'text', paddingRight: 38 }}
+                    value={pwdForm[field]}
+                    onChange={e => setPwdForm(f => ({ ...f, [field]: e.target.value }))}
+                    placeholder={label}
+                    onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+                    onBlur={e => e.target.style.borderColor = 'var(--border)'}
+                  />
+                  <button type="button" onClick={() => setShowPwd(p => ({ ...p, [field]: !p[field] }))}
+                    style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                      background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 16 }}>
+                    {showPwd[field] ? '🙈' : '👁'}
+                  </button>
+                </div>
               </div>
             ))}
             {pwdError && <div style={{ fontSize: 12, color: 'var(--red)', marginBottom: 12, padding: '8px 12px', background: 'rgba(220,38,38,.08)', borderRadius: 8 }}>⚠️ {pwdError}</div>}

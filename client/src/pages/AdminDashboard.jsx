@@ -3,7 +3,7 @@ import {
   getBuses, createBus, updateBus, deleteBus,
   getRoutes, createRoute, updateRoute, deleteRoute,
   getAdminDrivers, createAdminDriver, updateAdminDriver, deleteAdminDriver,
-  getTrips, getAdminProfile, updateAdminProfile,
+  getTrips, getAdminProfile, updateAdminProfile, changeAdminPassword,
 } from '../api/adminService';
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -2486,13 +2486,113 @@ function PageAnalytics() {
 //   );
 // }
 
+function ModalChangePassword({ onClose, showToast }) {
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword]         = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [saving, setSaving]   = useState(false);
+  const [error, setError]     = useState('');
+  const [showCurrent, setShowCurrent] = useState(false);   // ← add
+  const [showNew, setShowNew]         = useState(false);   // ← add
+  const [showConfirm, setShowConfirm] = useState(false);   // ← add
+
+  const handleSubmit = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setError('All fields are required.'); return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError('New passwords do not match.'); return;
+    }
+    if (newPassword.length < 6) {
+      setError('Password must be at least 6 characters.'); return;
+    }
+    setSaving(true); setError('');
+    try {
+      await changeAdminPassword({ currentPassword, newPassword, confirmPassword });
+      showToast('Password changed successfully!');
+      onClose();
+    } catch (err) {
+      setError(err.message);
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal">
+        <button className="close-btn" onClick={onClose}>×</button>
+        <h3>🔒 Change Password</h3>
+        <p style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 18 }}>
+          Enter your current and new password below.
+        </p>
+
+        {error && (
+          <div style={{ background: '#fff0f0', border: '1px solid #fcc', borderRadius: 8, padding: '8px 12px', fontSize: 12.5, color: '#c00', marginBottom: 12 }}>
+            ⚠️ {error}
+          </div>
+        )}
+        <div className="form-row">
+          <label className="form-label">Current Password</label>
+          <div style={{ position: 'relative' }}>
+            <input className="form-input" type={showCurrent ? 'text' : 'password'}
+              placeholder="Current Password" value={currentPassword}
+              onChange={e => setCurrentPassword(e.target.value)}
+              style={{ paddingRight: 38 }} />
+            <button type="button" onClick={() => setShowCurrent(p => !p)}
+              style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)',
+                background:'none', border:'none', cursor:'pointer', color:'var(--muted)', fontSize:16 }}>
+              {showCurrent ? '🙈' : '👁'}
+            </button>
+          </div>
+        </div>
+
+        <div className="form-row">
+          <label className="form-label">New Password</label>
+          <div style={{ position: 'relative' }}>
+            <input className="form-input" type={showNew ? 'text' : 'password'}
+              placeholder="New Password" value={newPassword}
+              onChange={e => setNewPassword(e.target.value)}
+              style={{ paddingRight: 38 }} />
+            <button type="button" onClick={() => setShowNew(p => !p)}
+              style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)',
+                background:'none', border:'none', cursor:'pointer', color:'var(--muted)', fontSize:16 }}>
+              {showNew ? '🙈' : '👁'}
+            </button>
+          </div>
+        </div>
+
+        <div className="form-row">
+          <label className="form-label">Confirm New Password</label>
+          <div style={{ position: 'relative' }}>
+            <input className="form-input" type={showConfirm ? 'text' : 'password'}
+              placeholder="Confirm New Password" value={confirmPassword}
+              onChange={e => setConfirmPassword(e.target.value)}
+              style={{ paddingRight: 38 }} />
+            <button type="button" onClick={() => setShowConfirm(p => !p)}
+              style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)',
+                background:'none', border:'none', cursor:'pointer', color:'var(--muted)', fontSize:16 }}>
+              {showConfirm ? '🙈' : '👁'}
+            </button>
+          </div>
+        </div>
+
+        <div className="modal-actions">
+          <button className="btn-cancel" onClick={onClose} disabled={saving}>Cancel</button>
+          <button className="btn-save" onClick={handleSubmit} disabled={saving}>
+            {saving ? 'Updating…' : 'Update Password'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PageProfile({ showToast }) {
+  const [showChangePwd, setShowChangePwd] = useState(false);
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [dept, setDept] = useState("");
+  const [email, setEmail] = useState(""); 
   const [adminId, setAdminId] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -2508,8 +2608,8 @@ function PageProfile({ showToast }) {
           setAdminId(data.admin._id);
           setName(data.admin.name || "");
           setEmail(data.admin.email || "");
-          setPhone(data.admin.phone || "");
-          setDept(data.admin.department || "");
+          //setPhone(data.admin.phone || "");
+          //setDept(data.admin.department || "");
         }
       } catch (err) {
         console.error('Failed to load admin profile:', err);
@@ -2536,8 +2636,8 @@ function PageProfile({ showToast }) {
       await updateAdminProfile({
         name,
         email,
-        phone,
-        department: dept,
+        //phone,
+        //department: dept,
       });
       
       setEditing(false);
@@ -2644,37 +2744,16 @@ function PageProfile({ showToast }) {
                   <div className="field-val">{email || '—'}</div>
                 )}
               </div>
-              <div className="profile-field">
-                <label>Phone</label>
-                {editing ? (
-                  <input 
-                    className="form-input"
-                    value={phone} 
-                    onChange={e => setPhone(e.target.value)} 
-                  />
-                ) : (
-                  <div className="field-val">{phone || '—'}</div>
-                )}
-              </div>
-              <div className="profile-field">
-                <label>Department</label>
-                {editing ? (
-                  <input 
-                    className="form-input"
-                    value={dept} 
-                    onChange={e => setDept(e.target.value)} 
-                  />
-                ) : (
-                  <div className="field-val">{dept || '—'}</div>
-                )}
-              </div>
             </div>
           </div>
           <div className="profile-section" style={{ borderTop: "1px solid var(--border)" }}>
             <div className="profile-section-title">Security</div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0" }}>
               <div><div style={{ fontSize: 13, fontWeight: 600 }}>Password</div><div style={{ fontSize: 11.5, color: "var(--muted)" }}>Last changed 3 months ago</div></div>
-              <button className="fab-btn fab-secondary" style={{ padding: "6px 14px", fontSize: 12 }}>Change Password</button>
+              <button className="fab-btn fab-secondary" style={{ padding: "6px 14px", fontSize: 12 }}
+                onClick={() => setShowChangePwd(true)}>
+                Change Password
+              </button>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0" }}>
               <div><div style={{ fontSize: 13, fontWeight: 600 }}>Two-Factor Authentication</div><div style={{ fontSize: 11.5, color: "var(--muted)" }}>Protect your account with 2FA</div></div>
@@ -2694,6 +2773,12 @@ function PageProfile({ showToast }) {
           </div>
         </div>
       </div>
+        {showChangePwd && (
+          <ModalChangePassword
+            onClose={() => setShowChangePwd(false)}
+            showToast={showToast}
+          />
+        )}
     </div>
   );
 }
