@@ -21,3 +21,8 @@ export const getMyRoutes     = ()   => request('/student/routes');
 export const getNotifications = ()  => request('/student/notifications');
 export const markNotifRead   = (id) =>
   request(`/student/notifications/${id}/read`, { method: 'PATCH' });
+export const changePassword = (currentPassword, newPassword) =>
+  request('/student/change-password', {
+    method: 'PATCH',
+    body: { currentPassword, newPassword },
+  });

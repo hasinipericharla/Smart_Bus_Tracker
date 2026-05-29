@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getMyInfo } from '../api/studentService';
 import { clearStudentSession } from './StudentLogin';
 import { getMyRoutes } from '../api/studentService';
+import { changePassword } from '../api/studentService';
 
 const css = `
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Mono:wght@400;500&display=swap');
@@ -881,7 +882,126 @@ function PageFavorites({ favs, toggleFav, showToast }) {
 }
 
 // ─────────────────────────── PAGE PROFILE ────────────────────────────────────
+// function PageProfile({ navigate, studentName, myInfo }) {
+//   const initials = typeof studentName === 'string' && studentName.trim()
+//     ? studentName.trim().split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+//     : '??';
+
+//   const route       = myInfo?.assignedRoute;
+//   const pickupStop  = myInfo?.pickupStop    || '—';
+//   const rollNo      = myInfo?.rollNo        || '—';
+//   const className   = myInfo?.className     || '—';
+//   const parentPhone = myInfo?.parentContact || '—';
+//   return (
+//     // <div className="page">
+//     //   <div className="page-header">
+//     //     <div><div className="page-title">My Profile</div><div className="page-subtitle">Student account details</div></div>
+//     //   </div>
+//     //   <div style={{display:'grid',gridTemplateColumns:'280px 1fr',gap:14}}>
+//     //     {/* Left: profile card */}
+//     //     <div className="profile-card">
+//     //       <div className="profile-avatar">AR</div>
+//     //       <div className="profile-name">Aryan Reddy</div>
+//     //       <div className="profile-id">STU2024001</div>
+//     //       <span className="status-pill sp-green">Active</span>
+//     //       {[['Class','10-A'],['Route','Route A'],['Pickup Stop','City Park'],['Bus','KA-01-B'],['Driver','R. Kumar'],['Parent Contact','+91 98765 43210']].map(([k,v]) => (
+//     //         <div key={k} className="profile-row"><span className="profile-key">{k}</span><span className="profile-val">{v}</span></div>
+//     //       ))}
+//     //       <button className="fab-btn fab-secondary" style={{width:'100%',justifyContent:'center',marginTop:6}} onClick={() => { clearStudentSession(); navigate('/student/login'); }}>← Logout</button>
+//     //     </div>
+//     <div className="page">
+//       <div className="page-header">
+//         <div><div className="page-title">My Profile</div>
+//         <div className="page-subtitle">Student account details</div></div>
+//       </div>
+//       <div style={{display:'grid',gridTemplateColumns:'280px 1fr',gap:14}}>
+//         <div className="profile-card">
+//           <div className="profile-avatar">{initials}</div>
+//           <div className="profile-name">{studentName || '—'}</div>
+//           <div className="profile-id">{rollNo}</div>
+//           <span className="status-pill sp-green">Active</span>
+//           {/* {[
+//             ['Class',          className],
+//             ['Route',          route ? `${route.routeId} — ${route.name}` : '—'],
+//             ['Pickup Stop',    pickupStop],
+//             ['Parent Contact', parentPhone],
+//           ].map(([k,v]) => (
+//             <div key={k} className="profile-row">
+//               <span className="profile-key">{k}</span>
+//               <span className="profile-val">{v}</span>
+//             </div>
+//           ))} */}
+//           {[
+//   ['Class',          String(className   || '—')],
+//   ['Route',          route ? `${route.routeId || '—'} — ${route.name || '—'}` : '—'],
+//   ['Pickup Stop',    String(pickupStop  || '—')],
+//   ['Parent Contact', String(parentPhone || '—')],
+// ].map(([k, v]) => (
+//   <div key={k} className="profile-row">
+//     <span className="profile-key">{k}</span>
+//     <span className="profile-val">{v}</span>
+//   </div>
+// ))}
+//           <button className="fab-btn fab-secondary"
+//             style={{width:'100%',justifyContent:'center',marginTop:6}}
+//             onClick={() => { clearStudentSession(); navigate('/student/login'); }}>
+//             ← Logout
+//           </button>
+//         </div>
+//         {/* Right: week trips below details */}
+//         <div style={{display:'flex',flexDirection:'column',gap:14}}>
+//           <div className="card">
+//             <div className="card-header"><span className="card-title">This Week's Trips</span></div>
+//             <table className="data-table">
+//               <thead><tr><th>Date</th><th>Route</th><th>Pickup</th><th>Status</th></tr></thead>
+//               <tbody>
+//                 {[['Apr 19','Route A','07:22 AM','sp-green','On Time'],
+//                   ['Apr 18','Route A','07:25 AM','sp-amber','Delayed +3'],
+//                   ['Apr 17','Route A','07:22 AM','sp-green','On Time'],
+//                   ['Apr 16','Route A','07:20 AM','sp-green','On Time'],
+//                   ['Apr 15','Route A','07:22 AM','sp-green','On Time']].map(([d,r,t,sc,st])=>(
+//                   <tr key={d}><td style={{fontFamily:"'DM Mono',monospace",fontSize:11}}>{d}</td><td>{r}</td><td style={{fontFamily:"'DM Mono',monospace",fontSize:11}}>{t}</td><td><span className={`status-pill ${sc}`}>{st}</span></td></tr>
+//                 ))}
+//               </tbody>
+//             </table>
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+// ─────────────────────────── PAGE PROFILE ────────────────────────────────────
 function PageProfile({ navigate, studentName, myInfo }) {
+  const [editMode, setEditMode] = useState(false);
+  const [showPwdModal, setShowPwdModal] = useState(false);
+  const [twoFAEnabled, setTwoFAEnabled] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    parentContact: '',
+  });
+  const [pwdForm, setPwdForm] = useState({ current: '', newPwd: '', confirm: '' });
+  const [pwdError, setPwdError] = useState('');
+  const [toast2, setToast2] = useState('');
+  const [pwdLoading, setPwdLoading] = useState(false);
+
+  useEffect(() => {
+    if (myInfo) {
+      setEditForm({
+        name: myInfo.name || '',
+        phone: myInfo.phone || '',
+        email: myInfo.email || '',
+        parentContact: myInfo.parentContact || '',
+      });
+    }
+  }, [myInfo]);
+
+  const showLocalToast = (msg) => {
+    setToast2(msg);
+    setTimeout(() => setToast2(''), 2500);
+  };
+
   const initials = typeof studentName === 'string' && studentName.trim()
     ? studentName.trim().split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
     : '??';
@@ -891,81 +1011,267 @@ function PageProfile({ navigate, studentName, myInfo }) {
   const rollNo      = myInfo?.rollNo        || '—';
   const className   = myInfo?.className     || '—';
   const parentPhone = myInfo?.parentContact || '—';
+
+  const handleSaveProfile = () => {
+    // In real app: call API to update profile
+    setEditMode(false);
+    showLocalToast('✅ Profile updated successfully');
+  };
+
+  // const handleChangePassword = () => {
+  //   if (!pwdForm.current) { setPwdError('Enter your current password'); return; }
+  //   if (pwdForm.newPwd.length < 6) { setPwdError('New password must be at least 6 characters'); return; }
+  //   if (pwdForm.newPwd !== pwdForm.confirm) { setPwdError('Passwords do not match'); return; }
+  //   setPwdError('');
+  //   setShowPwdModal(false);
+  //   setPwdForm({ current: '', newPwd: '', confirm: '' });
+  //   showLocalToast('🔐 Password changed successfully');
+  // };
+  const handleChangePassword = async () => {
+  if (!pwdForm.current)          { setPwdError('Enter your current password'); return; }
+  if (pwdForm.newPwd.length < 6) { setPwdError('New password must be at least 6 characters'); return; }
+  if (pwdForm.newPwd !== pwdForm.confirm) { setPwdError('Passwords do not match'); return; }
+
+  setPwdLoading(true);  // add: const [pwdLoading, setPwdLoading] = useState(false);
+  setPwdError('');
+
+  try {
+    await changePassword(pwdForm.current, pwdForm.newPwd);
+    setShowPwdModal(false);
+    setPwdForm({ current: '', newPwd: '', confirm: '' });
+    showLocalToast('🔐 Password changed successfully');
+  } catch (err) {
+    setPwdError(err.message || 'Failed to change password');
+  } finally {
+    setPwdLoading(false);
+  }
+};
+
+  const inputStyle = {
+    width: '100%', padding: '9px 12px', border: '1.5px solid var(--border)',
+    borderRadius: 9, fontSize: 13, fontFamily: "'DM Sans',sans-serif",
+    color: 'var(--text)', background: editMode ? '#fff' : '#f8fafc',
+    outline: 'none', boxSizing: 'border-box',
+    transition: 'border-color .15s',
+    cursor: editMode ? 'text' : 'default',
+  };
+
   return (
-    // <div className="page">
-    //   <div className="page-header">
-    //     <div><div className="page-title">My Profile</div><div className="page-subtitle">Student account details</div></div>
-    //   </div>
-    //   <div style={{display:'grid',gridTemplateColumns:'280px 1fr',gap:14}}>
-    //     {/* Left: profile card */}
-    //     <div className="profile-card">
-    //       <div className="profile-avatar">AR</div>
-    //       <div className="profile-name">Aryan Reddy</div>
-    //       <div className="profile-id">STU2024001</div>
-    //       <span className="status-pill sp-green">Active</span>
-    //       {[['Class','10-A'],['Route','Route A'],['Pickup Stop','City Park'],['Bus','KA-01-B'],['Driver','R. Kumar'],['Parent Contact','+91 98765 43210']].map(([k,v]) => (
-    //         <div key={k} className="profile-row"><span className="profile-key">{k}</span><span className="profile-val">{v}</span></div>
-    //       ))}
-    //       <button className="fab-btn fab-secondary" style={{width:'100%',justifyContent:'center',marginTop:6}} onClick={() => { clearStudentSession(); navigate('/student/login'); }}>← Logout</button>
-    //     </div>
     <div className="page">
+      {toast2 && (
+        <div className="toast" style={{ background: 'var(--green)' }}>{toast2}</div>
+      )}
+
       <div className="page-header">
-        <div><div className="page-title">My Profile</div>
-        <div className="page-subtitle">Student account details</div></div>
-      </div>
-      <div style={{display:'grid',gridTemplateColumns:'280px 1fr',gap:14}}>
-        <div className="profile-card">
-          <div className="profile-avatar">{initials}</div>
-          <div className="profile-name">{studentName || '—'}</div>
-          <div className="profile-id">{rollNo}</div>
-          <span className="status-pill sp-green">Active</span>
-          {/* {[
-            ['Class',          className],
-            ['Route',          route ? `${route.routeId} — ${route.name}` : '—'],
-            ['Pickup Stop',    pickupStop],
-            ['Parent Contact', parentPhone],
-          ].map(([k,v]) => (
-            <div key={k} className="profile-row">
-              <span className="profile-key">{k}</span>
-              <span className="profile-val">{v}</span>
-            </div>
-          ))} */}
-          {[
-  ['Class',          String(className   || '—')],
-  ['Route',          route ? `${route.routeId || '—'} — ${route.name || '—'}` : '—'],
-  ['Pickup Stop',    String(pickupStop  || '—')],
-  ['Parent Contact', String(parentPhone || '—')],
-].map(([k, v]) => (
-  <div key={k} className="profile-row">
-    <span className="profile-key">{k}</span>
-    <span className="profile-val">{v}</span>
-  </div>
-))}
-          <button className="fab-btn fab-secondary"
-            style={{width:'100%',justifyContent:'center',marginTop:6}}
-            onClick={() => { clearStudentSession(); navigate('/student/login'); }}>
-            ← Logout
-          </button>
+        <div>
+          <div className="page-title">My Profile</div>
+          <div className="page-subtitle">Manage your account and preferences</div>
         </div>
-        {/* Right: week trips below details */}
-        <div style={{display:'flex',flexDirection:'column',gap:14}}>
-          <div className="card">
-            <div className="card-header"><span className="card-title">This Week's Trips</span></div>
-            <table className="data-table">
-              <thead><tr><th>Date</th><th>Route</th><th>Pickup</th><th>Status</th></tr></thead>
-              <tbody>
-                {[['Apr 19','Route A','07:22 AM','sp-green','On Time'],
-                  ['Apr 18','Route A','07:25 AM','sp-amber','Delayed +3'],
-                  ['Apr 17','Route A','07:22 AM','sp-green','On Time'],
-                  ['Apr 16','Route A','07:20 AM','sp-green','On Time'],
-                  ['Apr 15','Route A','07:22 AM','sp-green','On Time']].map(([d,r,t,sc,st])=>(
-                  <tr key={d}><td style={{fontFamily:"'DM Mono',monospace",fontSize:11}}>{d}</td><td>{r}</td><td style={{fontFamily:"'DM Mono',monospace",fontSize:11}}>{t}</td><td><span className={`status-pill ${sc}`}>{st}</span></td></tr>
-                ))}
-              </tbody>
-            </table>
+        {!editMode ? (
+          <button className="fab-btn fab-primary" onClick={() => setEditMode(true)}>
+            ✏️ Edit Profile
+          </button>
+        ) : (
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="fab-btn fab-secondary" onClick={() => setEditMode(false)}>✕ Cancel</button>
+            <button className="fab-btn fab-primary" onClick={handleSaveProfile}>✓ Save Changes</button>
+          </div>
+        )}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 14 }}>
+        {/* Left: profile card */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div className="profile-card">
+            <div className="profile-avatar">{initials}</div>
+            <div className="profile-name">{studentName || '—'}</div>
+            <div className="profile-id">{rollNo}</div>
+            <span className="status-pill sp-green">Active</span>
+            {/* Stats row like admin */}
+            <div style={{ display: 'flex', gap: 0, width: '100%', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border)', marginTop: 4 }}>
+              {[['2', 'TRIPS / DAY'], ['5', 'DAYS / WK'], ['1', 'ROUTE']].map(([val, label], i) => (
+                <div key={label} style={{
+                  flex: 1, textAlign: 'center', padding: '10px 4px',
+                  borderRight: i < 2 ? '1px solid var(--border)' : 'none',
+                  background: '#f8fafc'
+                }}>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)' }}>{val}</div>
+                  <div style={{ fontSize: 9, color: 'var(--muted)', fontWeight: 700, letterSpacing: .5, marginTop: 2 }}>{label}</div>
+                </div>
+              ))}
+            </div>
+            {/* Meta info */}
+            <div style={{ width: '100%', fontSize: 12.5, color: 'var(--muted)' }}>
+              {[
+                ['Enrolled', 'Jan 2024'],
+                ['Last Login', 'Today'],
+                ['Sessions', 'Active'],
+              ].map(([k, v]) => (
+                <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid var(--border)' }}>
+                  <span>{k}</span><span style={{ fontWeight: 600, color: 'var(--text)' }}>{v}</span>
+                </div>
+              ))}
+            </div>
+            <button className="fab-btn fab-secondary"
+              style={{ width: '100%', justifyContent: 'center', marginTop: 6 }}
+              onClick={() => { clearStudentSession(); navigate('/student/login'); }}>
+              ← Logout
+            </button>
           </div>
         </div>
+
+        {/* Right: details + security */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+          {/* Personal Information */}
+          <div className="card">
+            <div className="card-header">
+              <span className="card-title">Personal Information</span>
+            </div>
+            <div style={{ padding: '18px 20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                {[
+                  ['Full Name', 'name', editForm.name || studentName || ''],
+                  ['Roll Number', null, rollNo],
+                  ['Phone', 'phone', editForm.phone],
+                  ['Class', null, className],
+                  ['Parent Contact', 'parentContact', editForm.parentContact],
+                  ['Route', null, route ? `${route.routeId} — ${route.name}` : '—'],
+                  ['Pickup Stop', null, pickupStop],
+                  ['Email', 'email', editForm.email],
+                ].map(([label, field, val]) => (
+                  <div key={label}>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: .5, marginBottom: 6 }}>
+                      {label}
+                    </div>
+                    {field && editMode ? (
+                      <input
+                        style={inputStyle}
+                        value={editForm[field]}
+                        onChange={e => setEditForm(f => ({ ...f, [field]: e.target.value }))}
+                        placeholder={label}
+                        onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+                        onBlur={e => e.target.style.borderColor = 'var(--border)'}
+                      />
+                    ) : (
+                      <div style={{
+                        padding: '9px 12px', background: '#f8fafc',
+                        border: '1.5px solid var(--border)', borderRadius: 9,
+                        fontSize: 13, fontWeight: field ? 400 : 600,
+                        color: val && val !== '—' ? 'var(--text)' : 'var(--muted)'
+                      }}>
+                        {val || '—'}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Security */}
+          <div className="card">
+            <div className="card-header">
+              <span className="card-title">Security</span>
+            </div>
+            <div style={{ padding: '6px 0' }}>
+              {/* Change Password Row */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
+                <div>
+                  <div style={{ fontSize: 13.5, fontWeight: 600 }}>Password</div>
+                  <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>Last changed 3 months ago</div>
+                </div>
+                <button className="fab-btn fab-secondary" onClick={() => setShowPwdModal(true)}>
+                  Change Password
+                </button>
+              </div>
+              {/* 2FA Row */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px' }}>
+                <div>
+                  <div style={{ fontSize: 13.5, fontWeight: 600 }}>Two-Factor Authentication</div>
+                  <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>Protect your account with 2FA</div>
+                </div>
+                <button
+                  onClick={() => { setTwoFAEnabled(v => !v); showLocalToast(twoFAEnabled ? '2FA disabled' : '🔐 2FA enabled'); }}
+                  style={{
+                    padding: '6px 16px', borderRadius: 20, fontSize: 12.5, fontWeight: 700,
+                    cursor: 'pointer', border: 'none', fontFamily: "'DM Sans',sans-serif",
+                    background: twoFAEnabled ? 'rgba(22,163,74,.15)' : '#f1f5f9',
+                    color: twoFAEnabled ? 'var(--green)' : 'var(--muted)',
+                    transition: 'all .2s',
+                  }}
+                >
+                  {twoFAEnabled ? '✓ Enabled' : 'Enable'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Recent Activity */}
+          <div className="card">
+            <div className="card-header"><span className="card-title">Recent Activity</span></div>
+            <div style={{ padding: '6px 0' }}>
+              {[
+                { color: 'var(--green)', text: 'Boarded bus KA-01-B at City Park', time: 'Today, 07:22 AM' },
+                { color: 'var(--accent)', text: 'Evening drop completed at City Park', time: 'Yesterday, 05:22 PM' },
+                { color: 'var(--blue)', text: 'Route schedule viewed', time: 'Yesterday, 06:45 AM' },
+              ].map((a, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '11px 20px', borderBottom: i < 2 ? '1px solid var(--border)' : 'none' }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: a.color, marginTop: 4, flexShrink: 0 }} />
+                  <div>
+                    <div style={{ fontSize: 13, color: 'var(--text)' }}>{a.text}</div>
+                    <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2, fontFamily: "'DM Mono',monospace" }}>{a.time}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
       </div>
+
+      {/* Change Password Modal */}
+      {showPwdModal && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: 16, padding: 28, width: 400,
+            boxShadow: '0 20px 60px rgba(0,0,0,.2)', animation: 'fadeIn .2s ease'
+          }}>
+            <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>🔐 Change Password</div>
+            <div style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 20 }}>Enter your current and new password below.</div>
+            {[['current', 'Current Password'], ['newPwd', 'New Password'], ['confirm', 'Confirm New Password']].map(([field, label]) => (
+              <div key={field} style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: .5, marginBottom: 5 }}>{label}</div>
+                <input
+                  type="password"
+                  style={{ ...inputStyle, background: '#f8fafc', cursor: 'text' }}
+                  value={pwdForm[field]}
+                  onChange={e => setPwdForm(f => ({ ...f, [field]: e.target.value }))}
+                  placeholder={label}
+                  onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+                  onBlur={e => e.target.style.borderColor = 'var(--border)'}
+                />
+              </div>
+            ))}
+            {pwdError && <div style={{ fontSize: 12, color: 'var(--red)', marginBottom: 12, padding: '8px 12px', background: 'rgba(220,38,38,.08)', borderRadius: 8 }}>⚠️ {pwdError}</div>}
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 20 }}>
+              <button className="fab-btn fab-secondary" onClick={() => { setShowPwdModal(false); setPwdError(''); setPwdForm({ current: '', newPwd: '', confirm: '' }); }}>Cancel</button>
+              {/* <button className="fab-btn fab-primary" onClick={handleChangePassword}>Update Password</button> */}
+              <button
+  className="fab-btn fab-primary"
+  onClick={handleChangePassword}
+  disabled={pwdLoading}
+  style={{ opacity: pwdLoading ? .7 : 1 }}
+>
+  {pwdLoading ? 'Updating…' : 'Update Password'}
+</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
