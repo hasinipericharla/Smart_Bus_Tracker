@@ -409,13 +409,33 @@ const deleteDriver = asyncHandler(async (req, res) => {
 });
 
 // GET /api/driver/my-info — driver sees their own record
+// const getMyDriverInfo = asyncHandler(async (req, res) => {
+//   const record = await AdminDriver.findOne({ email: req.driver.email })
+//     .populate('assignedBus', 'busNumber model capacity')
+//     .populate('assignedRoute', 'routeId name stops');
+//   if (!record)
+//     return res.status(404).json({ success: false, message: 'No profile found. Contact admin.' });
+//   res.json({ success: true, driver: record });
+// });
+// GET /api/driver/my-info — driver sees their own record
 const getMyDriverInfo = asyncHandler(async (req, res) => {
   const record = await AdminDriver.findOne({ email: req.driver.email })
     .populate('assignedBus', 'busNumber model capacity')
     .populate('assignedRoute', 'routeId name stops');
+
   if (!record)
     return res.status(404).json({ success: false, message: 'No profile found. Contact admin.' });
-  res.json({ success: true, driver: record });
+
+  // Merge driverId from the auth account (Driver model)
+  const authDriver = await Driver.findById(req.driver._id).select('driverId');
+
+  res.json({
+    success: true,
+    driver: {
+      ...record.toObject(),
+      driverId: authDriver?.driverId || '—',
+    },
+  });
 });
 
 module.exports = { getAllDrivers, createDriver, updateDriver, deleteDriver, getMyDriverInfo };

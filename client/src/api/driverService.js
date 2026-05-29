@@ -21,3 +21,8 @@ export const getMyRoutes      = ()   => request('/driver/routes');
 export const getNotifications = ()   => request('/driver/notifications');
 export const markNotifRead    = (id) =>
   request(`/driver/notifications/${id}/read`, { method: 'PATCH' });
+export const changePassword = (currentPassword, newPassword) =>
+  request('/driver/change-password', {
+    method: 'PATCH',
+    body: { currentPassword, newPassword },
+  });

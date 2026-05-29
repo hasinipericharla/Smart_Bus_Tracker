@@ -352,7 +352,32 @@ const logout = asyncHandler(async (req, res) => {
     .json({ success: true, message: 'Logged out.' });
 });
 
+// ── Change Password (authenticated) ─────────────────────────────────────────
+const changeDriverPassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword)
+    return res.status(400).json({ success: false, message: 'Current and new password are required.' });
+  if (newPassword.length < 6)
+    return res.status(400).json({ success: false, message: 'New password must be at least 6 characters.' });
+  if (currentPassword === newPassword)
+    return res.status(400).json({ success: false, message: 'New password must be different from current password.' });
+
+  const driver = await Driver.findById(req.driver._id).select('+password');
+  if (!driver)
+    return res.status(404).json({ success: false, message: 'Driver not found.' });
+
+  const isMatch = await driver.comparePassword(currentPassword);
+  if (!isMatch)
+    return res.status(401).json({ success: false, message: 'Current password is incorrect.' });
+
+  driver.password = newPassword;
+  await driver.save();
+
+  res.status(200).json({ success: true, message: 'Password changed successfully.' });
+});
+
 module.exports = {
   signup, verifyEmail, resendOtp, login,
-  forgotPassword, verifyResetOtp, resetPassword, logout,
+  forgotPassword, verifyResetOtp, resetPassword, logout, changeDriverPassword,
 };
