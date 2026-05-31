@@ -13,6 +13,12 @@ const adminStudentSchema = new mongoose.Schema({
   assignedRoute: { type: mongoose.Schema.Types.ObjectId, ref: 'Route', default: null },
   pickupStop:    { type: String },
 
+  // models/AdminStudent.js — add these fields to your existing schema
+
+tripType:          { type: String, enum: ['morning', 'evening', 'both'], default: 'both' },
+morningPickupTime: { type: String, default: '' },
+eveningPickupTime: { type: String, default: '' },
+
   status: {
     type: String,
     enum: ['active', 'inactive', 'pending'],

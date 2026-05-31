@@ -874,6 +874,190 @@ function ModalRoute({ onClose, onSave, editData }) {
 
 
 
+// function ModalStudent({ onClose, onSave, editData }) {
+//   const [name, setName]                   = useState(editData?.name || '');
+//   const [email, setEmail]                 = useState(editData?.email || '');
+//   const [rollNo, setRollNo]               = useState(editData?.rollNo || '');
+//   const [className, setClassName]         = useState(editData?.className || '');
+//   const [route, setRoute]                 = useState(editData?.assignedRoute?._id || '');
+//   const [pickupStop, setPickupStop]       = useState(editData?.pickupStop || '');
+//   const [parentContact, setParentContact] = useState(editData?.parentContact || '');
+//   const [status, setStatus]               = useState(editData?.status || 'active');
+//   const [routes, setRoutes]               = useState([]);
+//   const [stops, setStops]                 = useState([]);
+//   const [saving, setSaving]               = useState(false);
+//   const [error, setError]                 = useState('');
+
+//   // Fetch routes when modal opens
+//   useEffect(() => {
+//     getRoutes().then(r => setRoutes(r.routes || [])).catch(() => {});
+//   }, []);
+
+//   // When route changes, load its stops
+//   useEffect(() => {
+//     if (!route) { setStops([]); return; }
+//     const selected = routes.find(r => r._id === route);
+//     setStops(selected?.stops || []);
+//   }, [route, routes]);
+
+//   const handleSave = async () => {
+//     if (!name || !email || !rollNo) {
+//       setError('Name, email and roll number are required.');
+//       return;
+//     }
+//     setSaving(true);
+//     setError('');
+//     try {
+//       const payload = {
+//         name,
+//         email,
+//         rollNo,
+//         className,
+//         assignedRoute:  route         || null,
+//         pickupStop,
+//         parentContact,
+//         status,
+//       };
+//       if (editData?._id) {
+//         await updateAdminStudent(editData._id, payload);
+//         onSave('Student updated successfully!');
+//       } else {
+//         await createAdminStudent(payload);
+//         onSave('Student added successfully!');
+//       }
+//     } catch (err) {
+//       setError(err.message);
+//       setSaving(false);
+//     }
+//   };
+
+//   return (
+//     <div className="modal">
+//       <button className="close-btn" onClick={onClose}>×</button>
+//       <h3>{editData ? 'Edit Student' : 'Add Student'}</h3>
+
+//       {error && (
+//         <div style={{
+//           background: '#fff0f0', border: '1px solid #fcc',
+//           borderRadius: 8, padding: '8px 12px',
+//           fontSize: 12.5, color: '#c00', marginBottom: 12
+//         }}>
+//           ⚠️ {error}
+//         </div>
+//       )}
+
+//       <div className="form-row">
+//         <label className="form-label">Full Name</label>
+//         <input
+//           className="form-input"
+//           placeholder="Student full name"
+//           value={name}
+//           onChange={e => setName(e.target.value)}
+//         />
+//       </div>
+
+//       <div className="form-row">
+//         <label className="form-label">Email</label>
+//         <input
+//           className="form-input"
+//           placeholder="student@college.edu"
+//           value={email}
+//           onChange={e => setEmail(e.target.value)}
+//         />
+//       </div>
+
+//       <div className="form-row2">
+//         <div className="form-row">
+//           <label className="form-label">Roll No.</label>
+//           <input
+//             className="form-input"
+//             placeholder="2024-XXX"
+//             value={rollNo}
+//             onChange={e => setRollNo(e.target.value)}
+//           />
+//         </div>
+//         <div className="form-row">
+//           <label className="form-label">Class / Section</label>
+//           <input
+//             className="form-input"
+//             placeholder="10-A"
+//             value={className}
+//             onChange={e => setClassName(e.target.value)}
+//           />
+//         </div>
+//       </div>
+
+//       <div className="form-row">
+//         <label className="form-label">Assign Route</label>
+//         <select
+//           className="form-input"
+//           value={route}
+//           onChange={e => setRoute(e.target.value)}
+//         >
+//           <option value="">— Select route —</option>
+//           {routes.map(r => (
+//             <option key={r._id} value={r._id}>
+//               {r.routeId} — {r.name}
+//             </option>
+//           ))}
+//         </select>
+//       </div>
+
+//       <div className="form-row">
+//         <label className="form-label">Pickup Stop</label>
+//         {stops.length > 0 ? (
+//           <select
+//             className="form-input"
+//             value={pickupStop}
+//             onChange={e => setPickupStop(e.target.value)}
+//           >
+//             <option value="">— Select stop —</option>
+//             {stops.map((s, i) => (
+//               <option key={i} value={s.name}>{s.name}</option>
+//             ))}
+//           </select>
+//         ) : (
+//           <input
+//             className="form-input"
+//             placeholder="Select a route first or type stop name"
+//             value={pickupStop}
+//             onChange={e => setPickupStop(e.target.value)}
+//           />
+//         )}
+//       </div>
+
+//       <div className="form-row">
+//         <label className="form-label">Parent Contact</label>
+//         <input
+//           className="form-input"
+//           placeholder="+91 9XXXXXXXXX"
+//           value={parentContact}
+//           onChange={e => setParentContact(e.target.value)}
+//         />
+//       </div>
+
+//       <div className="form-row">
+//         <label className="form-label">Status</label>
+//         <select
+//           className="form-input"
+//           value={status}
+//           onChange={e => setStatus(e.target.value)}
+//         >
+//           <option value="active">Active</option>
+//           <option value="pending">Pending</option>
+//           <option value="inactive">Inactive</option>
+//         </select>
+//       </div>
+
+//       <div className="modal-actions">
+//         <button className="btn-cancel" onClick={onClose}>Cancel</button>
+//         <button className="btn-save" onClick={handleSave} disabled={saving}>
+//           {saving ? 'Saving...' : editData ? 'Update Student' : 'Save Student'}
+//         </button>
+//       </div>
+//     </div>
+//   );
+// }
 function ModalStudent({ onClose, onSave, editData }) {
   const [name, setName]                   = useState(editData?.name || '');
   const [email, setEmail]                 = useState(editData?.email || '');
@@ -883,17 +1067,21 @@ function ModalStudent({ onClose, onSave, editData }) {
   const [pickupStop, setPickupStop]       = useState(editData?.pickupStop || '');
   const [parentContact, setParentContact] = useState(editData?.parentContact || '');
   const [status, setStatus]               = useState(editData?.status || 'active');
-  const [routes, setRoutes]               = useState([]);
-  const [stops, setStops]                 = useState([]);
-  const [saving, setSaving]               = useState(false);
-  const [error, setError]                 = useState('');
 
-  // Fetch routes when modal opens
+  // ── NEW FIELDS ──
+  const [tripType, setTripType]           = useState(editData?.tripType || 'both');        // morning | evening | both
+  const [morningPickupTime, setMorningPickupTime] = useState(editData?.morningPickupTime || '');
+  const [eveningPickupTime, setEveningPickupTime] = useState(editData?.eveningPickupTime || '');
+
+  const [routes, setRoutes]   = useState([]);
+  const [stops, setStops]     = useState([]);
+  const [saving, setSaving]   = useState(false);
+  const [error, setError]     = useState('');
+
   useEffect(() => {
     getRoutes().then(r => setRoutes(r.routes || [])).catch(() => {});
   }, []);
 
-  // When route changes, load its stops
   useEffect(() => {
     if (!route) { setStops([]); return; }
     const selected = routes.find(r => r._id === route);
@@ -913,10 +1101,14 @@ function ModalStudent({ onClose, onSave, editData }) {
         email,
         rollNo,
         className,
-        assignedRoute:  route         || null,
+        assignedRoute:  route || null,
         pickupStop,
         parentContact,
         status,
+        // ── NEW ──
+        tripType,
+        morningPickupTime: (tripType === 'morning' || tripType === 'both') ? morningPickupTime : '',
+        eveningPickupTime: (tripType === 'evening' || tripType === 'both') ? eveningPickupTime : '',
       };
       if (editData?._id) {
         await updateAdminStudent(editData._id, payload);
@@ -930,6 +1122,9 @@ function ModalStudent({ onClose, onSave, editData }) {
       setSaving(false);
     }
   };
+
+  const showMorning = tripType === 'morning' || tripType === 'both';
+  const showEvening = tripType === 'evening' || tripType === 'both';
 
   return (
     <div className="modal">
@@ -946,59 +1141,34 @@ function ModalStudent({ onClose, onSave, editData }) {
         </div>
       )}
 
+      {/* ── existing fields unchanged ── */}
       <div className="form-row">
         <label className="form-label">Full Name</label>
-        <input
-          className="form-input"
-          placeholder="Student full name"
-          value={name}
-          onChange={e => setName(e.target.value)}
-        />
+        <input className="form-input" placeholder="Student full name" value={name} onChange={e => setName(e.target.value)} />
       </div>
 
       <div className="form-row">
         <label className="form-label">Email</label>
-        <input
-          className="form-input"
-          placeholder="student@college.edu"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-        />
+        <input className="form-input" placeholder="student@college.edu" value={email} onChange={e => setEmail(e.target.value)} />
       </div>
 
       <div className="form-row2">
         <div className="form-row">
           <label className="form-label">Roll No.</label>
-          <input
-            className="form-input"
-            placeholder="2024-XXX"
-            value={rollNo}
-            onChange={e => setRollNo(e.target.value)}
-          />
+          <input className="form-input" placeholder="2024-XXX" value={rollNo} onChange={e => setRollNo(e.target.value)} />
         </div>
         <div className="form-row">
           <label className="form-label">Class / Section</label>
-          <input
-            className="form-input"
-            placeholder="10-A"
-            value={className}
-            onChange={e => setClassName(e.target.value)}
-          />
+          <input className="form-input" placeholder="10-A" value={className} onChange={e => setClassName(e.target.value)} />
         </div>
       </div>
 
       <div className="form-row">
         <label className="form-label">Assign Route</label>
-        <select
-          className="form-input"
-          value={route}
-          onChange={e => setRoute(e.target.value)}
-        >
+        <select className="form-input" value={route} onChange={e => setRoute(e.target.value)}>
           <option value="">— Select route —</option>
           {routes.map(r => (
-            <option key={r._id} value={r._id}>
-              {r.routeId} — {r.name}
-            </option>
+            <option key={r._id} value={r._id}>{r.routeId} — {r.name}</option>
           ))}
         </select>
       </div>
@@ -1006,43 +1176,138 @@ function ModalStudent({ onClose, onSave, editData }) {
       <div className="form-row">
         <label className="form-label">Pickup Stop</label>
         {stops.length > 0 ? (
-          <select
-            className="form-input"
-            value={pickupStop}
-            onChange={e => setPickupStop(e.target.value)}
-          >
+          <select className="form-input" value={pickupStop} onChange={e => setPickupStop(e.target.value)}>
             <option value="">— Select stop —</option>
             {stops.map((s, i) => (
               <option key={i} value={s.name}>{s.name}</option>
             ))}
           </select>
         ) : (
-          <input
-            className="form-input"
-            placeholder="Select a route first or type stop name"
-            value={pickupStop}
-            onChange={e => setPickupStop(e.target.value)}
-          />
+          <input className="form-input" placeholder="Select a route first or type stop name" value={pickupStop} onChange={e => setPickupStop(e.target.value)} />
         )}
       </div>
 
+      {/* ── NEW: Trip Type ── */}
+      <div className="form-section-title" style={{ marginTop: 6 }}>Trip Schedule</div>
+
+      <div className="form-row">
+        <label className="form-label">Trip Type</label>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {[
+            { val: 'morning', label: '🌅 Morning only' },
+            { val: 'evening', label: '🌆 Evening only' },
+            { val: 'both',    label: '🔄 Both' },
+          ].map(opt => (
+            <button
+              key={opt.val}
+              type="button"
+              onClick={() => setTripType(opt.val)}
+              style={{
+                flex: 1,
+                padding: '9px 6px',
+                borderRadius: 9,
+                border: `1.5px solid ${tripType === opt.val ? 'var(--accent)' : 'var(--border)'}`,
+                background: tripType === opt.val ? 'rgba(245,166,35,.1)' : '#f8fafc',
+                color: tripType === opt.val ? 'var(--accent2)' : 'var(--muted)',
+                fontFamily: "'DM Sans',sans-serif",
+                fontSize: 12,
+                fontWeight: tripType === opt.val ? 700 : 500,
+                cursor: 'pointer',
+                transition: 'all .15s',
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Morning stop + time ── */}
+      {showMorning && (
+        <div style={{
+          background: 'rgba(245,166,35,.05)',
+          border: '1px solid rgba(245,166,35,.2)',
+          borderRadius: 10,
+          padding: '12px 14px',
+          marginBottom: 12,
+        }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent2)', textTransform: 'uppercase', letterSpacing: .5, marginBottom: 10 }}>
+            🌅 Morning Trip
+          </div>
+          <div className="form-row2">
+            <div className="form-row" style={{ marginBottom: 0 }}>
+              <label className="form-label">Pickup Stop</label>
+              {stops.length > 0 ? (
+                <select className="form-input" value={pickupStop} onChange={e => setPickupStop(e.target.value)}>
+                  <option value="">— Select stop —</option>
+                  {stops.map((s, i) => (
+                    <option key={i} value={s.name}>{s.name}</option>
+                  ))}
+                </select>
+              ) : (
+                <input className="form-input" placeholder="Stop name" value={pickupStop} onChange={e => setPickupStop(e.target.value)} />
+              )}
+            </div>
+            <div className="form-row" style={{ marginBottom: 0 }}>
+              <label className="form-label">Pickup Time</label>
+              <input
+                className="form-input"
+                type="time"
+                value={morningPickupTime}
+                onChange={e => setMorningPickupTime(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Evening stop + time ── */}
+      {showEvening && (
+        <div style={{
+          background: 'rgba(59,139,212,.05)',
+          border: '1px solid rgba(59,139,212,.2)',
+          borderRadius: 10,
+          padding: '12px 14px',
+          marginBottom: 12,
+        }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue2)', textTransform: 'uppercase', letterSpacing: .5, marginBottom: 10 }}>
+            🌆 Evening Trip
+          </div>
+          <div className="form-row2">
+            <div className="form-row" style={{ marginBottom: 0 }}>
+              <label className="form-label">Drop-off Stop</label>
+              {stops.length > 0 ? (
+                <select className="form-input" value={pickupStop} onChange={e => setPickupStop(e.target.value)}>
+                  <option value="">— Select stop —</option>
+                  {stops.map((s, i) => (
+                    <option key={i} value={s.name}>{s.name}</option>
+                  ))}
+                </select>
+              ) : (
+                <input className="form-input" placeholder="Stop name" value={pickupStop} onChange={e => setPickupStop(e.target.value)} />
+              )}
+            </div>
+            <div className="form-row" style={{ marginBottom: 0 }}>
+              <label className="form-label">Drop-off Time</label>
+              <input
+                className="form-input"
+                type="time"
+                value={eveningPickupTime}
+                onChange={e => setEveningPickupTime(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="form-row">
         <label className="form-label">Parent Contact</label>
-        <input
-          className="form-input"
-          placeholder="+91 9XXXXXXXXX"
-          value={parentContact}
-          onChange={e => setParentContact(e.target.value)}
-        />
+        <input className="form-input" placeholder="+91 9XXXXXXXXX" value={parentContact} onChange={e => setParentContact(e.target.value)} />
       </div>
 
       <div className="form-row">
         <label className="form-label">Status</label>
-        <select
-          className="form-input"
-          value={status}
-          onChange={e => setStatus(e.target.value)}
-        >
+        <select className="form-input" value={status} onChange={e => setStatus(e.target.value)}>
           <option value="active">Active</option>
           <option value="pending">Pending</option>
           <option value="inactive">Inactive</option>
@@ -1062,13 +1327,13 @@ function ModalStudent({ onClose, onSave, editData }) {
 /* ─── PAGES ─────────────────────────────────────────────────────────── */
 
 function PageDashboard({ showModal, unreadCount, onBellClick }) {
-  const [buses, setBuses] = useState([]);
-  useEffect(() => {
-  fetch("http://localhost:5000/api/admin/buses")
-    .then((res) => res.json())
-    .then((data) => setBuses(data.buses))
-    .catch((err) => console.error(err));
-}, []);
+  // const [buses, setBuses] = useState([]);
+//   useEffect(() => {
+//   fetch("http://localhost:8000/api/admin/buses")
+//     .then((res) => res.json())
+//     .then((data) => setBuses(data.buses))
+//     .catch((err) => console.error(err));
+// }, []);
   const [activePill, setActivePill] = useState("All");
   const pills = ["All", "Route A", "Route B", "Route C"];
   return (

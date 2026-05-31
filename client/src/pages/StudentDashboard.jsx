@@ -570,10 +570,226 @@ function PageTracking({ favs, toggleFav, showToast }) {
 //     </div>
 //   );
 // }
+// function PageRoutes({ favs, toggleFav, showToast }) {
+//   const [tripType, setTripType] = useState('morning');
+//   const [myInfo, setMyInfo] = useState(null);
+//   const [loading, setLoading] = useState(true);
+
+//   useEffect(() => {
+//     getMyInfo()
+//       .then(d => setMyInfo(d.student))
+//       .catch(() => setMyInfo(null))
+//       .finally(() => setLoading(false));
+//   }, []);
+
+//   const route       = myInfo?.assignedRoute;
+//   const pickupStop  = myInfo?.pickupStop || '—';
+//   const stops       = route?.stops || [];
+
+//   // Find the index of the student's pickup stop
+//   const myStopIdx = stops.findIndex(
+//     s => s.name?.toLowerCase() === pickupStop?.toLowerCase()
+//   );
+
+//   if (loading) {
+//     return (
+//       <div className="page">
+//         <div className="page-header">
+//           <div><div className="page-title">My Route</div></div>
+//         </div>
+//         <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>
+//           Loading route details…
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   if (!route) {
+//     return (
+//       <div className="page">
+//         <div className="page-header">
+//           <div>
+//             <div className="page-title">My Route</div>
+//             <div className="page-subtitle">No route assigned yet</div>
+//           </div>
+//         </div>
+//         <div className="card" style={{ padding: 40, textAlign: 'center' }}>
+//           <div style={{ fontSize: 32, marginBottom: 12 }}>🚌</div>
+//           <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--muted)' }}>Not assigned to a route</div>
+//           <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 6 }}>
+//             Contact your admin to get assigned to a bus route.
+//           </div>
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   return (
+//     <div className="page">
+//       <div className="page-header">
+//         <div>
+//           <div className="page-title">My Route</div>
+//           <div className="page-subtitle">
+//             {route.routeId} — {route.name} · {stops.length} stops
+//           </div>
+//         </div>
+//         <span className="status-pill sp-green" style={{ fontSize: 12, padding: '6px 14px' }}>
+//           Active Route
+//         </span>
+//       </div>
+
+//       {/* Trip Type Toggle */}
+//       <div style={{ display: 'flex', gap: 8 }}>
+//         {[['morning', '🌅 Morning'], ['evening', '🌆 Evening']].map(([val, label]) => (
+//           <button key={val} onClick={() => setTripType(val)}
+//             style={{
+//               padding: '8px 20px', borderRadius: 20, fontWeight: 700, fontSize: 13,
+//               cursor: 'pointer', border: 'none', fontFamily: 'DM Sans,sans-serif', transition: 'all .15s',
+//               background: tripType === val ? 'var(--accent)' : '#f1f5f9',
+//               color: tripType === val ? '#1a1a1a' : 'var(--muted)',
+//             }}
+//           >{label}</button>
+//         ))}
+//       </div>
+
+//       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+//         {/* Route Details */}
+//         <div className="card">
+//           <div className="card-header"><span className="card-title">Route Details</span></div>
+//           <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+//             {[
+//               ['Route ID',        route.routeId || '—'],
+//               ['Route Name',      route.name    || '—'],
+//               ['Description',     route.description || '—'],
+//               ['Total Stops',     stops.length],
+//               ['My Pickup Stop',  pickupStop],
+//               ['My Stop No.',     myStopIdx >= 0 ? `Stop ${myStopIdx + 1}` : '—'],
+//             ].map(([k, v]) => (
+//               <div key={k} style={{
+//                 display: 'flex', justifyContent: 'space-between', fontSize: 13,
+//                 paddingBottom: 8, borderBottom: '1px solid var(--border)'
+//               }}>
+//                 <span style={{ color: 'var(--muted)' }}>{k}</span>
+//                 <span style={{ fontWeight: 600 }}>{v}</span>
+//               </div>
+//             ))}
+//           </div>
+//         </div>
+
+//         {/* All Stops */}
+//         <div className="card">
+//           <div className="card-header">
+//             <span className="card-title">All Stops</span>
+//             <div className="ch-right">
+//               <span style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 600 }}>
+//                 {stops.length} stops · ordered
+//               </span>
+//             </div>
+//           </div>
+
+//           {stops.length === 0 ? (
+//             <div style={{ padding: '24px 18px', textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>
+//               No stops defined for this route yet.
+//             </div>
+//           ) : (
+//             <div className="stops-list" style={{ padding: 0 }}>
+//               {stops
+//                 .slice()
+//                 .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+//                 .map((stop, i) => {
+//                   const isMine = stop.name?.toLowerCase() === pickupStop?.toLowerCase();
+//                   const isFav  = favs.includes(stop._id || stop.name);
+//                   const beforeMe = i < myStopIdx;
+//                   return (
+//                     <div
+//                       key={i}
+//                       className={`stop-item ${isMine ? 'active-stop' : ''}`}
+//                       style={{ gap: 10, padding: '10px 14px' }}
+//                     >
+//                       <div
+//                         className={`stop-circle ${isMine ? 'sc-amber' : beforeMe ? 'sc-green' : 'sc-gray'}`}
+//                         style={{ width: 24, height: 24, fontSize: 9 }}
+//                       >
+//                         {stop.order ?? i + 1}
+//                       </div>
+//                       <div style={{ flex: 1, minWidth: 0 }}>
+//                         <div className="stop-name" style={{ fontSize: 12 }}>
+//                           {stop.name}
+//                           {isMine && (
+//                             <span style={{
+//                               fontSize: 9, background: 'rgba(37,99,235,.12)', color: 'var(--blue)',
+//                               padding: '1px 6px', borderRadius: 5, marginLeft: 4
+//                             }}>MY STOP</span>
+//                           )}
+//                         </div>
+//                         <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
+//                           Stop {stop.order ?? i + 1}
+//                           {stop.distance ? ` · ${stop.distance}` : ''}
+//                         </div>
+//                       </div>
+//                       <button
+//                         className="fav-btn"
+//                         style={{ fontSize: 13 }}
+//                         onClick={() => {
+//                           toggleFav(stop._id || stop.name);
+//                           showToast(isFav ? 'Removed from favorites' : '❤️ Added to favorites');
+//                         }}
+//                       >
+//                         {isFav ? '❤️' : '🤍'}
+//                       </button>
+//                     </div>
+//                   );
+//                 })}
+//             </div>
+//           )}
+//         </div>
+//       </div>
+
+//       {/* Route description card if present */}
+//       {route.description && (
+//         <div className="card" style={{ padding: '16px 20px' }}>
+//           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: .5, marginBottom: 6 }}>
+//             Route Description
+//           </div>
+//           <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.6 }}>
+//             {route.description}
+//           </div>
+//         </div>
+//       )}
+//     </div>
+//   );
+// }
+
+// // ─────────────────────────── PAGE NOTIFICATIONS ───────────────────────────────
+// function PageNotifications({ notifs, setNotifs }) {
+//   const unread = notifs.filter(n => !n.read).length;
+//   return (
+//     <div className="page">
+//       <div className="page-header">
+//         <div><div className="page-title">Notifications</div><div className="page-subtitle">{unread} unread alerts</div></div>
+//         <button className="fab-btn fab-secondary" onClick={() => setNotifs(ns => ns.map(n => ({...n, read:true})))}>✓ Mark all read</button>
+//       </div>
+//       <div className="card">
+//         <div className="notif-list">
+//           {notifs.map((n, i) => (
+//             <div key={i} className={`notif-item${n.read ? '' : ' unread'}`} onClick={() => setNotifs(ns => ns.map((x,j) => j===i ? {...x,read:true} : x))}>
+//               <div className={`notif-icon ni-${n.color}`}>{n.icon}</div>
+//               <div style={{flex:1}}>
+//                 <div className="notif-text" dangerouslySetInnerHTML={{__html:n.text}}/>
+//                 <div className="notif-time">{n.time}</div>
+//               </div>
+//               {!n.read && <div className="unread-dot"/>}
+//             </div>
+//           ))}
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
 function PageRoutes({ favs, toggleFav, showToast }) {
   const [tripType, setTripType] = useState('morning');
-  const [myInfo, setMyInfo] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [myInfo, setMyInfo]     = useState(null);
+  const [loading, setLoading]   = useState(true);
 
   useEffect(() => {
     getMyInfo()
@@ -582,88 +798,160 @@ function PageRoutes({ favs, toggleFav, showToast }) {
       .finally(() => setLoading(false));
   }, []);
 
-  const route       = myInfo?.assignedRoute;
-  const pickupStop  = myInfo?.pickupStop || '—';
-  const stops       = route?.stops || [];
+  const route      = myInfo?.assignedRoute;
+  const pickupStop = myInfo?.pickupStop || '—';
+  const stops      = route?.stops || [];
 
-  // Find the index of the student's pickup stop
+  // Trip schedule from admin-assigned fields
+  const studentTripType    = myInfo?.tripType          || 'both';
+  const morningPickupTime  = myInfo?.morningPickupTime || null;
+  const eveningPickupTime  = myInfo?.eveningPickupTime || null;
+
+  // Only show tabs the student is enrolled for
+  const availableTrips = studentTripType === 'morning' ? ['morning']
+                       : studentTripType === 'evening' ? ['evening']
+                       : ['morning', 'evening'];
+
+  // Auto-select the correct default tab
+  useEffect(() => {
+    if (studentTripType === 'evening') setTripType('evening');
+  }, [studentTripType]);
+
   const myStopIdx = stops.findIndex(
     s => s.name?.toLowerCase() === pickupStop?.toLowerCase()
   );
 
-  if (loading) {
-    return (
-      <div className="page">
-        <div className="page-header">
-          <div><div className="page-title">My Route</div></div>
-        </div>
-        <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>
-          Loading route details…
-        </div>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="page">
+      <div className="page-header"><div><div className="page-title">My Route</div></div></div>
+      <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>Loading route details…</div>
+    </div>
+  );
 
-  if (!route) {
-    return (
-      <div className="page">
-        <div className="page-header">
-          <div>
-            <div className="page-title">My Route</div>
-            <div className="page-subtitle">No route assigned yet</div>
-          </div>
-        </div>
-        <div className="card" style={{ padding: 40, textAlign: 'center' }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>🚌</div>
-          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--muted)' }}>Not assigned to a route</div>
-          <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 6 }}>
-            Contact your admin to get assigned to a bus route.
-          </div>
-        </div>
+  if (!route) return (
+    <div className="page">
+      <div className="page-header">
+        <div><div className="page-title">My Route</div><div className="page-subtitle">No route assigned yet</div></div>
       </div>
-    );
-  }
+      <div className="card" style={{ padding: 40, textAlign: 'center' }}>
+        <div style={{ fontSize: 32, marginBottom: 12 }}>🚌</div>
+        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--muted)' }}>Not assigned to a route</div>
+        <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 6 }}>Contact your admin to get assigned to a bus route.</div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="page">
       <div className="page-header">
         <div>
           <div className="page-title">My Route</div>
-          <div className="page-subtitle">
-            {route.routeId} — {route.name} · {stops.length} stops
+          <div className="page-subtitle">{route.routeId} — {route.name} · {stops.length} stops</div>
+        </div>
+        <span className="status-pill sp-green" style={{ fontSize: 12, padding: '6px 14px' }}>Active Route</span>
+      </div>
+
+      {/* ── Trip Schedule Banner ── */}
+      <div style={{
+        background: 'linear-gradient(135deg,#1e293b,#334155)',
+        borderRadius: 13, padding: '18px 22px',
+        display: 'flex', alignItems: 'center', gap: 0, flexWrap: 'wrap',
+      }}>
+        <div style={{ marginRight: 'auto' }}>
+          <div style={{ fontSize: 10, color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: .5, marginBottom: 4 }}>
+            My Pickup Stop
+          </div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: '#e2e8f0' }}>{pickupStop}</div>
+          <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
+            {route.routeId} — {route.name}
           </div>
         </div>
-        <span className="status-pill sp-green" style={{ fontSize: 12, padding: '6px 14px' }}>
-          Active Route
-        </span>
+
+        {/* Morning block */}
+        {(studentTripType === 'morning' || studentTripType === 'both') && (
+          <div style={{
+            background: 'rgba(245,166,35,.12)', border: '1px solid rgba(245,166,35,.25)',
+            borderRadius: 10, padding: '12px 20px', textAlign: 'center', marginRight: 10,
+          }}>
+            <div style={{ fontSize: 9, color: '#e8951f', fontWeight: 700, textTransform: 'uppercase', letterSpacing: .5, marginBottom: 6 }}>🌅 Morning Pickup</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: '#f5a623', fontFamily: "'DM Mono',monospace", lineHeight: 1 }}>
+              {morningPickupTime || '—'}
+            </div>
+            <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 4 }}>at {pickupStop}</div>
+          </div>
+        )}
+
+        {/* Evening block */}
+        {(studentTripType === 'evening' || studentTripType === 'both') && (
+          <div style={{
+            background: 'rgba(37,99,235,.1)', border: '1px solid rgba(37,99,235,.22)',
+            borderRadius: 10, padding: '12px 20px', textAlign: 'center',
+          }}>
+            <div style={{ fontSize: 9, color: '#2563eb', fontWeight: 700, textTransform: 'uppercase', letterSpacing: .5, marginBottom: 6 }}>🌆 Evening Drop-off</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: '#3b8bd4', fontFamily: "'DM Mono',monospace", lineHeight: 1 }}>
+              {eveningPickupTime || '—'}
+            </div>
+            <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 4 }}>at {pickupStop}</div>
+          </div>
+        )}
       </div>
 
-      {/* Trip Type Toggle */}
-      <div style={{ display: 'flex', gap: 8 }}>
-        {[['morning', '🌅 Morning'], ['evening', '🌆 Evening']].map(([val, label]) => (
-          <button key={val} onClick={() => setTripType(val)}
-            style={{
-              padding: '8px 20px', borderRadius: 20, fontWeight: 700, fontSize: 13,
-              cursor: 'pointer', border: 'none', fontFamily: 'DM Sans,sans-serif', transition: 'all .15s',
-              background: tripType === val ? 'var(--accent)' : '#f1f5f9',
-              color: tripType === val ? '#1a1a1a' : 'var(--muted)',
-            }}
-          >{label}</button>
-        ))}
-      </div>
+      {/* ── Trip Type Toggle (only show tabs student is enrolled for) ── */}
+      {studentTripType === 'both' && (
+        <div style={{ display: 'flex', gap: 8 }}>
+          {[['morning', '🌅 Morning'], ['evening', '🌆 Evening']].map(([val, label]) => (
+            <button key={val} onClick={() => setTripType(val)}
+              style={{
+                padding: '8px 20px', borderRadius: 20, fontWeight: 700, fontSize: 13,
+                cursor: 'pointer', border: 'none', fontFamily: 'DM Sans,sans-serif', transition: 'all .15s',
+                background: tripType === val ? 'var(--accent)' : '#f1f5f9',
+                color:      tripType === val ? '#1a1a1a'       : 'var(--muted)',
+              }}
+            >{label}</button>
+          ))}
+        </div>
+      )}
+
+      {/* ── Only Morning enrolled ── */}
+      {studentTripType === 'morning' && (
+        <div style={{
+          background: 'rgba(245,166,35,.06)', border: '1px solid rgba(245,166,35,.2)',
+          borderRadius: 10, padding: '10px 16px',
+          fontSize: 12.5, color: '#b86e0a', fontWeight: 600,
+        }}>
+          🌅 You are enrolled for <strong>Morning trips only</strong>. Contact admin to change.
+        </div>
+      )}
+
+      {/* ── Only Evening enrolled ── */}
+      {studentTripType === 'evening' && (
+        <div style={{
+          background: 'rgba(37,99,235,.06)', border: '1px solid rgba(37,99,235,.2)',
+          borderRadius: 10, padding: '10px 16px',
+          fontSize: 12.5, color: '#1d4ed8', fontWeight: 600,
+        }}>
+          🌆 You are enrolled for <strong>Evening trips only</strong>. Contact admin to change.
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-        {/* Route Details */}
+
+        {/* ── Route Details card ── */}
         <div className="card">
           <div className="card-header"><span className="card-title">Route Details</span></div>
           <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
             {[
-              ['Route ID',        route.routeId || '—'],
-              ['Route Name',      route.name    || '—'],
-              ['Description',     route.description || '—'],
-              ['Total Stops',     stops.length],
-              ['My Pickup Stop',  pickupStop],
-              ['My Stop No.',     myStopIdx >= 0 ? `Stop ${myStopIdx + 1}` : '—'],
+              ['Route ID',       route.routeId   || '—'],
+              ['Route Name',     route.name      || '—'],
+              ['Description',    route.description || '—'],
+              ['Total Stops',    stops.length],
+              ['My Pickup Stop', pickupStop],
+              ['My Stop No.',    myStopIdx >= 0 ? `Stop ${myStopIdx + 1}` : '—'],
+              ['Trip Schedule',  studentTripType === 'both' ? 'Morning + Evening'
+                               : studentTripType === 'morning' ? 'Morning only'
+                               : 'Evening only'],
+              ...(studentTripType !== 'evening' ? [['Morning Pickup', morningPickupTime || '—']] : []),
+              ...(studentTripType !== 'morning' ? [['Evening Drop-off', eveningPickupTime || '—']] : []),
             ].map(([k, v]) => (
               <div key={k} style={{
                 display: 'flex', justifyContent: 'space-between', fontSize: 13,
@@ -676,13 +964,13 @@ function PageRoutes({ favs, toggleFav, showToast }) {
           </div>
         </div>
 
-        {/* All Stops */}
+        {/* ── All Stops with time indicators ── */}
         <div className="card">
           <div className="card-header">
             <span className="card-title">All Stops</span>
             <div className="ch-right">
               <span style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 600 }}>
-                {stops.length} stops · ordered
+                {stops.length} stops · {tripType === 'morning' ? '🌅 Morning' : '🌆 Evening'}
               </span>
             </div>
           </div>
@@ -697,9 +985,11 @@ function PageRoutes({ favs, toggleFav, showToast }) {
                 .slice()
                 .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
                 .map((stop, i) => {
-                  const isMine = stop.name?.toLowerCase() === pickupStop?.toLowerCase();
-                  const isFav  = favs.includes(stop._id || stop.name);
-                  const beforeMe = i < myStopIdx;
+                  const isMine    = stop.name?.toLowerCase() === pickupStop?.toLowerCase();
+                  const isFav     = favs.includes(stop._id || stop.name);
+                  const beforeMe  = i < myStopIdx;
+                  const isAfterMe = i > myStopIdx;
+
                   return (
                     <div
                       key={i}
@@ -708,25 +998,56 @@ function PageRoutes({ favs, toggleFav, showToast }) {
                     >
                       <div
                         className={`stop-circle ${isMine ? 'sc-amber' : beforeMe ? 'sc-green' : 'sc-gray'}`}
-                        style={{ width: 24, height: 24, fontSize: 9 }}
+                        style={{ width: 26, height: 26, fontSize: 9, flexShrink: 0 }}
                       >
-                        {stop.order ?? i + 1}
+                        {beforeMe ? '✓' : stop.order ?? i + 1}
                       </div>
+
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div className="stop-name" style={{ fontSize: 12 }}>
+                        <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
                           {stop.name}
                           {isMine && (
                             <span style={{
                               fontSize: 9, background: 'rgba(37,99,235,.12)', color: 'var(--blue)',
-                              padding: '1px 6px', borderRadius: 5, marginLeft: 4
+                              padding: '1px 6px', borderRadius: 5,
                             }}>MY STOP</span>
                           )}
                         </div>
-                        <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
-                          Stop {stop.order ?? i + 1}
-                          {stop.distance ? ` · ${stop.distance}` : ''}
-                        </div>
+
+                        {/* Show pickup time only at the student's stop */}
+                        {isMine && (
+                          <div style={{ display: 'flex', gap: 12, marginTop: 5 }}>
+                            {(studentTripType === 'morning' || studentTripType === 'both') && (
+                              <div className="time-slot">
+                                <span className="time-slot-label">🌅 Pickup</span>
+                                <span className="time-slot-val" style={{ color: 'var(--accent2)' }}>
+                                  {morningPickupTime || '—'}
+                                </span>
+                              </div>
+                            )}
+                            {studentTripType === 'both' && (
+                              <div style={{ width: 1, background: 'var(--border)', margin: '2px 0' }} />
+                            )}
+                            {(studentTripType === 'evening' || studentTripType === 'both') && (
+                              <div className="time-slot">
+                                <span className="time-slot-label">🌆 Drop-off</span>
+                                <span className="time-slot-val" style={{ color: 'var(--blue)' }}>
+                                  {eveningPickupTime || '—'}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Other stops just show order */}
+                        {!isMine && (
+                          <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
+                            Stop {stop.order ?? i + 1}
+                            {isAfterMe ? ' · upcoming' : ' · passed'}
+                          </div>
+                        )}
                       </div>
+
                       <button
                         className="fav-btn"
                         style={{ fontSize: 13 }}
@@ -745,44 +1066,14 @@ function PageRoutes({ favs, toggleFav, showToast }) {
         </div>
       </div>
 
-      {/* Route description card if present */}
       {route.description && (
         <div className="card" style={{ padding: '16px 20px' }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: .5, marginBottom: 6 }}>
             Route Description
           </div>
-          <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.6 }}>
-            {route.description}
-          </div>
+          <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.6 }}>{route.description}</div>
         </div>
       )}
-    </div>
-  );
-}
-
-// ─────────────────────────── PAGE NOTIFICATIONS ───────────────────────────────
-function PageNotifications({ notifs, setNotifs }) {
-  const unread = notifs.filter(n => !n.read).length;
-  return (
-    <div className="page">
-      <div className="page-header">
-        <div><div className="page-title">Notifications</div><div className="page-subtitle">{unread} unread alerts</div></div>
-        <button className="fab-btn fab-secondary" onClick={() => setNotifs(ns => ns.map(n => ({...n, read:true})))}>✓ Mark all read</button>
-      </div>
-      <div className="card">
-        <div className="notif-list">
-          {notifs.map((n, i) => (
-            <div key={i} className={`notif-item${n.read ? '' : ' unread'}`} onClick={() => setNotifs(ns => ns.map((x,j) => j===i ? {...x,read:true} : x))}>
-              <div className={`notif-icon ni-${n.color}`}>{n.icon}</div>
-              <div style={{flex:1}}>
-                <div className="notif-text" dangerouslySetInnerHTML={{__html:n.text}}/>
-                <div className="notif-time">{n.time}</div>
-              </div>
-              {!n.read && <div className="unread-dot"/>}
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
