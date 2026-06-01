@@ -2760,7 +2760,7 @@ function ModalChangePassword({ onClose, showToast }) {
   const [showCurrent, setShowCurrent] = useState(false);   // ← add
   const [showNew, setShowNew]         = useState(false);   // ← add
   const [showConfirm, setShowConfirm] = useState(false);   // ← add
-
+  
   const handleSubmit = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
       setError('All fields are required.'); return;
@@ -3062,6 +3062,10 @@ export default function BusNavDashboard() {
   const [clock, setClock] = useState("");
   const [notifs, setNotifs] = useState(INITIAL_NOTIFS);
   const toastTimer = useRef(null);
+  //const [confirmConfig, setConfirmConfig] = useState(null);
+  //const requestConfirm = (config) => setConfirmConfig(config);
+
+  const [adminName, setAdminName] = useState("");
   const [confirmConfig, setConfirmConfig] = useState(null);
   const requestConfirm = (config) => setConfirmConfig(config);
 
@@ -3069,6 +3073,16 @@ export default function BusNavDashboard() {
     const tick = () => setClock(new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }));
     tick(); const t = setInterval(tick, 1000); return () => clearInterval(t);
   }, []);
+
+  useEffect(() => {
+  getAdminProfile()
+    .then(data => {
+      if (data && data.admin && data.admin.name) {
+        setAdminName(data.admin.name);
+      }
+    })
+    .catch(() => {});
+}, []);
 
   const showToast = (msg) => { setToast(msg); clearTimeout(toastTimer.current); toastTimer.current = setTimeout(() => setToast(null), 2800); };
   //const showModal = (type) => setModal(type);
@@ -3197,13 +3211,14 @@ export default function BusNavDashboard() {
               {unreadCount > 0 && <span className="dot" />}
             </div>
             
+
             <div 
               className="avatar" 
               title="My Profile" 
               onClick={() => setActivePage("profile")}
               style={{ cursor: 'pointer' }}
             >
-              AD
+              {adminName ? adminName.charAt(0).toUpperCase() : 'AD'}
             </div>
           </div>
         </div>
