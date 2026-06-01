@@ -896,21 +896,7 @@ function PageRoutes({ favs, toggleFav, showToast }) {
         )}
       </div>
 
-      {/* ── Trip Type Toggle (only show tabs student is enrolled for) ── */}
-      {studentTripType === 'both' && (
-        <div style={{ display: 'flex', gap: 8 }}>
-          {[['morning', '🌅 Morning'], ['evening', '🌆 Evening']].map(([val, label]) => (
-            <button key={val} onClick={() => setTripType(val)}
-              style={{
-                padding: '8px 20px', borderRadius: 20, fontWeight: 700, fontSize: 13,
-                cursor: 'pointer', border: 'none', fontFamily: 'DM Sans,sans-serif', transition: 'all .15s',
-                background: tripType === val ? 'var(--accent)' : '#f1f5f9',
-                color:      tripType === val ? '#1a1a1a'       : 'var(--muted)',
-              }}
-            >{label}</button>
-          ))}
-        </div>
-      )}
+  
 
       {/* ── Only Morning enrolled ── */}
       {studentTripType === 'morning' && (
