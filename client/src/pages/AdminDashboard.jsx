@@ -10,6 +10,11 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { clearSession } from './AdminLogin';
 import { useNavigate } from 'react-router-dom';
 
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { io } from 'socket.io-client';
+
 const css = `
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Mono:wght@400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -311,6 +316,8 @@ const DELETE_MODAL_CSS = `
 .confirm-delete .spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
 `;
+
+
 
 function ConfirmDeleteModal({ config, onCancel }) {
   const [deleting, setDeleting] = useState(false);
@@ -1326,7 +1333,7 @@ function ModalStudent({ onClose, onSave, editData }) {
 
 /* ─── PAGES ─────────────────────────────────────────────────────────── */
 
-function PageDashboard({ showModal, unreadCount, onBellClick }) {
+function PageDashboard({ showModal, unreadCount, onBellClick, onNavigate }) {
   // const [buses, setBuses] = useState([]);
 //   useEffect(() => {
 //   fetch("http://localhost:8000/api/admin/buses")
@@ -1334,8 +1341,8 @@ function PageDashboard({ showModal, unreadCount, onBellClick }) {
 //     .then((data) => setBuses(data.buses))
 //     .catch((err) => console.error(err));
 // }, []);
-  const [activePill, setActivePill] = useState("All");
-  const pills = ["All", "Route A", "Route B", "Route C"];
+  //const [activePill, setActivePill] = useState("All");
+  //const pills = ["All", "Route A", "Route B", "Route C"];
   return (
     <div className="page">
       <div className="page-header">
@@ -1354,198 +1361,517 @@ function PageDashboard({ showModal, unreadCount, onBellClick }) {
       <div className="map-card">
         <div className="card-header">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
-          <span className="card-title">Live Map</span><span className="card-sub">— all buses</span>
-          <div className="ch-right">
-            {pills.map(p => <button key={p} className={`pill ${activePill === p ? "active" : "passive"}`} onClick={() => setActivePill(p)}>{p}</button>)}
+          <span className="card-title">Live Map</span>
+          <span className="card-sub">— all buses</span>
+        </div>
+        <div style={{
+          padding: '28px 24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 20,
+        }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 5 }}>
+              Real-time bus tracking
+            </div>
+            <div style={{ fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.6 }}>
+              Monitor all active buses, routes, and live locations across the fleet.
+            </div>
+            <div style={{ display: 'flex', gap: 18, marginTop: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green)' }} />
+                <span style={{ color: 'var(--muted)' }}>On time (18)</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }} />
+                <span style={{ color: 'var(--muted)' }}>Delayed (3)</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3a4a60' }} />
+                <span style={{ color: 'var(--muted)' }}>Idle (2)</span>
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="map-body">
-          <div className="map-grid-bg" />
-          <div className="map-road" style={{ left: 0, top: 118, width: "100%", height: 3, opacity: .5 }} />
-          <div className="map-road" style={{ left: 0, top: 62, width: "100%", height: 2, opacity: .25 }} />
-          <div className="map-road" style={{ left: 0, top: 185, width: "100%", height: 2, opacity: .25 }} />
-          <div className="map-road" style={{ left: 120, top: 0, width: 3, height: "100%", opacity: .4 }} />
-          <div className="map-road" style={{ left: 280, top: 0, width: 2, height: "100%", opacity: .25 }} />
-          <div className="map-road" style={{ left: 450, top: 0, width: 2, height: "100%", opacity: .25 }} />
-          <div className="route-line-h" style={{ left: 80, top: 109, width: 240, background: "rgba(59,139,212,.35)" }} />
-          <div className="route-line-h" style={{ left: 60, top: 176, width: 300, background: "rgba(61,200,122,.3)" }} />
-          <div className="route-line-h" style={{ left: 300, top: 63, width: 200, background: "rgba(245,166,35,.25)" }} />
-          {[[76,114],[160,114],[240,114],[315,114],[56,171],[160,171],[320,171],[310,58],[420,58]].map(([l,t],i) => <div key={i} className="stop-dot" style={{ left: l, top: t }} />)}
-          {[["on-time",130,108,"Bus A1","A1"],["on-time",200,108,"Bus A2","A2"],["delayed",268,108,"Bus B3 — Delayed","B3"],["on-time",100,165,"Bus C1","C1"],["on-time",240,165,"Bus C2","C2"],["on-time",390,108,"Bus D1","D1"],["delayed",370,53,"Bus E2 — Delayed","E2"],["idle",430,178,"Bus F1 — Idle","F1"]].map(([cls,l,t,title,lbl]) => (
-            <div key={lbl} className={`bus-dot ${cls}`} style={{ left: l, top: t }} title={title}>{lbl}</div>
-          ))}
-        </div>
-        <div className="map-legend">
-          <div className="legend-item"><div className="legend-dot" style={{ background: "var(--green)" }} /> On time (18)</div>
-          <div className="legend-item"><div className="legend-dot" style={{ background: "var(--accent)" }} /> Delayed (3)</div>
-          <div className="legend-item"><div className="legend-dot" style={{ background: "#3a4a60" }} /> Idle (2)</div>
+          <button
+            //onClick={() => showModal === undefined ? null : setActivePage('tracking')}
+            onClick={() => onNavigate('tracking')}
+            style={{
+              background: 'var(--accent)',
+              color: '#1a1a1a',
+              border: 'none',
+              borderRadius: 10,
+              padding: '13px 32px',
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              fontFamily: "'DM Sans',sans-serif",
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+              transition: 'all .15s',
+              boxShadow: '0 4px 14px rgba(245,166,35,.35)',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--accent2)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'var(--accent)'}
+          >
+            📍 Track Live
+          </button>
         </div>
       </div>
     </div>
   );
 }
+
+// Bus icon for admin map
+const makeBusIcon = (color) => L.divIcon({
+  html: `<div style="
+    background:${color};
+    width:40px;height:40px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:20px;border:3px solid #fff;
+    box-shadow:0 2px 10px rgba(0,0,0,.35);
+  ">🚌</div>`,
+  className: '',
+  iconSize: [40, 40],
+  iconAnchor: [20, 20],
+});
+
+const ROUTE_COLORS = {
+  A: '#1a73e8',
+  B: '#0f9d58',
+  C: '#f9ab00',
+  D: '#9334e6',
+};
+
+// function PageTracking({ showToast }) {
+//   const canvasRef = useRef(null);
+//   const busesRef = useRef(INITIAL_BUSES.map(b => ({ ...b })));
+//   const rafRef = useRef(null);
+//   const panRef = useRef({ x: 0, y: 0 });
+//   const dragRef = useRef({ active: false, sx: 0, sy: 0 });
+//   const zoomRef = useRef(1);
+//   const W0 = 680, H0 = 560;
+//   const [activeRoute, setActiveRoute] = useState('ALL');
+//   const [selectedBus, setSelectedBus] = useState(null);
+//   const [searchQuery, setSearchQuery] = useState('');
+//   const activeRouteRef = useRef('ALL');
+//   const selectedBusRef = useRef(null);
+//   const redraw = useCallback(() => {
+//     const cv = canvasRef.current; if (!cv) return;
+//     const ctx = cv.getContext('2d');
+//     const dpr = window.devicePixelRatio || 1;
+//     const cw = cv.width / dpr, ch = cv.height / dpr;
+//     ctx.clearRect(0, 0, cv.width, cv.height);
+//     ctx.save(); ctx.scale(dpr, dpr);
+//     const cx = cw / 2, cy = ch / 2;
+//     const z = zoomRef.current; const pan = panRef.current;
+//     ctx.save();
+//     ctx.translate(cx + pan.x, cy + pan.y); ctx.scale(z, z); ctx.translate(-W0 / 2, -H0 / 2);
+//     drawMapFrame(ctx, W0, H0); drawRoutes(ctx, activeRouteRef.current); drawBuses(ctx, busesRef.current, activeRouteRef.current, selectedBusRef.current);
+//     ctx.restore(); ctx.restore();
+//   }, []);
+//   useEffect(() => {
+//     const cv = canvasRef.current; if (!cv) return;
+//     const resize = () => { const dpr = window.devicePixelRatio || 1; const rect = cv.parentElement.getBoundingClientRect(); cv.width = rect.width * dpr; cv.height = rect.height * dpr; cv.style.width = rect.width + 'px'; cv.style.height = rect.height + 'px'; };
+//     resize(); window.addEventListener('resize', resize); return () => window.removeEventListener('resize', resize);
+//   }, []);
+//   useEffect(() => {
+//     const tick = () => { busesRef.current.forEach(b => { if (b.status === 'idle') return; b.t += b.speed; if (b.t >= 1) b.t = 0; }); redraw(); rafRef.current = requestAnimationFrame(tick); };
+//     rafRef.current = requestAnimationFrame(tick); return () => cancelAnimationFrame(rafRef.current);
+//   }, [redraw]);
+//   const doZoom = (f) => { zoomRef.current = Math.min(3, Math.max(0.4, zoomRef.current * f)); };
+//   const handleCanvasClick = (e) => {
+//     if (dragRef.current.moved) return;
+//     const cv = canvasRef.current; const rect = cv.getBoundingClientRect(); const dpr = window.devicePixelRatio || 1;
+//     const mx = e.clientX - rect.left; const my = e.clientY - rect.top;
+//     const cw = cv.width / dpr, ch = cv.height / dpr; const z = zoomRef.current; const pan = panRef.current;
+//     const wx = (mx - cw / 2 - pan.x) / z + W0 / 2; const wy = (my - ch / 2 - pan.y) / z + H0 / 2;
+//     let hit = null, minD = 16;
+//     busesRef.current.forEach(bus => { if (activeRouteRef.current !== 'ALL' && bus.route !== activeRouteRef.current) return; const stops = MAP_STOPS[bus.route]; const { x, y } = ptOnPath(stops, bus.t); const d = Math.hypot(wx - x, wy - y); if (d < minD) { minD = d; hit = bus; } });
+//     if (hit) { selectedBusRef.current = hit.id; setSelectedBus(hit.id); } else { selectedBusRef.current = null; setSelectedBus(null); }
+//   };
+//   const handleMouseDown = (e) => { dragRef.current = { active: true, moved: false, sx: e.clientX - panRef.current.x, sy: e.clientY - panRef.current.y }; };
+//   const handleMouseMove = (e) => { if (!dragRef.current.active) return; dragRef.current.moved = true; panRef.current = { x: e.clientX - dragRef.current.sx, y: e.clientY - dragRef.current.sy }; };
+//   const handleMouseUp = () => { dragRef.current.active = false; };
+//   const handleWheel = (e) => { e.preventDefault(); doZoom(e.deltaY < 0 ? 1.12 : 0.9); };
+//   const selectRoute = (r) => { activeRouteRef.current = r; setActiveRoute(r); selectedBusRef.current = null; setSelectedBus(null); };
+//   const selectBus = (busId) => { selectedBusRef.current = busId; setSelectedBus(busId); };
+//   const closePanel = () => { selectedBusRef.current = null; setSelectedBus(null); };
+//   const selBusData = busesRef.current.find(b => b.id === selectedBus) || null;
+//   const getNextStop = (bus) => { const stops = MAP_STOPS[bus.route]; const n = stops.length - 1; const seg = Math.min(Math.floor(bus.t * n) + 1, n); return stops[seg].name; };
+//   const getCurrentArea = (bus) => { const stops = MAP_STOPS[bus.route]; const n = stops.length - 1; return stops[Math.min(Math.floor(bus.t * n), n)].name; };
+//   const getETA = (bus) => { if (bus.status === 'idle') return '—'; const stops = MAP_STOPS[bus.route]; const n = stops.length - 1; const seg = Math.floor(bus.t * n); const rem = (seg + 1) / n - bus.t; return Math.max(1, Math.round(rem * n / (bus.speed * 3600 * 0.016))) + ' min'; };
+//   const routeChips = [{ r: 'ALL', label: 'All routes', color: '#1a73e8', dot: '#1a73e8' },{ r: 'A', label: 'Route A', color: '#1a73e8', dot: '#1a73e8' },{ r: 'B', label: 'Route B', color: '#0f9d58', dot: '#0f9d58' },{ r: 'C', label: 'Route C', color: '#f9ab00', dot: '#f9ab00' },{ r: 'D', label: 'Route D', color: '#9334e6', dot: '#9334e6' }];
+//   const statusCls = s => s === 'on-time' ? 'bcs-green' : s === 'delayed' ? 'bcs-amber' : s === 'idle' ? 'bcs-gray' : 'bcs-red';
+//   const statusText = s => s === 'on-time' ? 'On time' : s === 'delayed' ? 'Delayed' : 'Idle';
+//   const visibleBuses = busesRef.current.filter(b => { if (activeRoute !== 'ALL' && b.route !== activeRoute) return false; const q = searchQuery.toLowerCase(); if (q && !b.id.toLowerCase().includes(q) && !b.driver.toLowerCase().includes(q) && !b.route.toLowerCase().includes(q)) return false; return true; });
+//   const progKeyStops = (bus) => { const stops = MAP_STOPS[bus.route]; const n = stops.length; const indices = [0, Math.floor(n / 3), Math.floor(2 * n / 3), n - 1]; const curSeg = Math.min(Math.floor(bus.t * (n - 1)), n - 2); return indices.map(i => ({ name: stops[i].name, done: i <= curSeg, cur: i === curSeg || i === curSeg + 1 })); };
+//   return (
+//     <div className="tracking-page">
+//       <div className="gm-canvas-wrap" onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onWheel={handleWheel} onClick={handleCanvasClick}>
+//         <canvas className="gm-canvas" ref={canvasRef} />
+//       </div>
+//       <div className="tracking-topbar">
+//         <div className="gm-searchbox">
+//           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9aa0a6" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+//           <input placeholder="Search bus, driver or route…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+//         </div>
+//         <div className="route-chips">
+//           {routeChips.map(chip => (
+//             <button key={chip.r} className={`rchip${activeRoute === chip.r ? ' active' : ''}`}
+//               style={activeRoute === chip.r ? { background: chip.color, color: '#fff' } : {}}
+//               onClick={() => selectRoute(chip.r)}>
+//               <span className="rdot" style={{ background: activeRoute === chip.r ? '#fff' : chip.dot }} />
+//               {chip.label}
+//             </button>
+//           ))}
+//         </div>
+//       </div>
+//       <div className="live-badge-float"><div className="live-anim-dot" /> Live updates</div>
+//       <div className={`bus-info-panel${selBusData ? '' : ' hidden'}`}>
+//         {selBusData && (() => {
+//           const rc = ROUTE_CFG[selBusData.route];
+//           const pct = Math.round(selBusData.passengers / selBusData.capacity * 100);
+//           const progPct = Math.round(selBusData.t * 100);
+//           const nodes = progKeyStops(selBusData);
+//           return (
+//             <>
+//               <div className="bip-header">
+//                 <div className="bip-avatar" style={{ background: selBusData.status === 'idle' ? '#9aa0a6' : rc.color }}>{selBusData.label}</div>
+//                 <div style={{ flex: 1 }}>
+//                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+//                     <div className="bip-busid">{selBusData.id}</div>
+//                     <span className={`bcard-spill ${statusCls(selBusData.status)}`}>{selBusData.status === 'delayed' ? `+${selBusData.delay}m` : statusText(selBusData.status)}</span>
+//                   </div>
+//                   <div className="bip-routename">{rc.label}</div>
+//                 </div>
+//                 <button className="bip-close" onClick={closePanel}>×</button>
+//               </div>
+//               <div className="bip-body">
+//                 <div className="bip-row"><svg className="bip-icon" viewBox="0 0 24 24" fill="none" stroke="#5f6368" strokeWidth="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg><span className="bip-key">Near</span><span className="bip-val">{getCurrentArea(selBusData)}</span></div>
+//                 <div className="bip-row"><svg className="bip-icon" viewBox="0 0 24 24" fill="none" stroke="#5f6368" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg><span className="bip-key">Next stop</span><span className="bip-val" style={{ color: rc.color }}>{getNextStop(selBusData)}</span></div>
+//                 <div className="bip-row"><svg className="bip-icon" viewBox="0 0 24 24" fill="none" stroke="#5f6368" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span className="bip-key">ETA next stop</span><span className="bip-val">{getETA(selBusData)}</span></div>
+//                 <div className="bip-row"><svg className="bip-icon" viewBox="0 0 24 24" fill="none" stroke="#5f6368" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span className="bip-key">Driver</span><span className="bip-val">{selBusData.driver}</span></div>
+//                 <div className="bip-row"><svg className="bip-icon" viewBox="0 0 24 24" fill="none" stroke="#5f6368" strokeWidth="2"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg><span className="bip-key">Passengers</span><span className="bip-val">{selBusData.passengers}/{selBusData.capacity} ({pct}%)</span></div>
+//                 <div className="bip-row"><svg className="bip-icon" viewBox="0 0 24 24" fill="none" stroke="#5f6368" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg><span className="bip-key">Speed</span><span className="bip-val">{selBusData.status === 'idle' ? '0 km/h' : `${Math.round(28 + (selBusData.t * 100) % 15)} km/h`}</span></div>
+//               </div>
+//               <div className="bip-progress">
+//                 <div className="bip-prog-lbl">Route progress — {progPct}%</div>
+//                 <div className="bip-prog-track"><div className="bip-prog-fill" style={{ width: `${progPct}%`, background: rc.color }} /></div>
+//                 <div className="bip-stops-row">
+//                   {nodes.map((n, i) => (
+//                     <div className="bip-stop-node" key={i}>
+//                       <div className={`bip-stop-dot${n.done ? ' done' : ''}${n.cur ? ' current' : ''}`} />
+//                       <div className={`bip-stop-label${n.done ? ' done-lbl' : ''}`} style={n.done ? { color: rc.color } : {}}>{n.name}</div>
+//                     </div>
+//                   ))}
+//                 </div>
+//               </div>
+//             </>
+//           );
+//         })()}
+//       </div>
+//       <div className="gm-zoom-ctrl">
+//         <button className="gm-zoom-btn" onClick={() => doZoom(1.25)}>+</button>
+//         <button className="gm-zoom-btn" onClick={() => doZoom(0.8)}>−</button>
+//       </div>
+//       <div className="gm-compass">N</div>
+//       <div className="gm-attribution">Map data © BusNav 2026</div>
+//       <div className="bus-cards-bar">
+//         <div className="bcs-scroll">
+//           {visibleBuses.map(bus => {
+//             const rc = ROUTE_CFG[bus.route];
+//             return (
+//               <div key={bus.id} className={`bcard${selectedBus === bus.id ? ' sel' : ''}`} onClick={() => selectBus(bus.id)}>
+//                 <div className="bcard-top">
+//                   <div className="bcard-av" style={{ background: bus.status === 'idle' ? '#9aa0a6' : rc.color }}>{bus.label}</div>
+//                   <div style={{ flex: 1 }}><div className="bcard-num">{bus.id}</div><div className="bcard-route">{rc.short}</div></div>
+//                   <span className={`bcard-spill ${statusCls(bus.status)}`}>{bus.status === 'delayed' ? `+${bus.delay}m` : statusText(bus.status)}</span>
+//                 </div>
+//                 <div className="bcard-info">
+//                   <span style={{ color: '#5f6368' }}>Near: </span><b>{getCurrentArea(bus)}</b><br />
+//                   <span style={{ color: '#5f6368' }}>Next: </span><span className="hl" style={{ color: rc.color }}>{getNextStop(bus)}</span>
+//                   <span style={{ color: '#9aa0a6' }}> · {getETA(bus)}</span>
+//                 </div>
+//               </div>
+//             );
+//           })}
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
 
 
 
 function PageTracking({ showToast }) {
-  const canvasRef = useRef(null);
-  const busesRef = useRef(INITIAL_BUSES.map(b => ({ ...b })));
-  const rafRef = useRef(null);
-  const panRef = useRef({ x: 0, y: 0 });
-  const dragRef = useRef({ active: false, sx: 0, sy: 0 });
-  const zoomRef = useRef(1);
-  const W0 = 680, H0 = 560;
-  const [activeRoute, setActiveRoute] = useState('ALL');
+  const [liveBuses, setLiveBuses]     = useState({});
   const [selectedBus, setSelectedBus] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const activeRouteRef = useRef('ALL');
-  const selectedBusRef = useRef(null);
-  const redraw = useCallback(() => {
-    const cv = canvasRef.current; if (!cv) return;
-    const ctx = cv.getContext('2d');
-    const dpr = window.devicePixelRatio || 1;
-    const cw = cv.width / dpr, ch = cv.height / dpr;
-    ctx.clearRect(0, 0, cv.width, cv.height);
-    ctx.save(); ctx.scale(dpr, dpr);
-    const cx = cw / 2, cy = ch / 2;
-    const z = zoomRef.current; const pan = panRef.current;
-    ctx.save();
-    ctx.translate(cx + pan.x, cy + pan.y); ctx.scale(z, z); ctx.translate(-W0 / 2, -H0 / 2);
-    drawMapFrame(ctx, W0, H0); drawRoutes(ctx, activeRouteRef.current); drawBuses(ctx, busesRef.current, activeRouteRef.current, selectedBusRef.current);
-    ctx.restore(); ctx.restore();
-  }, []);
+  const [activeRoute, setActiveRoute] = useState('ALL');
+  const socketRef = useRef(null);
+
+  const defaultCenter = [15.8497, 74.4977];
+
   useEffect(() => {
-    const cv = canvasRef.current; if (!cv) return;
-    const resize = () => { const dpr = window.devicePixelRatio || 1; const rect = cv.parentElement.getBoundingClientRect(); cv.width = rect.width * dpr; cv.height = rect.height * dpr; cv.style.width = rect.width + 'px'; cv.style.height = rect.height + 'px'; };
-    resize(); window.addEventListener('resize', resize); return () => window.removeEventListener('resize', resize);
+    socketRef.current = io('http://localhost:8000');
+
+    // Get current live buses
+    socketRef.current.emit('get:live:buses');
+    socketRef.current.on('live:buses', (buses) => {
+      setLiveBuses(buses);
+    });
+
+    // Real-time location update
+    socketRef.current.on('admin:bus:update',
+      ({ busId, lat, lng, speed, busNumber }) => {
+        setLiveBuses(prev => ({
+          ...prev,
+          [busId]: { ...prev[busId], lat, lng, speed, busNumber },
+        }));
+      }
+    );
+
+    // Trip started
+    socketRef.current.on('admin:trip:started',
+      ({ busId, routeId, busNumber }) => {
+        setLiveBuses(prev => ({
+          ...prev,
+          [busId]: { ...prev[busId], status: 'live', routeId, busNumber },
+        }));
+      }
+    );
+
+    // Trip ended
+    socketRef.current.on('admin:trip:ended', ({ busId }) => {
+      setLiveBuses(prev => {
+        const updated = { ...prev };
+        delete updated[busId];
+        return updated;
+      });
+      if (selectedBus?.id === busId) setSelectedBus(null);
+    });
+
+    return () => socketRef.current?.disconnect();
   }, []);
-  useEffect(() => {
-    const tick = () => { busesRef.current.forEach(b => { if (b.status === 'idle') return; b.t += b.speed; if (b.t >= 1) b.t = 0; }); redraw(); rafRef.current = requestAnimationFrame(tick); };
-    rafRef.current = requestAnimationFrame(tick); return () => cancelAnimationFrame(rafRef.current);
-  }, [redraw]);
-  const doZoom = (f) => { zoomRef.current = Math.min(3, Math.max(0.4, zoomRef.current * f)); };
-  const handleCanvasClick = (e) => {
-    if (dragRef.current.moved) return;
-    const cv = canvasRef.current; const rect = cv.getBoundingClientRect(); const dpr = window.devicePixelRatio || 1;
-    const mx = e.clientX - rect.left; const my = e.clientY - rect.top;
-    const cw = cv.width / dpr, ch = cv.height / dpr; const z = zoomRef.current; const pan = panRef.current;
-    const wx = (mx - cw / 2 - pan.x) / z + W0 / 2; const wy = (my - ch / 2 - pan.y) / z + H0 / 2;
-    let hit = null, minD = 16;
-    busesRef.current.forEach(bus => { if (activeRouteRef.current !== 'ALL' && bus.route !== activeRouteRef.current) return; const stops = MAP_STOPS[bus.route]; const { x, y } = ptOnPath(stops, bus.t); const d = Math.hypot(wx - x, wy - y); if (d < minD) { minD = d; hit = bus; } });
-    if (hit) { selectedBusRef.current = hit.id; setSelectedBus(hit.id); } else { selectedBusRef.current = null; setSelectedBus(null); }
-  };
-  const handleMouseDown = (e) => { dragRef.current = { active: true, moved: false, sx: e.clientX - panRef.current.x, sy: e.clientY - panRef.current.y }; };
-  const handleMouseMove = (e) => { if (!dragRef.current.active) return; dragRef.current.moved = true; panRef.current = { x: e.clientX - dragRef.current.sx, y: e.clientY - dragRef.current.sy }; };
-  const handleMouseUp = () => { dragRef.current.active = false; };
-  const handleWheel = (e) => { e.preventDefault(); doZoom(e.deltaY < 0 ? 1.12 : 0.9); };
-  const selectRoute = (r) => { activeRouteRef.current = r; setActiveRoute(r); selectedBusRef.current = null; setSelectedBus(null); };
-  const selectBus = (busId) => { selectedBusRef.current = busId; setSelectedBus(busId); };
-  const closePanel = () => { selectedBusRef.current = null; setSelectedBus(null); };
-  const selBusData = busesRef.current.find(b => b.id === selectedBus) || null;
-  const getNextStop = (bus) => { const stops = MAP_STOPS[bus.route]; const n = stops.length - 1; const seg = Math.min(Math.floor(bus.t * n) + 1, n); return stops[seg].name; };
-  const getCurrentArea = (bus) => { const stops = MAP_STOPS[bus.route]; const n = stops.length - 1; return stops[Math.min(Math.floor(bus.t * n), n)].name; };
-  const getETA = (bus) => { if (bus.status === 'idle') return '—'; const stops = MAP_STOPS[bus.route]; const n = stops.length - 1; const seg = Math.floor(bus.t * n); const rem = (seg + 1) / n - bus.t; return Math.max(1, Math.round(rem * n / (bus.speed * 3600 * 0.016))) + ' min'; };
-  const routeChips = [{ r: 'ALL', label: 'All routes', color: '#1a73e8', dot: '#1a73e8' },{ r: 'A', label: 'Route A', color: '#1a73e8', dot: '#1a73e8' },{ r: 'B', label: 'Route B', color: '#0f9d58', dot: '#0f9d58' },{ r: 'C', label: 'Route C', color: '#f9ab00', dot: '#f9ab00' },{ r: 'D', label: 'Route D', color: '#9334e6', dot: '#9334e6' }];
-  const statusCls = s => s === 'on-time' ? 'bcs-green' : s === 'delayed' ? 'bcs-amber' : s === 'idle' ? 'bcs-gray' : 'bcs-red';
-  const statusText = s => s === 'on-time' ? 'On time' : s === 'delayed' ? 'Delayed' : 'Idle';
-  const visibleBuses = busesRef.current.filter(b => { if (activeRoute !== 'ALL' && b.route !== activeRoute) return false; const q = searchQuery.toLowerCase(); if (q && !b.id.toLowerCase().includes(q) && !b.driver.toLowerCase().includes(q) && !b.route.toLowerCase().includes(q)) return false; return true; });
-  const progKeyStops = (bus) => { const stops = MAP_STOPS[bus.route]; const n = stops.length; const indices = [0, Math.floor(n / 3), Math.floor(2 * n / 3), n - 1]; const curSeg = Math.min(Math.floor(bus.t * (n - 1)), n - 2); return indices.map(i => ({ name: stops[i].name, done: i <= curSeg, cur: i === curSeg || i === curSeg + 1 })); };
+
+  const liveBusArray = Object.entries(liveBuses)
+    .map(([id, data]) => ({ id, ...data }))
+    .filter(b => activeRoute === 'ALL' || b.routeId === activeRoute);
+
   return (
-    <div className="tracking-page">
-      <div className="gm-canvas-wrap" onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onWheel={handleWheel} onClick={handleCanvasClick}>
-        <canvas className="gm-canvas" ref={canvasRef} />
-      </div>
-      <div className="tracking-topbar">
-        <div className="gm-searchbox">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9aa0a6" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input placeholder="Search bus, driver or route…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-        </div>
-        <div className="route-chips">
-          {routeChips.map(chip => (
-            <button key={chip.r} className={`rchip${activeRoute === chip.r ? ' active' : ''}`}
-              style={activeRoute === chip.r ? { background: chip.color, color: '#fff' } : {}}
-              onClick={() => selectRoute(chip.r)}>
-              <span className="rdot" style={{ background: activeRoute === chip.r ? '#fff' : chip.dot }} />
-              {chip.label}
+    <div style={{
+      display: 'flex', flexDirection: 'column',
+      height: 'calc(100vh - 58px)', overflow: 'hidden',
+    }}>
+
+      {/* Top bar */}
+      <div style={{
+        padding: '10px 16px', background: '#fff',
+        borderBottom: '1px solid var(--border)',
+        display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap',
+      }}>
+        <span style={{ fontWeight: 700, fontSize: 14 }}>Live Tracking</span>
+        <span style={{ fontSize: 12, color: 'var(--muted)' }}>
+          {liveBusArray.length} buses live
+        </span>
+
+        {/* Route filter chips */}
+        <div style={{ display: 'flex', gap: 6, marginLeft: 'auto', flexWrap: 'wrap' }}>
+          {['ALL', 'A', 'B', 'C', 'D'].map(r => (
+            <button key={r}
+              onClick={() => setActiveRoute(r)}
+              style={{
+                padding: '5px 14px', borderRadius: 16,
+                fontSize: 12, fontWeight: 600,
+                cursor: 'pointer', border: 'none',
+                fontFamily: "'DM Sans',sans-serif",
+                background: activeRoute === r ? 'var(--accent)' : '#f1f5f9',
+                color:      activeRoute === r ? '#1a1a1a'        : 'var(--muted)',
+              }}
+            >
+              {r === 'ALL' ? 'All Routes' : `Route ${r}`}
             </button>
           ))}
         </div>
+
+        {/* Live indicator */}
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          gap: 6, fontSize: 12, color: '#0f9d58', fontWeight: 600,
+        }}>
+          <div style={{
+            width: 7, height: 7, borderRadius: '50%',
+            background: '#0f9d58', animation: 'livePulse 1.8s infinite',
+          }}/>
+          Live updates
+        </div>
       </div>
-      <div className="live-badge-float"><div className="live-anim-dot" /> Live updates</div>
-      <div className={`bus-info-panel${selBusData ? '' : ' hidden'}`}>
-        {selBusData && (() => {
-          const rc = ROUTE_CFG[selBusData.route];
-          const pct = Math.round(selBusData.passengers / selBusData.capacity * 100);
-          const progPct = Math.round(selBusData.t * 100);
-          const nodes = progKeyStops(selBusData);
-          return (
-            <>
-              <div className="bip-header">
-                <div className="bip-avatar" style={{ background: selBusData.status === 'idle' ? '#9aa0a6' : rc.color }}>{selBusData.label}</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div className="bip-busid">{selBusData.id}</div>
-                    <span className={`bcard-spill ${statusCls(selBusData.status)}`}>{selBusData.status === 'delayed' ? `+${selBusData.delay}m` : statusText(selBusData.status)}</span>
-                  </div>
-                  <div className="bip-routename">{rc.label}</div>
-                </div>
-                <button className="bip-close" onClick={closePanel}>×</button>
-              </div>
-              <div className="bip-body">
-                <div className="bip-row"><svg className="bip-icon" viewBox="0 0 24 24" fill="none" stroke="#5f6368" strokeWidth="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg><span className="bip-key">Near</span><span className="bip-val">{getCurrentArea(selBusData)}</span></div>
-                <div className="bip-row"><svg className="bip-icon" viewBox="0 0 24 24" fill="none" stroke="#5f6368" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg><span className="bip-key">Next stop</span><span className="bip-val" style={{ color: rc.color }}>{getNextStop(selBusData)}</span></div>
-                <div className="bip-row"><svg className="bip-icon" viewBox="0 0 24 24" fill="none" stroke="#5f6368" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span className="bip-key">ETA next stop</span><span className="bip-val">{getETA(selBusData)}</span></div>
-                <div className="bip-row"><svg className="bip-icon" viewBox="0 0 24 24" fill="none" stroke="#5f6368" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span className="bip-key">Driver</span><span className="bip-val">{selBusData.driver}</span></div>
-                <div className="bip-row"><svg className="bip-icon" viewBox="0 0 24 24" fill="none" stroke="#5f6368" strokeWidth="2"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg><span className="bip-key">Passengers</span><span className="bip-val">{selBusData.passengers}/{selBusData.capacity} ({pct}%)</span></div>
-                <div className="bip-row"><svg className="bip-icon" viewBox="0 0 24 24" fill="none" stroke="#5f6368" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg><span className="bip-key">Speed</span><span className="bip-val">{selBusData.status === 'idle' ? '0 km/h' : `${Math.round(28 + (selBusData.t * 100) % 15)} km/h`}</span></div>
-              </div>
-              <div className="bip-progress">
-                <div className="bip-prog-lbl">Route progress — {progPct}%</div>
-                <div className="bip-prog-track"><div className="bip-prog-fill" style={{ width: `${progPct}%`, background: rc.color }} /></div>
-                <div className="bip-stops-row">
-                  {nodes.map((n, i) => (
-                    <div className="bip-stop-node" key={i}>
-                      <div className={`bip-stop-dot${n.done ? ' done' : ''}${n.cur ? ' current' : ''}`} />
-                      <div className={`bip-stop-label${n.done ? ' done-lbl' : ''}`} style={n.done ? { color: rc.color } : {}}>{n.name}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </>
-          );
-        })()}
-      </div>
-      <div className="gm-zoom-ctrl">
-        <button className="gm-zoom-btn" onClick={() => doZoom(1.25)}>+</button>
-        <button className="gm-zoom-btn" onClick={() => doZoom(0.8)}>−</button>
-      </div>
-      <div className="gm-compass">N</div>
-      <div className="gm-attribution">Map data © BusNav 2026</div>
-      <div className="bus-cards-bar">
-        <div className="bcs-scroll">
-          {visibleBuses.map(bus => {
-            const rc = ROUTE_CFG[bus.route];
+
+      {/* Map */}
+      <div style={{ flex: 1, position: 'relative' }}>
+        <MapContainer
+          center={defaultCenter}
+          zoom={13}
+          style={{ width: '100%', height: '100%' }}
+          zoomControl={true}
+        >
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='© OpenStreetMap contributors'
+          />
+
+          {liveBusArray.map(bus => {
+            if (!bus.lat || !bus.lng) return null;
+            const color = ROUTE_COLORS[bus.routeId] || '#1a73e8';
             return (
-              <div key={bus.id} className={`bcard${selectedBus === bus.id ? ' sel' : ''}`} onClick={() => selectBus(bus.id)}>
-                <div className="bcard-top">
-                  <div className="bcard-av" style={{ background: bus.status === 'idle' ? '#9aa0a6' : rc.color }}>{bus.label}</div>
-                  <div style={{ flex: 1 }}><div className="bcard-num">{bus.id}</div><div className="bcard-route">{rc.short}</div></div>
-                  <span className={`bcard-spill ${statusCls(bus.status)}`}>{bus.status === 'delayed' ? `+${bus.delay}m` : statusText(bus.status)}</span>
-                </div>
-                <div className="bcard-info">
-                  <span style={{ color: '#5f6368' }}>Near: </span><b>{getCurrentArea(bus)}</b><br />
-                  <span style={{ color: '#5f6368' }}>Next: </span><span className="hl" style={{ color: rc.color }}>{getNextStop(bus)}</span>
-                  <span style={{ color: '#9aa0a6' }}> · {getETA(bus)}</span>
-                </div>
-              </div>
+              <Marker
+                key={bus.id}
+                position={[bus.lat, bus.lng]}
+                icon={makeBusIcon(color)}
+                eventHandlers={{ click: () => setSelectedBus(bus) }}
+              >
+                <Popup>
+                  <div style={{ minWidth: 160 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
+                      🚌 {bus.busNumber || bus.id}
+                    </div>
+                    <div style={{ fontSize: 12, color: '#5f6368' }}>
+                      Route: <b>{bus.routeId || '—'}</b>
+                    </div>
+                    <div style={{ fontSize: 12, color: '#5f6368' }}>
+                      Speed: <b>{bus.speed || 0} km/h</b>
+                    </div>
+                    <div style={{ fontSize: 12, color: '#0f9d58', fontWeight: 600 }}>
+                      ● Live
+                    </div>
+                  </div>
+                </Popup>
+              </Marker>
             );
           })}
+        </MapContainer>
+
+        {/* Selected bus info panel */}
+        {selectedBus && (
+          <div style={{
+            position: 'absolute', top: 12, left: 12,
+            background: '#fff', borderRadius: 14,
+            boxShadow: '0 4px 24px rgba(0,0,0,.2)',
+            width: 240, zIndex: 1000, overflow: 'hidden',
+          }}>
+            <div style={{
+              padding: '12px 14px',
+              borderBottom: '1px solid #f1f3f4',
+              display: 'flex', alignItems: 'center', gap: 10,
+            }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: '50%',
+                background: ROUTE_COLORS[selectedBus.routeId] || '#1a73e8',
+                display: 'flex', alignItems: 'center',
+                justifyContent: 'center', fontSize: 16,
+              }}>🚌</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: 14 }}>
+                  {selectedBus.busNumber || selectedBus.id}
+                </div>
+                <div style={{ fontSize: 11, color: '#5f6368' }}>
+                  Route {selectedBus.routeId || '—'}
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedBus(null)}
+                style={{
+                  background: 'none', border: 'none',
+                  cursor: 'pointer', fontSize: 20, color: '#5f6368',
+                }}
+              >×</button>
+            </div>
+            <div style={{ padding: '10px 14px' }}>
+              {[
+                ['Speed',   `${selectedBus.speed || 0} km/h`],
+                ['Status',  '● Live'],
+                ['Lat',     selectedBus.lat?.toFixed(5) || '—'],
+                ['Lng',     selectedBus.lng?.toFixed(5) || '—'],
+              ].map(([k, v]) => (
+                <div key={k} style={{
+                  display: 'flex', justifyContent: 'space-between',
+                  fontSize: 12, padding: '5px 0',
+                  borderBottom: '0.5px solid #f1f3f4',
+                }}>
+                  <span style={{ color: '#5f6368' }}>{k}</span>
+                  <span style={{ fontWeight: 600 }}>{v}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom bus cards */}
+      <div style={{ background: '#fff', borderTop: '1px solid var(--border)' }}>
+        <div style={{
+          display: 'flex', gap: 10,
+          padding: '10px 12px', overflowX: 'auto',
+        }}>
+          {liveBusArray.length === 0 ? (
+            <div style={{
+              padding: '12px 16px',
+              fontSize: 13, color: 'var(--muted)',
+            }}>
+              No buses live yet. Waiting for drivers to start trips…
+            </div>
+          ) : liveBusArray.map(bus => (
+            <div
+              key={bus.id}
+              onClick={() => setSelectedBus(bus)}
+              style={{
+                minWidth: 180, flexShrink: 0,
+                background: selectedBus?.id === bus.id ? '#e8f0fe' : '#f8fafc',
+                border: `2px solid ${selectedBus?.id === bus.id
+                  ? '#1a73e8' : 'var(--border)'}`,
+                borderRadius: 13, padding: '10px 12px',
+                cursor: 'pointer', transition: 'all .15s',
+              }}
+            >
+              <div style={{
+                display: 'flex', alignItems: 'center',
+                gap: 8, marginBottom: 6,
+              }}>
+                <div style={{
+                  width: 28, height: 28, borderRadius: '50%',
+                  background: ROUTE_COLORS[bus.routeId] || '#1a73e8',
+                  display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', fontSize: 14,
+                }}>🚌</div>
+                <div>
+                  <div style={{ fontSize: 12.5, fontWeight: 700 }}>
+                    {bus.busNumber || bus.id}
+                  </div>
+                  <div style={{ fontSize: 10, color: 'var(--muted)' }}>
+                    Route {bus.routeId || '—'}
+                  </div>
+                </div>
+                <span style={{
+                  marginLeft: 'auto', fontSize: 10,
+                  padding: '2px 7px', borderRadius: 9,
+                  background: '#e6f4ea', color: '#1e7e34', fontWeight: 700,
+                }}>Live</span>
+              </div>
+              <div style={{ fontSize: 10.5, color: 'var(--muted)' }}>
+                Speed: <b style={{ color: 'var(--text)' }}>
+                  {bus.speed || 0} km/h
+                </b>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
   );
 }
-
 
 
 function PageBuses({ showModal, showToast, requestConfirm }) {
@@ -3147,7 +3473,8 @@ export default function BusNavDashboard() {
 
   const renderPage = () => {
     switch (activePage) {
-      case "dashboard":     return <PageDashboard showModal={showModal} unreadCount={unreadCount} onBellClick={handleBellNav} />;
+      //case "dashboard":     return <PageDashboard showModal={showModal} unreadCount={unreadCount} onBellClick={handleBellNav} />;
+      case "dashboard":     return <PageDashboard showModal={showModal} unreadCount={unreadCount} onBellClick={handleBellNav} onNavigate={setActivePage} />;
       case "tracking":      return <PageTracking showToast={showToast} />;
       //case "buses":         return <PageBuses showModal={showModal} />;
       //case "drivers":       return <PageDrivers showModal={showModal} />;

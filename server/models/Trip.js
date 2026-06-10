@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const tripSchema = new mongoose.Schema({
   bus:    { type: mongoose.Schema.Types.ObjectId, ref: 'Bus',         required: true },
   route:  { type: mongoose.Schema.Types.ObjectId, ref: 'Route',       required: true },
-  driver: { type: mongoose.Schema.Types.ObjectId, ref: 'AdminDriver', required: true },
+  driver: { type: mongoose.Schema.Types.ObjectId, ref: 'Driver', required: true },
 
   tripStart:      { type: Date },
   tripEnd:        { type: Date },

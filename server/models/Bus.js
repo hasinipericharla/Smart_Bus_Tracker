@@ -8,6 +8,14 @@ const busSchema = new mongoose.Schema({
   assignedDriver: { type: mongoose.Schema.Types.ObjectId, ref: 'AdminDriver', default: null },
   assignedRoute:  { type: mongoose.Schema.Types.ObjectId, ref: 'Route', default: null },
   lastActive: { type: Date },
+  // Add these fields inside busSchema
+  currentTrip: { type: mongoose.Schema.Types.ObjectId, ref: 'Trip', default: null },
+  location: {
+    lat:       { type: Number, default: null },
+    lng:       { type: Number, default: null },
+    speed:     { type: Number, default: 0 },
+    updatedAt: { type: Date,   default: null }, },
+    
 }, { timestamps: true });
 
 module.exports = mongoose.model('Bus', busSchema);

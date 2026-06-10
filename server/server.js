@@ -215,6 +215,12 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+app.get('/debug/students', async (req, res) => {
+  const AdminStudent = require('./models/AdminStudent');  // ← change this line
+  const students = await AdminStudent.find({}).select('name pickupStop assignedRoute status');
+  res.json(students);
+});
+
 // ─────────────────────────────────────────────
 // 404 Handler
 // ─────────────────────────────────────────────
@@ -233,8 +239,74 @@ app.use(errorHandler);
 // ─────────────────────────────────────────────
 // Start Server
 // ─────────────────────────────────────────────
-const PORT = process.env.PORT || 8000;
+// const PORT = process.env.PORT || 8000;
 
-app.listen(PORT, () => {
+// app.listen(PORT, () => {
+//   console.log(`🚍 BusNav Backend running on port ${PORT}`);
+// });
+const http = require('http');
+const { Server } = require('socket.io');
+
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    credentials: true,
+  }
+});
+
+// Store live bus locations in memory
+const busLocations = {};
+
+io.on('connection', (socket) => {
+  console.log('🔌 Socket connected:', socket.id);
+
+  // Driver starts trip
+  socket.on('driver:trip:start', ({ busId, routeId, driverId, busNumber }) => {
+    busLocations[busId] = { status: 'live', routeId, driverId, busNumber };
+    io.emit(`bus:${busId}:status`, { status: 'live', routeId });
+    io.emit('admin:trip:started', { busId, routeId, busNumber });
+    console.log(`🚌 Trip started: ${busNumber}`);
+  });
+
+  // Driver sends GPS location
+  socket.on('driver:location', ({ busId, lat, lng, speed, busNumber }) => {
+    if (busLocations[busId]) {
+      busLocations[busId] = { ...busLocations[busId], lat, lng, speed, updatedAt: Date.now() };
+    }
+    // Send to students watching this bus
+    io.emit(`bus:${busId}:location`, { lat, lng, speed, busNumber });
+    // Send to admin watching all buses
+    io.emit('admin:bus:update', { busId, lat, lng, speed, busNumber });
+  });
+
+  // Driver marks a stop reached
+  socket.on('driver:stop:reached', ({ busId, stopName, stopIndex }) => {
+    io.emit(`bus:${busId}:stop`, { stopName, stopIndex });
+    io.emit('admin:stop:update', { busId, stopName, stopIndex });
+  });
+
+  // Driver ends trip
+  socket.on('driver:trip:end', ({ busId, busNumber }) => {
+    delete busLocations[busId];
+    io.emit(`bus:${busId}:status`, { status: 'idle' });
+    io.emit('admin:trip:ended', { busId, busNumber });
+    console.log(`🏁 Trip ended: ${busNumber}`);
+  });
+
+  // Anyone can request current live buses
+  socket.on('get:live:buses', () => {
+    socket.emit('live:buses', busLocations);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('❌ Socket disconnected:', socket.id);
+  });
+});
+
+const PORT = process.env.PORT || 8000;
+server.listen(PORT, () => {
   console.log(`🚍 BusNav Backend running on port ${PORT}`);
 });
+

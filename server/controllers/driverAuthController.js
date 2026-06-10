@@ -377,7 +377,39 @@ const changeDriverPassword = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, message: 'Password changed successfully.' });
 });
 
+// GET /api/driver/trip/stop-counts/:routeId
+// const Student = require('../models/Student');
+
+// const getStopPassengerCounts = asyncHandler(async (req, res) => {
+//   const { routeId } = req.params;
+
+//   const students = await Student.find({
+//     assignedRoute: routeId,
+//     status: 'active',
+//   }).select('pickupStop');
+
+const AdminStudent = require('../models/AdminStudent');
+
+const getStopPassengerCounts = asyncHandler(async (req, res) => {
+  const { routeId } = req.params;
+
+  const students = await AdminStudent.find({
+    assignedRoute: routeId,
+    status: 'active',
+  }).select('pickupStop');
+
+  // Build map: { "temple": 5, "busstand": 8 }
+  const counts = {};
+  students.forEach(s => {
+    if (!s.pickupStop) return;
+    const key = s.pickupStop.trim().toLowerCase();
+    counts[key] = (counts[key] || 0) + 1;
+  });
+
+  res.json({ success: true, counts });
+});
+
 module.exports = {
   signup, verifyEmail, resendOtp, login,
-  forgotPassword, verifyResetOtp, resetPassword, logout, changeDriverPassword,
+  forgotPassword, verifyResetOtp, resetPassword, logout, changeDriverPassword, getStopPassengerCounts,  
 };

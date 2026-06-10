@@ -3,6 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { clearDriverSession } from './DriverLogin';
 import { getMyDriverInfo } from '../api/driverService';
 import { changePassword as changeDriverPwd } from '../api/driverService';
+import { io } from 'socket.io-client';
+import { startDriverTrip, endDriverTrip, updateDriverLocation, getStopPassengerCounts  } from '../api/driverService';
+
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 const css = `
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Mono:wght@400;500&display=swap');
@@ -121,18 +127,46 @@ const IconFile   = () => <svg className="ni" viewBox="0 0 24 24" fill="none" str
 const IconLogout = () => <svg className="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>;
 const BusLogo    = () => <svg viewBox="0 0 24 24" fill="#1a1a1a"><path d="M4 16c0 .88.39 1.67 1 2.22V20a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1h8v1a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm9 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM4 9h16v4H4V9z"/></svg>;
 
-const ROUTE_STOPS = [
-  {id:1,name:'College Main Gate',time:'07:00 AM'},
-  {id:2,name:'Market Circle',    time:'07:08 AM'},
-  {id:3,name:'North Bridge',     time:'07:15 AM'},
-  {id:4,name:'City Park',        time:'07:22 AM'},
-  {id:5,name:'East Market',      time:'07:30 AM'},
-  {id:6,name:'Rail Station',     time:'07:38 AM'},
-  {id:7,name:'Sadashiv Nagar',   time:'07:45 AM'},
-  {id:8,name:'Tilakwadi',        time:'07:52 AM'},
-];
+// Fix leaflet default icon
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl:       'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl:     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
 
-function PageHome({ tripActive, currentStop, totalPassengers, setActivePage, startTrip, endTrip, markStop, driverStatus, setDriverStatus, showToast, driverInfo }) {
+const driverBusIcon = L.divIcon({
+  html: `<div style="
+    background:#16a34a;width:36px;height:36px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:18px;border:3px solid #fff;
+    box-shadow:0 2px 8px rgba(0,0,0,.3);">🚌</div>`,
+  className: '',
+  iconSize: [36, 36],
+  iconAnchor: [18, 18],
+});
+
+function DriverMapUpdater({ position }) {
+  const map = useMap();
+  useEffect(() => {
+    if (position) map.setView(position, map.getZoom());
+  }, [position, map]);
+  return null;
+}
+
+
+// const ROUTE_STOPS = [
+//   {id:1,name:'College Main Gate',time:'07:00 AM'},
+//   {id:2,name:'Market Circle',    time:'07:08 AM'},
+//   {id:3,name:'North Bridge',     time:'07:15 AM'},
+//   {id:4,name:'City Park',        time:'07:22 AM'},
+//   {id:5,name:'East Market',      time:'07:30 AM'},
+//   {id:6,name:'Rail Station',     time:'07:38 AM'},
+//   {id:7,name:'Sadashiv Nagar',   time:'07:45 AM'},
+//   {id:8,name:'Tilakwadi',        time:'07:52 AM'},
+// ];
+
+function PageHome({ tripActive, currentStop, totalPassengers, setActivePage, startTrip, endTrip, markStop, driverStatus, setDriverStatus, showToast, driverInfo, routeStops }) {
   const name      = driverInfo?.name || 'Driver';
   const busNumber = driverInfo?.assignedBus?.busNumber || '—';
   const routeName = driverInfo?.assignedRoute?.name    || '—';
@@ -152,7 +186,8 @@ function PageHome({ tripActive, currentStop, totalPassengers, setActivePage, sta
         <div className="stat-card s-green">
           <div className="stat-label">Trip Status</div>
           <div className="stat-val green" style={{fontSize:16,marginTop:4}}>{tripActive ? '● Active' : '○ Idle'}</div>
-          <div className="stat-sub">{tripActive ? `Stop ${currentStop+1} of ${ROUTE_STOPS.length}` : 'Start your trip'}</div>
+        
+          <div className="stat-sub">{tripActive ? `Stop ${currentStop+1} of ${routeStops.length}` : 'Start your trip'}</div>
         </div>
         <div className="stat-card s-amber">
           <div className="stat-label">Passengers</div>
@@ -162,12 +197,13 @@ function PageHome({ tripActive, currentStop, totalPassengers, setActivePage, sta
         <div className="stat-card s-blue">
           <div className="stat-label">Stops Done</div>
           <div className="stat-val blue">{currentStop}</div>
-          <div className="stat-sub">of {ROUTE_STOPS.length} total</div>
+          
+          <div className="stat-sub">of {routeStops.length} total</div>
         </div>
         <div className="stat-card s-red">
           <div className="stat-label">Current Status</div>
           <div className="stat-val" style={{fontSize:14,marginTop:6,color: driverStatus==='On Time' ? 'var(--green)' : 'var(--accent)'}}>{driverStatus}</div>
-          <div className="stat-sub">Route A</div>
+          <div className="stat-sub">{driverInfo?.assignedRoute?.name || '—'}</div>
         </div>
       </div>
 
@@ -175,16 +211,17 @@ function PageHome({ tripActive, currentStop, totalPassengers, setActivePage, sta
       <div className={`trip-banner ${tripActive ? 'active' : 'idle'}`}>
         <div style={{fontSize:36}}>{tripActive ? '🚌' : '🅿️'}</div>
         <div>
-          <div style={{fontSize:13,fontWeight:700,color:'#e2e8f0'}}>{tripActive ? `Currently at: ${ROUTE_STOPS[currentStop]?.name || 'Trip Complete'}` : 'Ready to start your trip'}</div>
+          <div style={{fontSize:13,fontWeight:700,color:'#e2e8f0'}}>{tripActive ? `Currently at: ${routeStops[currentStop]?.name || 'Trip Complete'}` : 'Ready to start your trip'}</div>
           <div style={{fontSize:11.5,color:'#94a3b8',marginTop:4}}>
-            {/* {tripActive ? `Next: ${ROUTE_STOPS[currentStop+1]?.name || 'Last stop'}` : 'KA-01-B · Route A — North Loop · 8 stops'} */}
             {tripActive 
-  ? `Next: ${ROUTE_STOPS[currentStop+1]?.name || 'Last stop'}` 
-  : `${driverInfo?.assignedBus?.busNumber || '—'} · ${driverInfo?.assignedRoute?.name || '—'} · ${driverInfo?.assignedRoute?.stops?.length || 0} stops`
-}
+              ? `Next: ${routeStops[currentStop+1]?.name || 'Last stop'}` 
+              : `${driverInfo?.assignedBus?.busNumber || '—'} · ${driverInfo?.assignedRoute?.name || '—'} · ${routeStops.length} stops`
+            }
           </div>
+
         </div>
-        {tripActive && currentStop < ROUTE_STOPS.length && (
+        
+        {tripActive && currentStop < routeStops.length && (
           <button className="fab-btn fab-primary" style={{marginLeft:'auto'}} onClick={markStop}>
             🛑 Mark Stop Reached
           </button>
@@ -211,19 +248,282 @@ function PageHome({ tripActive, currentStop, totalPassengers, setActivePage, sta
       <div className="card">
         <div className="card-header">
           <span className="card-title">Stop Progress</span>
-          <div className="ch-right"><span className="card-sub">{currentStop}/{ROUTE_STOPS.length} completed</span></div>
+          <div className="ch-right"><span className="card-sub">{currentStop}/{routeStops.length} completed</span></div>
         </div>
-        {ROUTE_STOPS.map((stop, i) => (
-          <div key={stop.id} className={`stop-row ${i < currentStop ? 'reached' : i === currentStop ? 'current-stop' : ''}`}>
+          {routeStops.map((stop, i) => (
+            <div key={i} className={`stop-row ${i < currentStop ? 'reached' : i === currentStop ? 'current-stop' : ''}`}>
+              <div className={`stop-circle ${i < currentStop ? 'sc-green' : i === currentStop ? 'sc-amber' : 'sc-gray'}`}>
+                {i < currentStop ? '✓' : i+1}
+              </div>
+              <div style={{flex:1}}>
+                <div className="stop-name">{stop.name}</div>
+                <div className="stop-meta">{stop.morningPickup || stop.eveningDrop || ''}</div>
+              </div>
+              {i === currentStop && tripActive && <span className="status-pill sp-amber">Current</span>}
+              {i < currentStop && <span className="status-pill sp-green">Done</span>}
+            </div>
+          ))}
+      </div>
+    </div>
+  );
+}
+
+// function PageLiveMap({ tripActive, currentStop, routeStops }) {
+//   const [busPos, setBusPos] = useState(60);
+//   useEffect(() => {
+//     if (!tripActive) return;
+//     const t = setInterval(() => setBusPos(p => p >= 560 ? 60 : p + 1), 80);
+//     return () => clearInterval(t);
+//   }, [tripActive]);
+
+//   return (
+//     <div className="page">
+//       <div className="page-header">
+//         <div><div className="page-title">Live Map</div><div className="page-subtitle">Your current location · Route A</div></div>
+//         <span className="status-pill sp-green" style={{fontSize:12,padding:'6px 14px'}}>📍 Location Sharing {tripActive ? 'Active' : 'Paused'}</span>
+//       </div>
+//       <div className="card">
+//         <div className="card-header">
+//           <span className="card-title">KA-01-B Live Position</span>
+//           <div className="ch-right"><span style={{fontSize:11,color:'var(--muted)'}}>{tripActive ? 'Auto-updating' : 'Trip not started'}</span></div>
+//         </div>
+//         <div className="map-body" style={{height:380}}>
+//           <div className="map-grid-bg"/>
+//           <div className="map-road" style={{left:0,top:200,width:'100%',height:3,opacity:.5}}/>
+//           <div className="map-road" style={{left:0,top:120,width:'100%',height:2,opacity:.2}}/>
+//           <div className="map-road" style={{left:200,top:0,width:2,height:'100%',opacity:.3}}/>
+//           <div className="route-line-map" style={{left:50,top:201,width:560,background:'rgba(59,139,212,.4)'}}/>
+//           {routeStops.map((stop, i) => {
+//             const pos = { left: 60 + i*75, top: 197 };
+//             const isReached = i < currentStop;
+//             const isCurrent = i === currentStop;
+//             return (
+//               <div key={i} className={`stop-dot-map ${isReached ? 'reached' : isCurrent ? 'current' : 'upcoming'}`}
+//                 style={{left:pos.left, top:pos.top}}>
+//               </div>
+//             );
+//           })}
+//           <div className="bus-dot-drv" style={{left: tripActive ? busPos : 60, top:190}}>🚌</div>
+//           <div style={{position:'absolute',left:10,top:8,fontSize:10,color:'#94a3b8',fontFamily:"'DM Mono',monospace"}}>ROUTE A — NORTH LOOP · BELAGAVI</div>
+//           <div style={{position:'absolute',left:(tripActive ? busPos : 60)+2,top:174,fontSize:10,fontWeight:700,color:'var(--green)',fontFamily:"'DM Mono',monospace",whiteSpace:'nowrap'}}>KA-01-B {tripActive ? '42 km/h' : ''}</div>
+//         </div>
+//         <div className="map-legend">
+//           <div className="legend-item"><div className="legend-dot" style={{background:'var(--green)'}}/> Stop Reached</div>
+//           <div className="legend-item"><div className="legend-dot" style={{background:'var(--accent)'}}/> Current</div>
+//           <div className="legend-item"><div className="legend-dot" style={{background:'#94a3b8'}}/> Upcoming</div>
+//           {!tripActive && <div style={{marginLeft:'auto',fontSize:11,color:'var(--red)',fontWeight:600}}>⚠️ Start trip to share live location</div>}
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+
+
+function PageLiveMap({ tripActive, currentStop, routeStops, driverInfo }) {
+  const [busPosition, setBusPosition] = useState(null);
+  const [busSpeed, setBusSpeed]       = useState(0);
+  const socketRef                     = useRef(null);
+
+  const defaultCenter = [15.8497, 74.4977]; // Belagavi fallback
+  const busId         = driverInfo?.assignedBus?._id;
+  const busNumber     = driverInfo?.assignedBus?.busNumber || '—';
+
+  useEffect(() => {
+    socketRef.current = io('http://localhost:8000');
+
+    if (busId) {
+      socketRef.current.on(`bus:${busId}:location`, ({ lat, lng, speed }) => {
+        setBusPosition([lat, lng]);
+        setBusSpeed(speed || 0);
+      });
+    }
+
+    // If trip is active, try to get current GPS position immediately
+    if (tripActive && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setBusPosition([pos.coords.latitude, pos.coords.longitude]),
+        () => {}
+      );
+    }
+
+    return () => socketRef.current?.disconnect();
+  }, [busId, tripActive]);
+
+  return (
+    <div className="page">
+      <div className="page-header">
+        <div>
+          <div className="page-title">Live Map</div>
+          <div className="page-subtitle">
+            Your current location · {driverInfo?.assignedRoute?.name || 'Route'}
+          </div>
+        </div>
+        <span
+          className={`status-pill ${tripActive ? 'sp-green' : 'sp-gray'}`}
+          style={{ fontSize: 12, padding: '6px 14px' }}
+        >
+          📍 Location Sharing {tripActive ? 'Active' : 'Paused'}
+        </span>
+      </div>
+
+      {/* Speed / status banner */}
+      <div style={{
+        background: tripActive
+          ? 'linear-gradient(135deg,#14532d,#166534)'
+          : 'linear-gradient(135deg,#1e293b,#334155)',
+        borderRadius: 13, padding: '20px 24px',
+        display: 'flex', alignItems: 'center', gap: 18,
+        flexWrap: 'wrap', color: '#fff',
+      }}>
+        <div>
+          <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>Bus</div>
+          <div style={{ fontSize: 15, fontWeight: 700 }}>{busNumber}</div>
+          <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
+            {driverInfo?.assignedRoute?.name || '—'}
+          </div>
+        </div>
+        <div style={{
+          background: 'rgba(255,255,255,.08)',
+          borderRadius: 10, padding: '12px 18px', textAlign: 'center',
+        }}>
+          <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>Stops Done</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: '#fff' }}>
+            {currentStop} / {routeStops.length}
+          </div>
+        </div>
+        {tripActive && routeStops[currentStop] && (
+          <div style={{
+            background: 'rgba(255,255,255,.08)',
+            borderRadius: 10, padding: '12px 18px', textAlign: 'center',
+          }}>
+            <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>Current Stop</div>
+            <div style={{ fontSize: 14, fontWeight: 700 }}>
+              {routeStops[currentStop]?.name}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Leaflet Map */}
+      <div className="card">
+        <div className="card-header">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+            stroke="var(--green)" strokeWidth="2">
+            <circle cx="12" cy="12" r="10"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+          <span className="card-title">{busNumber} Live Position</span>
+          <div className="ch-right">
+            <span style={{ fontSize: 11, color: 'var(--muted)' }}>
+              {tripActive ? 'Auto-updating' : 'Trip not started'}
+            </span>
+          </div>
+        </div>
+
+        <div style={{ height: 400, overflow: 'hidden' }}>
+          <MapContainer
+            center={busPosition || defaultCenter}
+            zoom={14}
+            style={{ width: '100%', height: '100%' }}
+            zoomControl={true}
+          >
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution="© OpenStreetMap contributors"
+            />
+
+            {/* Auto-follow bus */}
+            {busPosition && <DriverMapUpdater position={busPosition} />}
+
+            {/* Bus marker */}
+            {busPosition && tripActive && (
+              <Marker position={busPosition} icon={driverBusIcon}>
+                <Popup>
+                  <b>🚌 {busNumber}</b><br/>
+                  Speed: {busSpeed} km/h<br/>
+                  Stop: {currentStop} / {routeStops.length}
+                </Popup>
+              </Marker>
+            )}
+
+            {/* Stop markers */}
+            {routeStops.map((stop, i) => {
+              if (!stop.lat || !stop.lng) return null;
+              const isReached  = i < currentStop;
+              const isCurrent  = i === currentStop;
+              const stopIcon   = L.divIcon({
+                html: `<div style="
+                  background:${isReached ? '#16a34a' : isCurrent ? '#f5a623' : '#94a3b8'};
+                  width:24px;height:24px;border-radius:50%;
+                  border:2px solid #fff;
+                  display:flex;align-items:center;justify-content:center;
+                  font-size:10px;color:#fff;font-weight:800;
+                  box-shadow:0 2px 6px rgba(0,0,0,.25);
+                ">${isReached ? '✓' : i + 1}</div>`,
+                className: '',
+                iconSize: [24, 24],
+                iconAnchor: [12, 12],
+              });
+              return (
+                <Marker key={i} position={[stop.lat, stop.lng]} icon={stopIcon}>
+                  <Popup>
+                    <b>Stop {i + 1}: {stop.name}</b>
+                    {isCurrent && <><br/><span style={{ color: '#f5a623', fontWeight: 600 }}>▶ Current Stop</span></>}
+                    {isReached && <><br/><span style={{ color: '#16a34a', fontWeight: 600 }}>✓ Reached</span></>}
+                  </Popup>
+                </Marker>
+              );
+            })}
+          </MapContainer>
+        </div>
+
+        {/* Legend */}
+        <div className="map-legend">
+          <div className="legend-item">
+            <div className="legend-dot" style={{ background: 'var(--green)' }}/> Stop Reached
+          </div>
+          <div className="legend-item">
+            <div className="legend-dot" style={{ background: 'var(--accent)' }}/> Current
+          </div>
+          <div className="legend-item">
+            <div className="legend-dot" style={{ background: '#94a3b8' }}/> Upcoming
+          </div>
+          {!tripActive && (
+            <div style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--red)', fontWeight: 600 }}>
+              ⚠️ Start trip to share live location
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Stop progress list */}
+      <div className="card">
+        <div className="card-header">
+          <span className="card-title">Stop Progress</span>
+          <div className="ch-right">
+            <span className="card-sub">{currentStop}/{routeStops.length} completed</span>
+          </div>
+        </div>
+        {routeStops.map((stop, i) => (
+          <div
+            key={i}
+            className={`stop-row ${i < currentStop ? 'reached' : i === currentStop ? 'current-stop' : ''}`}
+          >
             <div className={`stop-circle ${i < currentStop ? 'sc-green' : i === currentStop ? 'sc-amber' : 'sc-gray'}`}>
-              {i < currentStop ? '✓' : i+1}
+              {i < currentStop ? '✓' : i + 1}
             </div>
-            <div style={{flex:1}}>
+            <div style={{ flex: 1 }}>
               <div className="stop-name">{stop.name}</div>
-              <div className="stop-meta">{stop.time}</div>
+              <div className="stop-meta">
+                {stop.morningPickup || stop.eveningDrop || ''}
+              </div>
             </div>
-            {i === currentStop && tripActive && <span className="status-pill sp-amber">Current</span>}
-            {i < currentStop && <span className="status-pill sp-green">Done</span>}
+            {i === currentStop && tripActive && (
+              <span className="status-pill sp-amber">Current</span>
+            )}
+            {i < currentStop && (
+              <span className="status-pill sp-green">Done</span>
+            )}
           </div>
         ))}
       </div>
@@ -231,55 +531,6 @@ function PageHome({ tripActive, currentStop, totalPassengers, setActivePage, sta
   );
 }
 
-function PageLiveMap({ tripActive, currentStop }) {
-  const [busPos, setBusPos] = useState(60);
-  useEffect(() => {
-    if (!tripActive) return;
-    const t = setInterval(() => setBusPos(p => p >= 560 ? 60 : p + 1), 80);
-    return () => clearInterval(t);
-  }, [tripActive]);
-
-  return (
-    <div className="page">
-      <div className="page-header">
-        <div><div className="page-title">Live Map</div><div className="page-subtitle">Your current location · Route A</div></div>
-        <span className="status-pill sp-green" style={{fontSize:12,padding:'6px 14px'}}>📍 Location Sharing {tripActive ? 'Active' : 'Paused'}</span>
-      </div>
-      <div className="card">
-        <div className="card-header">
-          <span className="card-title">KA-01-B Live Position</span>
-          <div className="ch-right"><span style={{fontSize:11,color:'var(--muted)'}}>{tripActive ? 'Auto-updating' : 'Trip not started'}</span></div>
-        </div>
-        <div className="map-body" style={{height:380}}>
-          <div className="map-grid-bg"/>
-          <div className="map-road" style={{left:0,top:200,width:'100%',height:3,opacity:.5}}/>
-          <div className="map-road" style={{left:0,top:120,width:'100%',height:2,opacity:.2}}/>
-          <div className="map-road" style={{left:200,top:0,width:2,height:'100%',opacity:.3}}/>
-          <div className="route-line-map" style={{left:50,top:201,width:560,background:'rgba(59,139,212,.4)'}}/>
-          {ROUTE_STOPS.map((stop, i) => {
-            const pos = { left: 60 + i*75, top: 197 };
-            const isReached = i < currentStop;
-            const isCurrent = i === currentStop;
-            return (
-              <div key={i} className={`stop-dot-map ${isReached ? 'reached' : isCurrent ? 'current' : 'upcoming'}`}
-                style={{left:pos.left, top:pos.top}}>
-              </div>
-            );
-          })}
-          <div className="bus-dot-drv" style={{left: tripActive ? busPos : 60, top:190}}>🚌</div>
-          <div style={{position:'absolute',left:10,top:8,fontSize:10,color:'#94a3b8',fontFamily:"'DM Mono',monospace"}}>ROUTE A — NORTH LOOP · BELAGAVI</div>
-          <div style={{position:'absolute',left:(tripActive ? busPos : 60)+2,top:174,fontSize:10,fontWeight:700,color:'var(--green)',fontFamily:"'DM Mono',monospace",whiteSpace:'nowrap'}}>KA-01-B {tripActive ? '42 km/h' : ''}</div>
-        </div>
-        <div className="map-legend">
-          <div className="legend-item"><div className="legend-dot" style={{background:'var(--green)'}}/> Stop Reached</div>
-          <div className="legend-item"><div className="legend-dot" style={{background:'var(--accent)'}}/> Current</div>
-          <div className="legend-item"><div className="legend-dot" style={{background:'#94a3b8'}}/> Upcoming</div>
-          {!tripActive && <div style={{marginLeft:'auto',fontSize:11,color:'var(--red)',fontWeight:600}}>⚠️ Start trip to share live location</div>}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // function PageRoute() {
 //   return (
@@ -337,7 +588,7 @@ function PageRoute({ driverInfo }) {
   const details = [
     ['Route ID',       route.routeId   || '—'],
     ['Route Name',     route.name      || '—'],
-    ['Description',    route.description || '—'],
+    //['Description',    route.description || '—'],
     ['Bus',            bus?.busNumber  || '—'],
     ['Capacity',       bus?.capacity   ? `${bus.capacity} passengers` : '—'],
     ['Total Stops',    stops.length    || '—'],
@@ -750,7 +1001,7 @@ export default function DriverDashboard() {
 
   const [tripActive, setTripActive] = useState(false);
   const [currentStop, setCurrentStop] = useState(0);
-  const [totalPassengers, setTotalPassengers] = useState(34);
+  const [totalPassengers, setTotalPassengers] = useState(0);
   const [driverStatus, setDriverStatus] = useState('On Time');
   const [toast, setToast] = useState(null);
   const [clock, setClock] = useState('');
@@ -769,17 +1020,240 @@ export default function DriverDashboard() {
     toastRef.current = setTimeout(() => setToast(null), 2500);
   };
 
-  const startTrip = () => { setTripActive(true); setCurrentStop(0); showToast('✅ Trip started! Location sharing active'); };
-  const endTrip   = () => { setTripActive(false); showToast('🏁 Trip ended successfully!'); };
-  const markStop  = () => {
-    if (currentStop < ROUTE_STOPS.length - 1) {
-      setCurrentStop(c => c + 1);
-      setTotalPassengers(p => Math.min(50, p + Math.floor(Math.random()*5)));
-      showToast(`✅ Stop ${currentStop+1} marked: ${ROUTE_STOPS[currentStop].name}`);
-    } else {
-      endTrip();
+  // const startTrip = () => { setTripActive(true); setCurrentStop(0); showToast('✅ Trip started! Location sharing active'); };
+  // const endTrip   = () => { setTripActive(false); showToast('🏁 Trip ended successfully!'); };
+  // const markStop  = () => {
+  //   if (currentStop < ROUTE_STOPS.length - 1) {
+  //     setCurrentStop(c => c + 1);
+  //     setTotalPassengers(p => Math.min(50, p + Math.floor(Math.random()*5)));
+  //     showToast(`✅ Stop ${currentStop+1} marked: ${ROUTE_STOPS[currentStop].name}`);
+  //   } else {
+  //     endTrip();
+  //   }
+  // };
+
+  // ── Socket & GPS refs (inside DriverDashboard) ──
+const socketRef           = useRef(null);
+const watchIdRef          = useRef(null);
+const locationIntervalRef = useRef(null);
+const [tripId, setTripId] = useState(null);
+const [stopPassengerMap, setStopPassengerMap] = useState({});
+
+// Derive stops from assigned route — replaces hardcoded ROUTE_STOPS
+const routeStops = driverInfo?.assignedRoute?.stops
+  ? [...driverInfo.assignedRoute.stops].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+  : [];
+
+// ── Connect socket once on mount ──
+useEffect(() => {
+  socketRef.current = io('http://localhost:8000');
+  return () => socketRef.current?.disconnect();
+}, []);
+
+// ── Start Trip ──
+const startTrip = async () => {
+  try {
+    const busId   = driverInfo?.assignedBus?._id;
+    const routeId = driverInfo?.assignedRoute?._id;
+
+    if (!busId || !routeId) {
+      showToast('⚠️ No bus or route assigned');
+      return;
     }
-  };
+
+
+    // ── Fetch student counts per stop ──
+    const { counts } = await getStopPassengerCounts(routeId);
+    console.log('🧪 routeId being sent:', routeId);
+    console.log('🧪 Stop passenger counts:', counts);        // ← add this
+    console.log('🧪 Route stops:', routeStops.map(s => s.name)); // ← add this
+    setStopPassengerMap(counts);
+    setTotalPassengers(0);   // reset; will accumulate as stops are reached
+
+    // Save trip to DB
+    const res = await startDriverTrip({ busId, routeId });
+    setTripId(res.trip._id);
+    setTripActive(true);
+    setCurrentStop(0);
+
+    const busNumber = driverInfo.assignedBus.busNumber;
+
+    // Tell everyone via socket
+    socketRef.current.emit('driver:trip:start', {
+      busId,
+      routeId,
+      busNumber,
+      driverId: driverInfo._id,
+    });
+
+    // Start GPS tracking
+    if (navigator.geolocation) {
+      watchIdRef.current = navigator.geolocation.watchPosition(
+        (pos) => {
+          const { latitude: lat, longitude: lng, speed } = pos.coords;
+          socketRef.current.emit('driver:location', {
+            busId,
+            busNumber,
+            lat,
+            lng,
+            speed: speed ? Math.round(speed * 3.6) : 0,
+          });
+        },
+        (err) => console.error('GPS error:', err),
+        { enableHighAccuracy: true, maximumAge: 3000 }
+      );
+
+      // Save location to DB every 10 seconds
+      locationIntervalRef.current = setInterval(async () => {
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+          await updateDriverLocation({
+            busId,
+            lat:   pos.coords.latitude,
+            lng:   pos.coords.longitude,
+            speed: pos.coords.speed
+              ? Math.round(pos.coords.speed * 3.6)
+              : 0,
+          });
+        });
+      }, 10000);
+    }
+
+    showToast('✅ Trip started! Location sharing active');
+  } catch (err) {
+    showToast('❌ Failed to start trip: ' + err.message);
+  }
+};
+
+// ── End Trip ──
+const endTrip = async () => {
+  try {
+    const busId = driverInfo?.assignedBus?._id;
+
+    if (tripId) {
+      await endDriverTrip({ tripId, busId });
+    }
+
+    // Stop GPS
+    if (watchIdRef.current) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+    }
+    clearInterval(locationIntervalRef.current);
+
+    socketRef.current.emit('driver:trip:end', {
+      busId,
+      busNumber: driverInfo?.assignedBus?.busNumber,
+    });
+
+    setTripActive(false);
+    setTripId(null);
+    setTotalPassengers(0);      // ← add
+    setStopPassengerMap({});    // ← add
+    showToast('🏁 Trip ended successfully!');
+  } catch (err) {
+    showToast('❌ Failed to end trip');
+  }
+};
+
+// ── Mark Stop ──
+// const markStop = () => {
+//   const busId = driverInfo?.assignedBus?._id;
+//   const stop  = ROUTE_STOPS[currentStop];
+
+//   socketRef.current?.emit('driver:stop:reached', {
+//     busId,
+//     stopName:  stop?.name,
+//     stopIndex: currentStop,
+//   });
+
+//   if (currentStop < ROUTE_STOPS.length - 1) {
+//     setCurrentStop(c => c + 1);
+//     setTotalPassengers(p => Math.min(50, p + Math.floor(Math.random() * 5)));
+//     showToast(`✅ Stop marked: ${stop?.name}`);
+//   } else {
+//     endTrip();
+//   }
+// };
+
+// const markStop = () => {
+//   const busId = driverInfo?.assignedBus?._id;
+//   const stop  = routeStops[currentStop];
+
+//   socketRef.current?.emit('driver:stop:reached', {
+//     busId,
+//     stopName:  stop?.name,
+//     stopIndex: currentStop,
+//   });
+
+//   if (currentStop < routeStops.length - 1) {
+//     setCurrentStop(c => c + 1);
+//     setTotalPassengers(p => Math.min(50, p + Math.floor(Math.random() * 5)));
+//     showToast(`✅ Stop marked: ${stop?.name}`);
+//   } else {
+//     endTrip();
+//   }
+// };
+
+// const markStop = () => {
+//   const busId = driverInfo?.assignedBus?._id;
+//   const stop  = routeStops[currentStop];
+
+//   socketRef.current?.emit('driver:stop:reached', {
+//     busId,
+//     stopName:  stop?.name,
+//     stopIndex: currentStop,
+//   });
+
+//   // Match stop name case-insensitively to get boarding count
+//   const stopKey       = stop?.name?.trim().toLowerCase() || '';
+//   const boardingCount = stopPassengerMap[stopKey] || 0;
+
+//   if (currentStop < routeStops.length - 1) {
+//     setCurrentStop(c => c + 1);
+//     setTotalPassengers(p => Math.min(
+//       driverInfo?.assignedBus?.capacity || 50,
+//       p + boardingCount
+//     ));
+//     showToast(`✅ Stop reached: ${stop?.name} (+${boardingCount} passengers)`);
+//   } else {
+//     // Last stop — mark it done first, then end after a short delay
+//     setCurrentStop(c => c + 1);
+//     setTotalPassengers(p => Math.min(
+//       driverInfo?.assignedBus?.capacity || 50,
+//       p + boardingCount
+//     ));
+//     showToast(`✅ Stop reached: ${stop?.name} (+${boardingCount} passengers)`);
+//     setTimeout(() => endTrip(), 1500);  // show "Done" for 1.5s then end
+//   }
+// };
+
+const markStop = () => {
+  const busId = driverInfo?.assignedBus?._id;
+  const stop  = routeStops[currentStop];
+
+  socketRef.current?.emit('driver:stop:reached', {
+    busId,
+    stopName:  stop?.name,
+    stopIndex: currentStop,
+  });
+
+  const stopKey       = stop?.name?.trim().toLowerCase() || '';
+  const boardingCount = stopPassengerMap[stopKey] || 0;
+
+  setTotalPassengers(p => Math.min(
+    driverInfo?.assignedBus?.capacity || 50,
+    p + boardingCount
+  ));
+
+  if (currentStop < routeStops.length - 1) {
+    // Not last stop — move to next
+    setCurrentStop(c => c + 1);
+    showToast(`✅ Stop reached: ${stop?.name} (+${boardingCount} passengers)`);
+  } else {
+    // Last stop — mark all done, stay active until driver clicks End Trip
+    setCurrentStop(routeStops.length);
+    showToast(`✅ All stops completed! (+${boardingCount} passengers) — Click End Trip when ready`);
+  }
+};
 
   const navSections = [
     {label:'Overview',items:[
@@ -796,10 +1270,18 @@ export default function DriverDashboard() {
   ];
 
   const renderPage = () => {
-    const props = { tripActive, currentStop, totalPassengers, setActivePage, startTrip, endTrip, markStop, driverStatus, setDriverStatus, showToast, driverInfo };
+    //const props = { tripActive, currentStop, totalPassengers, setActivePage, startTrip, endTrip, markStop, driverStatus, setDriverStatus, showToast, driverInfo };
+    const props = {
+      tripActive, currentStop, totalPassengers,
+      setActivePage, startTrip, endTrip, markStop,
+      driverStatus, setDriverStatus, showToast, driverInfo,
+      routeStops,   // ← add this
+    };
     switch(activePage) {
       case 'home':    return <PageHome {...props}/>;
-      case 'map':     return <PageLiveMap tripActive={tripActive} currentStop={currentStop}/>;
+      //case 'map':     return <PageLiveMap tripActive={tripActive} currentStop={currentStop}/>;
+      //case 'map': return <PageLiveMap tripActive={tripActive} currentStop={currentStop} routeStops={routeStops}/>;
+      case 'map': return <PageLiveMap tripActive={tripActive} currentStop={currentStop} routeStops={routeStops} driverInfo={driverInfo}/>;
       case 'route':   return <PageRoute driverInfo={driverInfo}/>;
       case 'history': return <PageHistory/>;
       // case 'profile': return <PageProfile navigate={navigate}/>;

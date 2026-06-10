@@ -26,3 +26,23 @@ export const changePassword = (currentPassword, newPassword) =>
     method: 'PATCH',
     body: { currentPassword, newPassword },
   });
+
+export const startDriverTrip = (body) =>
+  request('/driver/trip/start', { method: 'POST', body });
+
+export const endDriverTrip = (body) =>
+  request('/driver/trip/end', { method: 'POST', body });
+
+export const updateDriverLocation = (body) =>
+  request('/driver/trip/location', { method: 'PATCH', body });
+
+// export const getStopPassengerCounts = async (routeId) => {
+//   const res = await fetch(`/api/driver/trip/stop-counts/${routeId}`, {
+//     headers: { Authorization: `Bearer ${getDriverToken()}` },
+//   });
+//   if (!res.ok) throw new Error('Failed to fetch stop counts');
+//   return res.json();
+// };
+
+export const getStopPassengerCounts = (routeId) =>
+  request(`/driver/trip/stop-counts/${routeId}`);

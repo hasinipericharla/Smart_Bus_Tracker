@@ -26,7 +26,8 @@ const {
   getDriverNotifications,
   markDriverNotifRead,
 } = require('../controllers/notificationController');
-const { changeDriverPassword } = require('../controllers/driverAuthController'); // ← confirm this line exists
+
+const { changeDriverPassword, getStopPassengerCounts } = require('../controllers/driverAuthController');
 
 router.use(protectDriver);
 
@@ -35,5 +36,14 @@ router.get('/routes',                   getAllRoutes);
 router.get('/notifications',            getDriverNotifications);
 router.patch('/notifications/:id/read', markDriverNotifRead);
 router.patch('/change-password',        changeDriverPassword); // ← confirm this line exists
+
+//router.get('/trip/stop-counts/:routeId', protect, getStopPassengerCounts);
+router.get('/trip/stop-counts/:routeId', getStopPassengerCounts);
+
+const { startTrip, endTrip, updateLocation } = require('../controllers/tripController');
+
+router.post('/trip/start',      startTrip);
+router.post('/trip/end',        endTrip);
+router.patch('/trip/location',  updateLocation);
 
 module.exports = router;

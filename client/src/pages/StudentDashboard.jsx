@@ -4,6 +4,10 @@ import { getMyInfo } from '../api/studentService';
 import { clearStudentSession } from './StudentLogin';
 import { getMyRoutes } from '../api/studentService';
 import { changePassword } from '../api/studentService';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { io } from 'socket.io-client';
 
 const css = `
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Mono:wght@400;500&display=swap');
@@ -137,6 +141,8 @@ body{font-family:'DM Sans',sans-serif;background:#f1f5f9;color:var(--text)}
 ::-webkit-scrollbar{width:5px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
 `;
 
+
+
 const IconHome   = () => <svg className="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
 const IconMap    = () => <svg className="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="10" r="3"/><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>;
 const IconBell   = () => <svg className="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/></svg>;
@@ -158,6 +164,56 @@ const STOPS = [
 ];
 
 const MY_STOP_IDX = 3; // City Park
+
+// Fix leaflet default icon issue
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
+
+const busIcon = L.divIcon({
+  html: `<div style="
+    background:#16a34a;
+    width:36px;height:36px;
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:18px;
+    border:3px solid #fff;
+    box-shadow:0 2px 8px rgba(0,0,0,.3);
+  ">🚌</div>`,
+  className: '',
+  iconSize: [36, 36],
+  iconAnchor: [18, 18],
+});
+
+const myStopIcon = L.divIcon({
+  html: `<div style="
+    background:#2563eb;
+    width:28px;height:28px;
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;color:#fff;font-weight:800;
+    border:3px solid #fff;
+    box-shadow:0 2px 8px rgba(0,0,0,.3);
+  ">📍</div>`,
+  className: '',
+  iconSize: [28, 28],
+  iconAnchor: [14, 14],
+});
+
+function MapUpdater({ position }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (position) {
+      map.setView(position, map.getZoom());
+    }
+  }, [position, map]);
+
+  return null;
+}
 
 
 function PageHome({ showToast, setActivePage, onNameLoaded }) {
@@ -354,112 +410,366 @@ useEffect(() => {
 }
 
 
-// ─────────────────────────── PAGE TRACKING ───────────────────────────────────
-function PageTracking({ favs, toggleFav, showToast }) {
-  const [busPos, setBusPos] = useState(310);
-  const [tooltip, setTooltip] = useState(null);
+// // ─────────────────────────── PAGE TRACKING ───────────────────────────────────
+// function PageTracking({ favs, toggleFav, showToast }) {
+//   const [busPos, setBusPos] = useState(310);
+//   const [tooltip, setTooltip] = useState(null);
+//   useEffect(() => {
+//     const t = setInterval(() => setBusPos(p => p >= 560 ? 60 : p + 2), 100);
+//     return () => clearInterval(t);
+//   }, []);
+//   const reachedIdx = Math.floor((busPos - 60) / 62.5);
+//   const stopPositions = STOPS.map((_, i) => ({ left: 60 + i * 75, top: 187 }));
+
+//   return (
+//     <div className="page">
+//       <div className="page-header">
+//         <div><div className="page-title">Live Tracking</div><div className="page-subtitle">Real-time bus position · KA-01-B</div></div>
+//         <span className="status-pill sp-green" style={{fontSize:12,padding:'6px 14px'}}>● Bus is Live</span>
+//       </div>
+
+//       {/* ETA Banner */}
+//       <div className="eta-banner">
+//         <div>
+//           <div style={{fontSize:12,color:'#94a3b8',marginBottom:4,fontWeight:600,textTransform:'uppercase',letterSpacing:'.5px'}}>Bus Arriving At</div>
+//           <div className="eta-bus-info">City Park · Stop 4</div>
+//           <div className="eta-stop">KA-01-B · Route A — North Loop</div>
+//         </div>
+//         <div style={{marginLeft:'auto',textAlign:'center'}}>
+//           <div className="eta-mins">8</div>
+//           <div className="eta-label">minutes</div>
+//         </div>
+//         <div style={{background:'rgba(255,255,255,.08)',borderRadius:10,padding:'12px 18px',textAlign:'center'}}>
+//           <div style={{fontSize:11,color:'#94a3b8',marginBottom:4}}>Scheduled</div>
+//           <div style={{fontSize:18,fontWeight:700,fontFamily:"'DM Mono',monospace",color:'#fff'}}>07:22 AM</div>
+//           <span className="status-pill sp-green" style={{marginTop:6,display:'inline-block'}}>On Time</span>
+//         </div>
+//         <div style={{background:'rgba(255,255,255,.08)',borderRadius:10,padding:'12px 18px',textAlign:'center'}}>
+//           <div style={{fontSize:11,color:'#94a3b8',marginBottom:4}}>Speed</div>
+//           <div style={{fontSize:20,fontWeight:700,color:'var(--accent)',fontFamily:"'DM Mono',monospace"}}>42 km/h</div>
+//         </div>
+//       </div>
+
+//       {/* Live Map */}
+//       <div className="card">
+//         <div className="card-header">
+//           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+//           <span className="card-title">Live Bus Location</span>
+//           <div className="ch-right"><span className="status-pill sp-green">● Live</span></div>
+//         </div>
+//         <div className="map-body" style={{height:320}}>
+//           <div className="map-grid-bg"/>
+//           <div className="map-road" style={{left:0,top:190,width:'100%',height:3,opacity:.5}}/>
+//           <div className="map-road" style={{left:0,top:120,width:'100%',height:2,opacity:.2}}/>
+//           <div className="map-road" style={{left:200,top:0,width:2,height:'100%',opacity:.3}}/>
+//           <div className="map-road" style={{left:420,top:0,width:2,height:'100%',opacity:.2}}/>
+//           <div className="route-line-map" style={{left:50,top:191,width:560,background:'rgba(59,139,212,.4)'}}/>
+//           {stopPositions.map((pos, i) => (
+//             <div key={i}
+//               className={`stop-dot-map ${i < reachedIdx ? 'reached' : i === reachedIdx ? 'next' : 'upcoming'}`}
+//               style={{left:pos.left, top:pos.top}}
+//               onMouseEnter={() => setTooltip({...pos, name: STOPS[i].name, time: STOPS[i].mrnPickup})}
+//               onMouseLeave={() => setTooltip(null)}
+//             >
+//               {i === MY_STOP_IDX && <div style={{position:'absolute',top:-18,left:'50%',transform:'translateX(-50%)',fontSize:9,fontWeight:800,color:'var(--blue)',whiteSpace:'nowrap',background:'rgba(37,99,235,.1)',padding:'1px 5px',borderRadius:4}}>MY STOP</div>}
+//             </div>
+//           ))}
+//           {tooltip && (
+//             <div className="stop-tooltip" style={{left:tooltip.left, top:tooltip.top}}>
+//               {tooltip.name} · {tooltip.time}
+//             </div>
+//           )}
+//           <div className="bus-dot-live" style={{left:busPos, top:179}}>🚌</div>
+//           <div style={{position:'absolute',left:10,top:8,fontSize:10,color:'#94a3b8',fontFamily:"'DM Mono',monospace"}}>ROUTE A — NORTH LOOP</div>
+//           <div style={{position:'absolute',left:busPos+2,top:163,fontSize:10,fontWeight:700,color:'var(--green)',fontFamily:"'DM Mono',monospace",whiteSpace:'nowrap'}}>KA-01-B</div>
+//         </div>
+//         <div className="map-legend">
+//           <div className="legend-item"><div className="legend-dot" style={{background:'var(--green)'}}/> Reached</div>
+//           <div className="legend-item"><div className="legend-dot" style={{background:'var(--accent)'}}/> Next Stop</div>
+//           <div className="legend-item"><div className="legend-dot" style={{background:'#94a3b8'}}/> Upcoming</div>
+//           <div className="legend-item"><div style={{fontSize:13}}>🚌</div> Bus</div>
+//           <div className="legend-item" style={{marginLeft:'auto',color:'var(--blue)',fontWeight:600}}>📍 Your Stop = City Park</div>
+//         </div>
+//       </div>
+
+//       {/* Route Stops */}
+//       <div className="card">
+//         <div className="card-header">
+//           <span className="card-title">Route Stops</span>
+//           <div className="ch-right"><span className="card-sub">8 stops</span></div>
+//         </div>
+//         <div className="stops-list">
+//           {STOPS.map((stop, i) => {
+//             const isReached = i < reachedIdx;
+//             const isNext = i === reachedIdx;
+//             const isMine = i === MY_STOP_IDX;
+//             const isFav = favs.includes(stop.id);
+//             return (
+//               <div key={stop.id} className={`stop-item ${isNext ? 'active-stop' : ''} ${isReached ? 'reached-stop' : ''}`}>
+//                 <div className={`stop-circle ${isReached ? 'sc-green' : isNext ? 'sc-amber' : 'sc-gray'}`}>
+//                   {isReached ? '✓' : i+1}
+//                 </div>
+//                 <div>
+//                   <div className="stop-name">{stop.name} {isMine && <span style={{fontSize:10,background:'rgba(37,99,235,.12)',color:'var(--blue)',padding:'1px 7px',borderRadius:5,marginLeft:4}}>MY STOP</span>}</div>
+//                   <div className="stop-meta">{stop.mrnPickup} · {stop.dist}</div>
+//                 </div>
+//                 <div className="stop-right">
+//                   {isNext && <span className="status-pill sp-amber">Next</span>}
+//                   <button className="fav-btn" onClick={() => { toggleFav(stop.id); showToast(isFav ? 'Removed from favorites' : '❤️ Added to favorites'); }}>
+//                     {isFav ? '❤️' : '🤍'}
+//                   </button>
+//                 </div>
+//               </div>
+//             );
+//           })}
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+
+
+function PageTracking({ favs, toggleFav, showToast, myInfo }) {
+  const busId      = myInfo?.assignedBus?._id;
+  const myStopName = myInfo?.pickupStop;
+  const routeStops = myInfo?.assignedRoute?.stops || STOPS;
+
+  const [busPosition, setBusPosition] = useState(null);
+  const [busSpeed, setBusSpeed]       = useState(0);
+  const [busStatus, setBusStatus]     = useState('idle');
+  const [currentStop, setCurrentStop] = useState(null);
+  const socketRef = useRef(null);
+
+  const defaultCenter = [15.8497, 74.4977]; // Belagavi
+
   useEffect(() => {
-    const t = setInterval(() => setBusPos(p => p >= 560 ? 60 : p + 2), 100);
-    return () => clearInterval(t);
-  }, []);
-  const reachedIdx = Math.floor((busPos - 60) / 62.5);
-  const stopPositions = STOPS.map((_, i) => ({ left: 60 + i * 75, top: 187 }));
+    socketRef.current = io('http://localhost:8000');
+
+    if (busId) {
+      // Live location updates
+      socketRef.current.on(`bus:${busId}:location`, ({ lat, lng, speed }) => {
+        setBusPosition([lat, lng]);
+        setBusSpeed(speed || 0);
+      });
+
+      // Trip started/ended
+      socketRef.current.on(`bus:${busId}:status`, ({ status }) => {
+        setBusStatus(status);
+      });
+
+      // Stop reached
+      socketRef.current.on(`bus:${busId}:stop`, ({ stopName, stopIndex }) => {
+        setCurrentStop({ name: stopName, index: stopIndex });
+      });
+    }
+
+    socketRef.current.emit('get:live:buses');
+
+    return () => socketRef.current?.disconnect();
+  }, [busId]);
 
   return (
     <div className="page">
       <div className="page-header">
-        <div><div className="page-title">Live Tracking</div><div className="page-subtitle">Real-time bus position · KA-01-B</div></div>
-        <span className="status-pill sp-green" style={{fontSize:12,padding:'6px 14px'}}>● Bus is Live</span>
+        <div>
+          <div className="page-title">Live Tracking</div>
+          <div className="page-subtitle">
+            Real-time bus position · {myInfo?.assignedRoute?.name || 'Route'}
+          </div>
+        </div>
+        <span
+          className={`status-pill ${busStatus === 'live' ? 'sp-green' : 'sp-gray'}`}
+          style={{ fontSize: 12, padding: '6px 14px' }}
+        >
+          {busStatus === 'live' ? '● Bus is Live' : '○ Bus Idle'}
+        </span>
       </div>
 
       {/* ETA Banner */}
-      <div className="eta-banner">
+      <div style={{
+        background: 'linear-gradient(135deg,#1e293b,#334155)',
+        borderRadius: 13, padding: '20px 24px',
+        display: 'flex', alignItems: 'center',
+        gap: 18, flexWrap: 'wrap', color: '#fff',
+      }}>
         <div>
-          <div style={{fontSize:12,color:'#94a3b8',marginBottom:4,fontWeight:600,textTransform:'uppercase',letterSpacing:'.5px'}}>Bus Arriving At</div>
-          <div className="eta-bus-info">City Park · Stop 4</div>
-          <div className="eta-stop">KA-01-B · Route A — North Loop</div>
+          <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>
+            Bus Arriving At
+          </div>
+          <div style={{ fontSize: 15, fontWeight: 700 }}>
+            {myStopName || 'Your Stop'}
+          </div>
+          <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
+            {myInfo?.assignedRoute?.name || '—'}
+          </div>
         </div>
-        <div style={{marginLeft:'auto',textAlign:'center'}}>
-          <div className="eta-mins">8</div>
-          <div className="eta-label">minutes</div>
+        <div style={{ marginLeft: 'auto', textAlign: 'center' }}>
+          <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>Speed</div>
+          <div style={{
+            fontSize: 28, fontWeight: 800,
+            color: 'var(--accent)',
+            fontFamily: "'DM Mono',monospace",
+          }}>
+            {busSpeed} <span style={{ fontSize: 14 }}>km/h</span>
+          </div>
         </div>
-        <div style={{background:'rgba(255,255,255,.08)',borderRadius:10,padding:'12px 18px',textAlign:'center'}}>
-          <div style={{fontSize:11,color:'#94a3b8',marginBottom:4}}>Scheduled</div>
-          <div style={{fontSize:18,fontWeight:700,fontFamily:"'DM Mono',monospace",color:'#fff'}}>07:22 AM</div>
-          <span className="status-pill sp-green" style={{marginTop:6,display:'inline-block'}}>On Time</span>
-        </div>
-        <div style={{background:'rgba(255,255,255,.08)',borderRadius:10,padding:'12px 18px',textAlign:'center'}}>
-          <div style={{fontSize:11,color:'#94a3b8',marginBottom:4}}>Speed</div>
-          <div style={{fontSize:20,fontWeight:700,color:'var(--accent)',fontFamily:"'DM Mono',monospace"}}>42 km/h</div>
-        </div>
+        {currentStop && (
+          <div style={{
+            background: 'rgba(255,255,255,.08)',
+            borderRadius: 10, padding: '12px 18px', textAlign: 'center',
+          }}>
+            <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>
+              Last Stop Reached
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 700 }}>
+              {currentStop.name}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Live Map */}
+      {/* Leaflet Map */}
       <div className="card">
         <div className="card-header">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+            stroke="var(--green)" strokeWidth="2">
+            <circle cx="12" cy="12" r="10"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
           <span className="card-title">Live Bus Location</span>
-          <div className="ch-right"><span className="status-pill sp-green">● Live</span></div>
+          <div className="ch-right">
+            <span className={`status-pill ${busStatus === 'live' ? 'sp-green' : 'sp-gray'}`}>
+              {busStatus === 'live' ? '● Live' : '○ Idle'}
+            </span>
+          </div>
         </div>
-        <div className="map-body" style={{height:320}}>
-          <div className="map-grid-bg"/>
-          <div className="map-road" style={{left:0,top:190,width:'100%',height:3,opacity:.5}}/>
-          <div className="map-road" style={{left:0,top:120,width:'100%',height:2,opacity:.2}}/>
-          <div className="map-road" style={{left:200,top:0,width:2,height:'100%',opacity:.3}}/>
-          <div className="map-road" style={{left:420,top:0,width:2,height:'100%',opacity:.2}}/>
-          <div className="route-line-map" style={{left:50,top:191,width:560,background:'rgba(59,139,212,.4)'}}/>
-          {stopPositions.map((pos, i) => (
-            <div key={i}
-              className={`stop-dot-map ${i < reachedIdx ? 'reached' : i === reachedIdx ? 'next' : 'upcoming'}`}
-              style={{left:pos.left, top:pos.top}}
-              onMouseEnter={() => setTooltip({...pos, name: STOPS[i].name, time: STOPS[i].mrnPickup})}
-              onMouseLeave={() => setTooltip(null)}
-            >
-              {i === MY_STOP_IDX && <div style={{position:'absolute',top:-18,left:'50%',transform:'translateX(-50%)',fontSize:9,fontWeight:800,color:'var(--blue)',whiteSpace:'nowrap',background:'rgba(37,99,235,.1)',padding:'1px 5px',borderRadius:4}}>MY STOP</div>}
-            </div>
-          ))}
-          {tooltip && (
-            <div className="stop-tooltip" style={{left:tooltip.left, top:tooltip.top}}>
-              {tooltip.name} · {tooltip.time}
-            </div>
-          )}
-          <div className="bus-dot-live" style={{left:busPos, top:179}}>🚌</div>
-          <div style={{position:'absolute',left:10,top:8,fontSize:10,color:'#94a3b8',fontFamily:"'DM Mono',monospace"}}>ROUTE A — NORTH LOOP</div>
-          <div style={{position:'absolute',left:busPos+2,top:163,fontSize:10,fontWeight:700,color:'var(--green)',fontFamily:"'DM Mono',monospace",whiteSpace:'nowrap'}}>KA-01-B</div>
+
+        <div style={{ height: 380, borderRadius: '0 0 13px 13px', overflow: 'hidden' }}>
+          <MapContainer
+            center={busPosition || defaultCenter}
+            zoom={14}
+            style={{ width: '100%', height: '100%' }}
+            zoomControl={true}
+          >
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='© OpenStreetMap contributors'
+            />
+
+            {/* Auto-follow bus */}
+            {busPosition && <MapUpdater position={busPosition} />}
+
+            {/* Bus marker */}
+            {busPosition && (
+              <Marker position={busPosition} icon={busIcon}>
+                <Popup>
+                  <b>🚌 Bus</b><br/>
+                  Speed: {busSpeed} km/h<br/>
+                  Status: {busStatus}
+                </Popup>
+              </Marker>
+            )}
+
+            {/* My stop marker */}
+            {routeStops.map((stop, i) => {
+              if (!stop.lat || !stop.lng) return null;
+              const isMyStop =
+                stop.name?.toLowerCase() === myStopName?.toLowerCase();
+              return (
+                <Marker
+                  key={i}
+                  position={[stop.lat, stop.lng]}
+                  icon={isMyStop ? myStopIcon : L.divIcon({
+                    html: `<div style="
+                      background:${i < (currentStop?.index || 0) ? '#16a34a' : '#94a3b8'};
+                      width:20px;height:20px;border-radius:50%;
+                      border:2px solid #fff;
+                      display:flex;align-items:center;justify-content:center;
+                      font-size:9px;color:#fff;font-weight:800;
+                    ">${i + 1}</div>`,
+                    className: '',
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10],
+                  })}
+                >
+                  <Popup>
+                    <b>Stop {i + 1}: {stop.name}</b>
+                    {isMyStop && <><br/><span style={{color:'#2563eb',fontWeight:600}}>📍 Your Stop</span></>}
+                  </Popup>
+                </Marker>
+              );
+            })}
+          </MapContainer>
         </div>
-        <div className="map-legend">
-          <div className="legend-item"><div className="legend-dot" style={{background:'var(--green)'}}/> Reached</div>
-          <div className="legend-item"><div className="legend-dot" style={{background:'var(--accent)'}}/> Next Stop</div>
-          <div className="legend-item"><div className="legend-dot" style={{background:'#94a3b8'}}/> Upcoming</div>
-          <div className="legend-item"><div style={{fontSize:13}}>🚌</div> Bus</div>
-          <div className="legend-item" style={{marginLeft:'auto',color:'var(--blue)',fontWeight:600}}>📍 Your Stop = City Park</div>
-        </div>
+
+        {busStatus !== 'live' && (
+          <div style={{
+            padding: '10px 18px',
+            background: 'rgba(245,166,35,.06)',
+            fontSize: 12,
+            color: 'var(--accent2)',
+            fontWeight: 600,
+            textAlign: 'center',
+          }}>
+            ⚠️ Bus has not started the trip yet.
+            Map will update automatically when driver starts.
+          </div>
+        )}
       </div>
 
-      {/* Route Stops */}
+      {/* Route Stops List */}
       <div className="card">
         <div className="card-header">
           <span className="card-title">Route Stops</span>
-          <div className="ch-right"><span className="card-sub">8 stops</span></div>
+          <div className="ch-right">
+            <span className="card-sub">{routeStops.length} stops</span>
+          </div>
         </div>
         <div className="stops-list">
-          {STOPS.map((stop, i) => {
-            const isReached = i < reachedIdx;
-            const isNext = i === reachedIdx;
-            const isMine = i === MY_STOP_IDX;
-            const isFav = favs.includes(stop.id);
+          {routeStops.map((stop, i) => {
+            const isNext    = currentStop?.index === i;
+            const isReached = currentStop && i < currentStop.index;
+            const isMine    =
+              stop.name?.toLowerCase() === myStopName?.toLowerCase();
+            const isFav     =
+              favs.includes(stop.id || stop._id || stop.name);
             return (
-              <div key={stop.id} className={`stop-item ${isNext ? 'active-stop' : ''} ${isReached ? 'reached-stop' : ''}`}>
+              <div
+                key={i}
+                className={`stop-item ${isNext ? 'active-stop' : ''} ${isReached ? 'reached-stop' : ''}`}
+              >
                 <div className={`stop-circle ${isReached ? 'sc-green' : isNext ? 'sc-amber' : 'sc-gray'}`}>
-                  {isReached ? '✓' : i+1}
+                  {isReached ? '✓' : i + 1}
                 </div>
                 <div>
-                  <div className="stop-name">{stop.name} {isMine && <span style={{fontSize:10,background:'rgba(37,99,235,.12)',color:'var(--blue)',padding:'1px 7px',borderRadius:5,marginLeft:4}}>MY STOP</span>}</div>
-                  <div className="stop-meta">{stop.mrnPickup} · {stop.dist}</div>
+                  <div className="stop-name">
+                    {stop.name}
+                    {isMine && (
+                      <span style={{
+                        fontSize: 10,
+                        background: 'rgba(37,99,235,.12)',
+                        color: 'var(--blue)',
+                        padding: '1px 7px',
+                        borderRadius: 5,
+                        marginLeft: 4,
+                      }}>MY STOP</span>
+                    )}
+                  </div>
+                  <div className="stop-meta">
+                    {stop.mrnPickup || stop.morningPickup || ''}
+                  </div>
                 </div>
                 <div className="stop-right">
-                  {isNext && <span className="status-pill sp-amber">Next</span>}
-                  <button className="fav-btn" onClick={() => { toggleFav(stop.id); showToast(isFav ? 'Removed from favorites' : '❤️ Added to favorites'); }}>
+                  {isNext && (
+                    <span className="status-pill sp-amber">Next</span>
+                  )}
+                  <button
+                    className="fav-btn"
+                    onClick={() => {
+                      toggleFav(stop.id || stop.name);
+                      showToast(isFav ? 'Removed' : '❤️ Added to favorites');
+                    }}
+                  >
                     {isFav ? '❤️' : '🤍'}
                   </button>
                 </div>
@@ -471,6 +781,9 @@ function PageTracking({ favs, toggleFav, showToast }) {
     </div>
   );
 }
+
+
+
 
 // ─────────────────────────── PAGE ROUTES ─────────────────────────────────────
 // function PageRoutes({ favs, toggleFav, showToast }) {
@@ -786,6 +1099,46 @@ function PageTracking({ favs, toggleFav, showToast }) {
 //     </div>
 //   );
 // }
+
+function PageNotifications({ notifs, setNotifs }) {
+  const unread = notifs.filter(n => !n.read).length;
+  return (
+    <div className="page">
+      <div className="page-header">
+        <div>
+          <div className="page-title">Notifications</div>
+          <div className="page-subtitle">{unread} unread alerts</div>
+        </div>
+        <button
+          className="fab-btn fab-secondary"
+          onClick={() => setNotifs(ns => ns.map(n => ({ ...n, read: true })))}
+        >
+          ✓ Mark all read
+        </button>
+      </div>
+      <div className="card">
+        <div className="notif-list">
+          {notifs.map((n, i) => (
+            <div
+              key={i}
+              className={`notif-item${n.read ? '' : ' unread'}`}
+              onClick={() => setNotifs(ns => ns.map((x, j) => j === i ? { ...x, read: true } : x))}
+            >
+              <div className={`notif-icon ni-${n.color}`}>{n.icon}</div>
+              <div style={{ flex: 1 }}>
+                <div className="notif-text" dangerouslySetInnerHTML={{ __html: n.text }} />
+                <div className="notif-time">{n.time}</div>
+              </div>
+              {!n.read && <div className="unread-dot" />}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 function PageRoutes({ favs, toggleFav, showToast }) {
   const [tripType, setTripType] = useState('morning');
   const [myInfo, setMyInfo]     = useState(null);
@@ -1065,18 +1418,122 @@ function PageRoutes({ favs, toggleFav, showToast }) {
 }
 
 // ─────────────────────────── PAGE FAVORITES ───────────────────────────────────
-function PageFavorites({ favs, toggleFav, showToast }) {
+// function PageFavorites({ favs, toggleFav, showToast }) {
+//   const [search, setSearch] = useState('');
+//   const [showAdd, setShowAdd] = useState(false);
+
+//   const favStops = STOPS.filter(s => favs.includes(s.id));
+//   const nonFavStops = STOPS.filter(s => !favs.includes(s.id));
+//   const filteredNonFav = nonFavStops.filter(s => s.name.toLowerCase().includes(search.toLowerCase()));
+
+//   return (
+//     <div className="page">
+//       <div className="page-header">
+//         <div><div className="page-title">Favorite Stops</div><div className="page-subtitle">{favStops.length} saved stops</div></div>
+//         <button className="fab-btn fab-primary" onClick={() => setShowAdd(v => !v)}>
+//           {showAdd ? '✕ Close' : '＋ Add Favorites'}
+//         </button>
+//       </div>
+
+//       {/* Add Favorites Panel */}
+//       {showAdd && (
+//         <div className="card">
+//           <div className="card-header">
+//             <span className="card-title">Add a Stop to Favorites</span>
+//           </div>
+//           <div style={{padding:'12px 18px 6px'}}>
+//             <div style={{position:'relative'}}>
+//               <input className="search-input" placeholder="Search stops…" value={search} onChange={e => setSearch(e.target.value)} />
+//               <span style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',fontSize:14,color:'var(--muted)'}}>🔍</span>
+//             </div>
+//           </div>
+//           {filteredNonFav.length === 0 ? (
+//             <div style={{padding:'16px 18px',fontSize:13,color:'var(--muted)',textAlign:'center'}}>
+//               {search ? 'No stops match your search.' : 'All stops are already in favorites!'}
+//             </div>
+//           ) : (
+//             filteredNonFav.map((stop, i) => (
+//               <div key={stop.id} className="stop-item" style={{borderLeft:'none'}}>
+//                 <div className="stop-circle sc-gray" style={{width:24,height:24,fontSize:9}}>{STOPS.indexOf(stop)+1}</div>
+//                 <div>
+//                   <div className="stop-name">{stop.name}</div>
+//                   <div className="stop-meta">{stop.mrnPickup} pickup · {stop.dist}</div>
+//                 </div>
+//                 <div className="stop-right">
+//                   <button className="fab-btn fab-primary" style={{fontSize:11,padding:'5px 12px'}} onClick={() => { toggleFav(stop.id); showToast('❤️ Added to favorites'); }}>＋ Add</button>
+//                 </div>
+//               </div>
+//             ))
+//           )}
+//         </div>
+//       )}
+
+//       {/* Favorites List */}
+//       {favStops.length === 0 ? (
+//         <div className="card" style={{padding:'40px',textAlign:'center'}}>
+//           <div style={{fontSize:32,marginBottom:12}}>🤍</div>
+//           <div style={{fontSize:15,fontWeight:600,color:'var(--muted)'}}>No favorite stops yet</div>
+//           <div style={{fontSize:13,color:'var(--muted)',marginTop:6}}>Click "Add Favorites" above to save stops</div>
+//         </div>
+//       ) : (
+//         <div className="card">
+//           <div className="card-header"><span className="card-title">Saved Stops</span></div>
+//           {favStops.map(stop => (
+//             <div key={stop.id} className="stop-item" style={{borderLeft:'none'}}>
+//               <div className="stop-circle sc-fav">❤</div>
+//               <div style={{flex:1}}>
+//                 <div className="stop-name">{stop.name}</div>
+//                 <div style={{display:'flex',gap:14,marginTop:3}}>
+//                   <div className="time-slot">
+//                     <span className="time-slot-label">Mrng Pickup</span>
+//                     <span className="time-slot-val" style={{color:'var(--green)'}}>{stop.mrnPickup}</span>
+//                   </div>
+//                   <div style={{width:1,background:'var(--border)',margin:'2px 0'}}/>
+//                   <div className="time-slot">
+//                     <span className="time-slot-label">Evng Pickup</span>
+//                     <span className="time-slot-val" style={{color:'var(--blue)'}}>{stop.evnPickup}</span>
+//                   </div>
+//                   <div style={{width:1,background:'var(--border)',margin:'2px 0'}}/>
+//                   <div className="time-slot">
+//                     <span className="time-slot-label">Distance</span>
+//                     <span className="time-slot-val">{stop.dist}</span>
+//                   </div>
+//                 </div>
+//               </div>
+//               <div className="stop-right">
+//                 <button className="fab-btn fab-secondary" style={{fontSize:11,padding:'5px 12px'}} onClick={() => { toggleFav(stop.id); showToast('Removed from favorites'); }}>Remove</button>
+//               </div>
+//             </div>
+//           ))}
+//         </div>
+//       )}
+//     </div>
+//   );
+// }
+
+
+function PageFavorites({ favs, toggleFav, showToast, myInfo }) {
   const [search, setSearch] = useState('');
   const [showAdd, setShowAdd] = useState(false);
 
-  const favStops = STOPS.filter(s => favs.includes(s.id));
-  const nonFavStops = STOPS.filter(s => !favs.includes(s.id));
-  const filteredNonFav = nonFavStops.filter(s => s.name.toLowerCase().includes(search.toLowerCase()));
+  // Use real route stops from student's assigned route
+  const routeStops = (myInfo?.assignedRoute?.stops || [])
+    .slice()
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+  const favStops    = routeStops.filter(s => favs.includes(s._id || s.name));
+  const nonFavStops = routeStops.filter(s => !favs.includes(s._id || s.name));
+  const filteredNonFav = nonFavStops.filter(s =>
+    s.name.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="page">
       <div className="page-header">
-        <div><div className="page-title">Favorite Stops</div><div className="page-subtitle">{favStops.length} saved stops</div></div>
+        <div>
+          <div className="page-title">Favorite Stops</div>
+          <div className="page-subtitle">{favStops.length} saved stops</div>
+        </div>
         <button className="fab-btn fab-primary" onClick={() => setShowAdd(v => !v)}>
           {showAdd ? '✕ Close' : '＋ Add Favorites'}
         </button>
@@ -1088,26 +1545,47 @@ function PageFavorites({ favs, toggleFav, showToast }) {
           <div className="card-header">
             <span className="card-title">Add a Stop to Favorites</span>
           </div>
-          <div style={{padding:'12px 18px 6px'}}>
-            <div style={{position:'relative'}}>
-              <input className="search-input" placeholder="Search stops…" value={search} onChange={e => setSearch(e.target.value)} />
-              <span style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',fontSize:14,color:'var(--muted)'}}>🔍</span>
+          <div style={{ padding: '12px 18px 6px' }}>
+            <div style={{ position: 'relative' }}>
+              <input
+                className="search-input"
+                placeholder="Search stops…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+              <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: 'var(--muted)' }}>🔍</span>
             </div>
           </div>
-          {filteredNonFav.length === 0 ? (
-            <div style={{padding:'16px 18px',fontSize:13,color:'var(--muted)',textAlign:'center'}}>
+
+          {routeStops.length === 0 ? (
+            <div style={{ padding: '16px 18px', fontSize: 13, color: 'var(--muted)', textAlign: 'center' }}>
+              No route assigned yet. Contact your admin.
+            </div>
+          ) : filteredNonFav.length === 0 ? (
+            <div style={{ padding: '16px 18px', fontSize: 13, color: 'var(--muted)', textAlign: 'center' }}>
               {search ? 'No stops match your search.' : 'All stops are already in favorites!'}
             </div>
           ) : (
             filteredNonFav.map((stop, i) => (
-              <div key={stop.id} className="stop-item" style={{borderLeft:'none'}}>
-                <div className="stop-circle sc-gray" style={{width:24,height:24,fontSize:9}}>{STOPS.indexOf(stop)+1}</div>
+              <div key={stop._id || i} className="stop-item" style={{ borderLeft: 'none' }}>
+                <div className="stop-circle sc-gray" style={{ width: 24, height: 24, fontSize: 9 }}>
+                  {stop.order ?? i + 1}
+                </div>
                 <div>
                   <div className="stop-name">{stop.name}</div>
-                  <div className="stop-meta">{stop.mrnPickup} pickup · {stop.dist}</div>
+                  <div className="stop-meta">
+                    {stop.morningPickup || stop.mrnPickup || `Stop ${stop.order ?? i + 1}`}
+                  </div>
                 </div>
                 <div className="stop-right">
-                  <button className="fab-btn fab-primary" style={{fontSize:11,padding:'5px 12px'}} onClick={() => { toggleFav(stop.id); showToast('❤️ Added to favorites'); }}>＋ Add</button>
+                  <button
+                    className="fab-btn fab-primary"
+                    style={{ fontSize: 11, padding: '5px 12px' }}
+                    onClick={() => {
+                      toggleFav(stop._id || stop.name);
+                      showToast('❤️ Added to favorites');
+                    }}
+                  >＋ Add</button>
                 </div>
               </div>
             ))
@@ -1115,40 +1593,39 @@ function PageFavorites({ favs, toggleFav, showToast }) {
         </div>
       )}
 
-      {/* Favorites List */}
+      {/* Saved Favorites List */}
       {favStops.length === 0 ? (
-        <div className="card" style={{padding:'40px',textAlign:'center'}}>
-          <div style={{fontSize:32,marginBottom:12}}>🤍</div>
-          <div style={{fontSize:15,fontWeight:600,color:'var(--muted)'}}>No favorite stops yet</div>
-          <div style={{fontSize:13,color:'var(--muted)',marginTop:6}}>Click "Add Favorites" above to save stops</div>
+        <div className="card" style={{ padding: '40px', textAlign: 'center' }}>
+          <div style={{ fontSize: 32, marginBottom: 12 }}>🤍</div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--muted)' }}>No favorite stops yet</div>
+          <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 6 }}>
+            Click "Add Favorites" above to save stops
+          </div>
         </div>
       ) : (
         <div className="card">
           <div className="card-header"><span className="card-title">Saved Stops</span></div>
-          {favStops.map(stop => (
-            <div key={stop.id} className="stop-item" style={{borderLeft:'none'}}>
+          {favStops.map((stop, i) => (
+            <div key={stop._id || i} className="stop-item" style={{ borderLeft: 'none' }}>
               <div className="stop-circle sc-fav">❤</div>
-              <div style={{flex:1}}>
+              <div style={{ flex: 1 }}>
                 <div className="stop-name">{stop.name}</div>
-                <div style={{display:'flex',gap:14,marginTop:3}}>
-                  <div className="time-slot">
-                    <span className="time-slot-label">Mrng Pickup</span>
-                    <span className="time-slot-val" style={{color:'var(--green)'}}>{stop.mrnPickup}</span>
-                  </div>
-                  <div style={{width:1,background:'var(--border)',margin:'2px 0'}}/>
-                  <div className="time-slot">
-                    <span className="time-slot-label">Evng Pickup</span>
-                    <span className="time-slot-val" style={{color:'var(--blue)'}}>{stop.evnPickup}</span>
-                  </div>
-                  <div style={{width:1,background:'var(--border)',margin:'2px 0'}}/>
-                  <div className="time-slot">
-                    <span className="time-slot-label">Distance</span>
-                    <span className="time-slot-val">{stop.dist}</span>
-                  </div>
+                <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>
+                  Stop {stop.order ?? i + 1}
+                  {stop.morningPickup || stop.mrnPickup
+                    ? ` · ${stop.morningPickup || stop.mrnPickup}`
+                    : ''}
                 </div>
               </div>
               <div className="stop-right">
-                <button className="fab-btn fab-secondary" style={{fontSize:11,padding:'5px 12px'}} onClick={() => { toggleFav(stop.id); showToast('Removed from favorites'); }}>Remove</button>
+                <button
+                  className="fab-btn fab-secondary"
+                  style={{ fontSize: 11, padding: '5px 12px' }}
+                  onClick={() => {
+                    toggleFav(stop._id || stop.name);
+                    showToast('Removed from favorites');
+                  }}
+                >Remove</button>
               </div>
             </div>
           ))}
@@ -1157,6 +1634,8 @@ function PageFavorites({ favs, toggleFav, showToast }) {
     </div>
   );
 }
+
+
 
 // ─────────────────────────── PAGE PROFILE ────────────────────────────────────
 // function PageProfile({ navigate, studentName, myInfo }) {
@@ -1486,24 +1965,6 @@ function PageProfile({ navigate, studentName, myInfo }) {
           </div>
 
           {/* Recent Activity */}
-          <div className="card">
-            <div className="card-header"><span className="card-title">Recent Activity</span></div>
-            <div style={{ padding: '6px 0' }}>
-              {[
-                { color: 'var(--green)', text: 'Boarded bus KA-01-B at City Park', time: 'Today, 07:22 AM' },
-                { color: 'var(--accent)', text: 'Evening drop completed at City Park', time: 'Yesterday, 05:22 PM' },
-                { color: 'var(--blue)', text: 'Route schedule viewed', time: 'Yesterday, 06:45 AM' },
-              ].map((a, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '11px 20px', borderBottom: i < 2 ? '1px solid var(--border)' : 'none' }}>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: a.color, marginTop: 4, flexShrink: 0 }} />
-                  <div>
-                    <div style={{ fontSize: 13, color: 'var(--text)' }}>{a.text}</div>
-                    <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2, fontFamily: "'DM Mono',monospace" }}>{a.time}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
 
         </div>
       </div>
@@ -1636,9 +2097,10 @@ const getInitials = (name) =>
   setActivePage={setActivePage} 
   onNameLoaded={(name, info) => { setStudentName(name); setStudentInfo(info); }}
 />;
-      case 'tracking':      return <PageTracking favs={favs} toggleFav={toggleFav} showToast={showToast}/>;
+      case 'tracking':      return <PageTracking favs={favs} toggleFav={toggleFav} showToast={showToast} myInfo={studentInfo}/>;
       case 'routes':        return <PageRoutes favs={favs} toggleFav={toggleFav} showToast={showToast}/>;
-      case 'favorites':     return <PageFavorites favs={favs} toggleFav={toggleFav} showToast={showToast}/>;
+      //case 'favorites':     return <PageFavorites favs={favs} toggleFav={toggleFav} showToast={showToast}/>;
+      case 'favorites': return <PageFavorites favs={favs} toggleFav={toggleFav} showToast={showToast} myInfo={studentInfo}/>;
       case 'notifications': return <PageNotifications notifs={notifs} setNotifs={setNotifs}/>;
       // case 'profile':       return <PageProfile navigate={navigate}/>;
       case 'profile': return <PageProfile 
