@@ -31,7 +31,12 @@ const protect = async (req, res, next) => {
     req.admin = admin;
     next();
   } catch (err) {
-    return res.status(401).json({ success: false, message: 'Token is invalid or expired.' });
+    // return res.status(401).json({ success: false, message: 'Token is invalid or expired.' });
+    console.error("AUTH ERROR:", err);
+  return res.status(401).json({
+    success: false,
+    message: 'Token is invalid or expired.'
+  });
   }
 };
 
