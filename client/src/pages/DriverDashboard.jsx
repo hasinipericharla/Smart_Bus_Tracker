@@ -1289,8 +1289,73 @@ const markStop = () => {
       default:        return <PageHome {...props}/>;
     }
   };
-
-  return (
+  
+  const PAGE_LABELS = {
+  home:    'Dashboard',
+  map:     'Live Map',
+  route:   'My Route',
+  history: 'Trip History',
+  profile: 'My Profile',
+};
+//   return (
+//     <>
+//       <style>{css}</style>
+//       <div className="layout">
+//         <div className="topbar">
+//           <div className="logo">
+//             <div className="logo-icon"><BusLogo/></div>
+//             BusNav Driver
+//           </div>
+//           <div className="spacer"/>
+//           <div style={{display:'flex',alignItems:'center',gap:8}}>
+//             <span className="status-pill" style={{fontSize:11,padding:'5px 12px', background: tripActive ? 'rgba(22,163,74,.12)' : 'rgba(100,116,139,.1)', color: tripActive ? 'var(--green)' : 'var(--muted)'}}>
+//               {tripActive ? '● Trip Active' : '○ Idle'}
+//             </span>
+//           </div>
+//           <div className="spacer"/>
+//           <div className="topbar-right">
+//             <div className="topbar-time">{clock}</div>
+//             {/* <div className="avatar">RK</div> */}
+//             <div
+//               className="avatar"
+//               title="My Profile"
+//               onClick={() => setActivePage('profile')}
+//               style={{ cursor: 'pointer' }}
+//             >
+//               {driverInfo
+//                 ? driverInfo.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+//                 : '?'}
+//             </div>
+//           </div>
+//         </div>
+//         <div className="body-wrap">
+//           <div className="sidebar">
+//             {navSections.map(s => (
+//               <div className="nav-section" key={s.label}>
+//                 <div className="nav-label">{s.label}</div>
+//                 {s.items.map(it => (
+//                   <button key={it.id} className={`nav-item${activePage===it.id?' active':''}`} onClick={() => setActivePage(it.id)}>
+//                     {it.icon} {it.label}
+//                   </button>
+//                 ))}
+//               </div>
+//             ))}
+//             <div className="sidebar-bottom">
+//               {/* <button className="nav-item" style={{color:'#64748b'}} onClick={() => navigate('/')}><IconLogout/> Logout</button> */}
+//               <button className="nav-item" style={{color:'#64748b'}} onClick={() => {
+//   clearDriverSession();
+//   navigate('/driver/login');
+// }}><IconLogout/> Logout</button>
+//             </div>
+//           </div>
+//           <div className="main">{renderPage()}</div>
+//         </div>
+//       </div>
+//       {toast && <div className="toast">{toast}</div>}
+//     </>
+//   );
+// }
+return (
     <>
       <style>{css}</style>
       <div className="layout">
@@ -1299,16 +1364,20 @@ const markStop = () => {
             <div className="logo-icon"><BusLogo/></div>
             BusNav Driver
           </div>
-          <div className="spacer"/>
-          <div style={{display:'flex',alignItems:'center',gap:8}}>
-            <span className="status-pill" style={{fontSize:11,padding:'5px 12px', background: tripActive ? 'rgba(22,163,74,.12)' : 'rgba(100,116,139,.1)', color: tripActive ? 'var(--green)' : 'var(--muted)'}}>
-              {tripActive ? '● Trip Active' : '○ Idle'}
+          <div style={{flex:1, display:'flex', justifyContent:'center', alignItems:'center', gap:8}}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2">
+              <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+              <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+            </svg>
+            <span style={{fontSize:14, fontWeight:600, color:'#64748b'}}>
+              {PAGE_LABELS[activePage] || 'Dashboard'}
             </span>
           </div>
-          <div className="spacer"/>
           <div className="topbar-right">
+            <span className="status-pill" style={{fontSize:11, padding:'5px 12px', background: tripActive ? 'rgba(22,163,74,.12)' : 'rgba(100,116,139,.1)', color: tripActive ? 'var(--green)' : 'var(--muted)'}}>
+              {tripActive ? '● Trip Active' : '○ Idle'}
+            </span>
             <div className="topbar-time">{clock}</div>
-            {/* <div className="avatar">RK</div> */}
             <div
               className="avatar"
               title="My Profile"
@@ -1334,11 +1403,10 @@ const markStop = () => {
               </div>
             ))}
             <div className="sidebar-bottom">
-              {/* <button className="nav-item" style={{color:'#64748b'}} onClick={() => navigate('/')}><IconLogout/> Logout</button> */}
               <button className="nav-item" style={{color:'#64748b'}} onClick={() => {
-  clearDriverSession();
-  navigate('/driver/login');
-}}><IconLogout/> Logout</button>
+                clearDriverSession();
+                navigate('/driver/login');
+              }}><IconLogout/> Logout</button>
             </div>
           </div>
           <div className="main">{renderPage()}</div>
