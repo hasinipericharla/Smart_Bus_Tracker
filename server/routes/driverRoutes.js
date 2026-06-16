@@ -40,11 +40,14 @@ router.patch('/change-password',        changeDriverPassword); // ← confirm th
 //router.get('/trip/stop-counts/:routeId', protect, getStopPassengerCounts);
 router.get('/trip/stop-counts/:routeId', getStopPassengerCounts);
 
-const { startTrip, endTrip, updateLocation, completeStop } = require('../controllers/tripController');
+//const { startTrip, endTrip, updateLocation, completeStop } = require('../controllers/tripController');
+const { startTrip, endTrip, updateLocation, completeStop, getMyTrips } = require('../controllers/tripController');
+
 
 router.post('/trip/start',      startTrip);
 router.post('/trip/end',        endTrip);
 router.patch('/trip/location',  updateLocation);
 router.patch('/trip/stop',      completeStop); 
+router.get('/my-trips',         getMyTrips);
 
 module.exports = router;

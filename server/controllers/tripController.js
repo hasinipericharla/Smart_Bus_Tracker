@@ -20,6 +20,11 @@ const getAllTrips = asyncHandler(async (req, res) => {
     filter.bus = req.query.busId;
   }
 
+  if (req.query.driverId) {
+    filter.driver = req.query.driverId;
+  }
+
+
   //const trips = await Trip.find(filter)
     // .populate('bus',    'busNumber model')
     // .populate('route',  'routeId name')
@@ -155,12 +160,33 @@ const startTrip = asyncHandler(async (req, res) => {
 });
 
 // POST /api/driver/trip/end
+// const endTrip = asyncHandler(async (req, res) => {
+//   const { tripId, busId } = req.body;
+
+//   const trip = await Trip.findByIdAndUpdate(
+//     tripId,
+//     { status: 'completed', tripEnd: new Date() },
+//     { new: true }
+//   );
+
+//   await require('../models/Bus').findByIdAndUpdate(busId, {
+//     status: 'idle',
+//     currentTrip: null,
+//   });
+
+//   res.json({ success: true, trip });
+// });
+
 const endTrip = asyncHandler(async (req, res) => {
-  const { tripId, busId } = req.body;
+  const { tripId, busId, stopsCompleted } = req.body;
 
   const trip = await Trip.findByIdAndUpdate(
     tripId,
-    { status: 'completed', tripEnd: new Date() },
+    {
+      status: 'completed',
+      tripEnd: new Date(),
+      ...(stopsCompleted !== undefined && { stopsCompleted }),
+    },
     { new: true }
   );
 
@@ -207,4 +233,13 @@ const updateLocation = asyncHandler(async (req, res) => {
   res.json({ success: true });
 });
 
-module.exports = { getAllTrips, createTrip, updateTrip, deleteTrip, startTrip, endTrip, updateLocation, completeStop, };
+const getMyTrips = asyncHandler(async (req, res) => {
+  const driverId = req.driver._id;
+  const trips = await Trip.find({ driver: driverId })
+    .populate('bus',   'busNumber model')
+    .populate('route', 'routeId name')
+    .sort({ tripStart: -1 });
+  res.json({ success: true, count: trips.length, trips });
+});
+
+module.exports = { getAllTrips, createTrip, updateTrip, deleteTrip, startTrip, endTrip, updateLocation, completeStop, getMyTrips  };
