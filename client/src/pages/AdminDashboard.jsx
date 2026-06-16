@@ -1924,9 +1924,18 @@ function PageTracking({ showToast }) {
     .map(([id, data]) => ({ id, ...data }))
     .filter(b => activeRoute === 'ALL' || b.routeId === activeRoute);
 
-  const visibleChipRoutes = dbRoutes.slice(0, 2);
-  const remainingRoutes   = dbRoutes.slice(2);
-  const filteredRemaining = remainingRoutes.filter(r =>
+  const visibleChipRoutes   = dbRoutes.slice(0, 2);
+  const remainingRoutes     = dbRoutes.slice(2);
+  const allSearchableRoutes = dbRoutes;
+
+
+  // const filteredRemaining = remainingRoutes.filter(r =>
+  //   !routeSearchQuery ||
+  //   r.name?.toLowerCase().includes(routeSearchQuery.toLowerCase()) ||
+  //   r.routeId?.toLowerCase().includes(routeSearchQuery.toLowerCase())
+  // );
+
+  const filteredRemaining = allSearchableRoutes.filter(r =>
     !routeSearchQuery ||
     r.name?.toLowerCase().includes(routeSearchQuery.toLowerCase()) ||
     r.routeId?.toLowerCase().includes(routeSearchQuery.toLowerCase())
@@ -1980,7 +1989,8 @@ function PageTracking({ showToast }) {
           ))}
 
           {/* Search button for remaining routes */}
-          {remainingRoutes.length > 0 && (
+          
+          {dbRoutes.length > 0 && (
             <div data-route-search style={{ position: 'relative' }}>
               <button
                 onClick={() => setShowRouteSearch(p => !p)}

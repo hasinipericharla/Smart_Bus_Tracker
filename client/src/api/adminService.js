@@ -142,6 +142,8 @@
 // adminService.js
 import { getSession } from '../pages/AdminLogin'; // ← adjust path if needed
 
+//const getSession = () => localStorage.getItem('adminToken');
+
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
 const request = async (endpoint, options = {}) => {

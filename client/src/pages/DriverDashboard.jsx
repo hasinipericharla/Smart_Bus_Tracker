@@ -636,27 +636,123 @@ function PageRoute({ driverInfo }) {
     </div>
   );
 }
-function PageHistory() {
+// function PageHistory() {
+//   return (
+//     <div className="page">
+//       <div className="page-header">
+//         <div><div className="page-title">Trip History</div><div className="page-subtitle">Your completed trips</div></div>
+//       </div>
+//       <div className="card">
+//         <table className="data-table">
+//           <thead><tr><th>Date</th><th>Route</th><th>Departure</th><th>Arrival</th><th>Stops</th><th>Passengers</th><th>Status</th></tr></thead>
+//           <tbody>
+//             {[['Apr 19','Route A','07:00 AM','07:52 AM','8/8',46,'sp-green','Completed'],
+//               ['Apr 18','Route A','07:00 AM','08:02 AM','8/8',42,'sp-amber','Minor Delay'],
+//               ['Apr 17','Route A','07:00 AM','07:52 AM','8/8',48,'sp-green','Completed'],
+//               ['Apr 16','Route A','07:00 AM','07:52 AM','8/8',44,'sp-green','Completed'],
+//               ['Apr 15','Route A','07:00 AM','08:10 AM','6/8',40,'sp-red','Delayed'],
+//               ['Apr 14','Route A','07:00 AM','07:52 AM','8/8',50,'sp-green','Completed'],
+//             ].map(([d,r,dep,arr,stops,pax,sc,st])=>(
+//               <tr key={d}><td style={{fontFamily:"'DM Mono',monospace",fontSize:11}}>{d}</td><td>{r}</td><td style={{fontFamily:"'DM Mono',monospace",fontSize:11}}>{dep}</td><td style={{fontFamily:"'DM Mono',monospace",fontSize:11}}>{arr}</td><td>{stops}</td><td>{pax}</td><td><span className={`status-pill ${sc}`}>{st}</span></td></tr>
+//             ))}
+//           </tbody>
+//         </table>
+//       </div>
+//     </div>
+//   );
+// }
+
+function PageHistory({ driverInfo }) {
+  const [trips, setTrips]     = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/api/driver/my-trips', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('driverToken')}` },
+    })
+      .then(r => r.json())
+      .then(data => setTrips(data.trips || []))
+      .catch(() => setTrips([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const fmt = d => d
+    ? new Date(d).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+    : '—';
+
+  const fmtDate = d => d
+    ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+    : '—';
+
+  const statusClass = s => {
+    if (s === 'completed')   return 'sp-green';
+    if (s === 'delayed')     return 'sp-red';
+    if (s === 'minor_delay') return 'sp-amber';
+    if (s === 'in_progress') return 'sp-blue';
+    return 'sp-gray';
+  };
+
+  const statusLabel = s => {
+    if (s === 'completed')   return 'Completed';
+    if (s === 'delayed')     return 'Delayed';
+    if (s === 'minor_delay') return 'Minor Delay';
+    if (s === 'in_progress') return 'In Progress';
+    return s || '—';
+  };
+
   return (
     <div className="page">
       <div className="page-header">
-        <div><div className="page-title">Trip History</div><div className="page-subtitle">Your completed trips</div></div>
+        <div>
+          <div className="page-title">Trip History</div>
+          <div className="page-subtitle">Your completed trips</div>
+        </div>
       </div>
       <div className="card">
-        <table className="data-table">
-          <thead><tr><th>Date</th><th>Route</th><th>Departure</th><th>Arrival</th><th>Stops</th><th>Passengers</th><th>Status</th></tr></thead>
-          <tbody>
-            {[['Apr 19','Route A','07:00 AM','07:52 AM','8/8',46,'sp-green','Completed'],
-              ['Apr 18','Route A','07:00 AM','08:02 AM','8/8',42,'sp-amber','Minor Delay'],
-              ['Apr 17','Route A','07:00 AM','07:52 AM','8/8',48,'sp-green','Completed'],
-              ['Apr 16','Route A','07:00 AM','07:52 AM','8/8',44,'sp-green','Completed'],
-              ['Apr 15','Route A','07:00 AM','08:10 AM','6/8',40,'sp-red','Delayed'],
-              ['Apr 14','Route A','07:00 AM','07:52 AM','8/8',50,'sp-green','Completed'],
-            ].map(([d,r,dep,arr,stops,pax,sc,st])=>(
-              <tr key={d}><td style={{fontFamily:"'DM Mono',monospace",fontSize:11}}>{d}</td><td>{r}</td><td style={{fontFamily:"'DM Mono',monospace",fontSize:11}}>{dep}</td><td style={{fontFamily:"'DM Mono',monospace",fontSize:11}}>{arr}</td><td>{stops}</td><td>{pax}</td><td><span className={`status-pill ${sc}`}>{st}</span></td></tr>
-            ))}
-          </tbody>
-        </table>
+        {loading ? (
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>
+            Loading trips…
+          </div>
+        ) : trips.length === 0 ? (
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>
+            No trips found yet.
+          </div>
+        ) : (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Route</th>
+                <th>Departure</th>
+                <th>Arrival</th>
+                <th>Stops</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {trips.map(t => (
+                <tr key={t._id}>
+                  <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11 }}>
+                    {fmtDate(t.tripStart)}
+                  </td>
+                  <td>{t.route?.name || '—'}</td>
+                  <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11 }}>
+                    {fmt(t.tripStart)}
+                  </td>
+                  <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11 }}>
+                    {t.status === 'in_progress' ? 'In Progress' : fmt(t.tripEnd)}
+                  </td>
+                  <td>{t.stopsCompleted} / {t.totalStops}</td>
+                  <td>
+                    <span className={`status-pill ${statusClass(t.status)}`}>
+                      {statusLabel(t.status)}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );
@@ -1130,7 +1226,8 @@ const endTrip = async () => {
     const busId = driverInfo?.assignedBus?._id;
 
     if (tripId) {
-      await endDriverTrip({ tripId, busId });
+      //await endDriverTrip({ tripId, busId });
+      await endDriverTrip({ tripId, busId, stopsCompleted: currentStop });
     }
 
     // Stop GPS
@@ -1319,7 +1416,8 @@ const markStop = async () => {
       //case 'map': return <PageLiveMap tripActive={tripActive} currentStop={currentStop} routeStops={routeStops}/>;
       case 'map': return <PageLiveMap tripActive={tripActive} currentStop={currentStop} routeStops={routeStops} driverInfo={driverInfo}/>;
       case 'route':   return <PageRoute driverInfo={driverInfo}/>;
-      case 'history': return <PageHistory/>;
+      //case 'history': return <PageHistory/>;
+      case 'history': return <PageHistory driverInfo={driverInfo}/>;
       // case 'profile': return <PageProfile navigate={navigate}/>;
       case 'profile': return <PageProfile navigate={navigate} driverInfo={driverInfo}/>;
       default:        return <PageHome {...props}/>;

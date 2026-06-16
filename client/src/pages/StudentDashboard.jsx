@@ -603,16 +603,7 @@ function PageTracking({ favs, toggleFav, showToast, myInfo }) {
             {myInfo?.assignedRoute?.name || '—'}
           </div>
         </div>
-        <div style={{ marginLeft: 'auto', textAlign: 'center' }}>
-          <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>Speed</div>
-          <div style={{
-            fontSize: 28, fontWeight: 800,
-            color: 'var(--accent)',
-            fontFamily: "'DM Mono',monospace",
-          }}>
-            {busSpeed} <span style={{ fontSize: 14 }}>km/h</span>
-          </div>
-        </div>
+   
         {currentStop && (
           <div style={{
             background: 'rgba(255,255,255,.08)',

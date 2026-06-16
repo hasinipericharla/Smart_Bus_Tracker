@@ -35,20 +35,23 @@ export const endDriverTrip = (body) =>
 
 export const updateDriverLocation = (body) =>
   request('/driver/trip/location', { method: 'PATCH', body });
-export const completeStop = async (tripId) => {
-  const token = getDriverSession(); // or however you get the token
-  const res = await fetch(`${BASE_URL}/driver/trip/stop`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-    },
-    body: JSON.stringify({ tripId }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Failed to update stop');
-  return data;
-};
+// export const completeStop = async (tripId) => {
+//   const token = getDriverSession(); // or however you get the token
+//   const res = await fetch(`${BASE_URL}/driver/trip/stop`, {
+//     method: 'PATCH',
+//     headers: {
+//       'Content-Type': 'application/json',
+//       'Authorization': `Bearer ${token}`,
+//     },
+//     body: JSON.stringify({ tripId }),
+//   });
+//   const data = await res.json();
+//   if (!res.ok) throw new Error(data.message || 'Failed to update stop');
+//   return data;
+// };
+
+export const completeStop = (tripId) =>
+  request('/driver/trip/stop', { method: 'PATCH', body: { tripId } });
 
 // export const getStopPassengerCounts = async (routeId) => {
 //   const res = await fetch(`/api/driver/trip/stop-counts/${routeId}`, {
