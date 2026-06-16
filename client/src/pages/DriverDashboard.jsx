@@ -4,7 +4,7 @@ import { clearDriverSession } from './DriverLogin';
 import { getMyDriverInfo } from '../api/driverService';
 import { changePassword as changeDriverPwd } from '../api/driverService';
 import { io } from 'socket.io-client';
-import { startDriverTrip, endDriverTrip, updateDriverLocation, getStopPassengerCounts  } from '../api/driverService';
+import { startDriverTrip, endDriverTrip, updateDriverLocation, getStopPassengerCounts, completeStop  } from '../api/driverService';
 
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -1226,7 +1226,36 @@ const endTrip = async () => {
 //   }
 // };
 
-const markStop = () => {
+// const markStop = () => {
+//   const busId = driverInfo?.assignedBus?._id;
+//   const stop  = routeStops[currentStop];
+
+//   socketRef.current?.emit('driver:stop:reached', {
+//     busId,
+//     stopName:  stop?.name,
+//     stopIndex: currentStop,
+//   });
+
+//   const stopKey       = stop?.name?.trim().toLowerCase() || '';
+//   const boardingCount = stopPassengerMap[stopKey] || 0;
+
+//   setTotalPassengers(p => Math.min(
+//     driverInfo?.assignedBus?.capacity || 50,
+//     p + boardingCount
+//   ));
+
+//   if (currentStop < routeStops.length - 1) {
+//     // Not last stop — move to next
+//     setCurrentStop(c => c + 1);
+//     showToast(`✅ Stop reached: ${stop?.name} (+${boardingCount} passengers)`);
+//   } else {
+//     // Last stop — mark all done, stay active until driver clicks End Trip
+//     setCurrentStop(routeStops.length);
+//     showToast(`✅ All stops completed! (+${boardingCount} passengers) — Click End Trip when ready`);
+//   }
+// };
+
+const markStop = async () => {
   const busId = driverInfo?.assignedBus?._id;
   const stop  = routeStops[currentStop];
 
@@ -1235,6 +1264,15 @@ const markStop = () => {
     stopName:  stop?.name,
     stopIndex: currentStop,
   });
+
+  // ── Tell the backend a stop was completed ──
+  if (tripId) {
+    try {
+      await completeStop(tripId);
+    } catch (err) {
+      console.error('Failed to update stop count:', err);
+    }
+  }
 
   const stopKey       = stop?.name?.trim().toLowerCase() || '';
   const boardingCount = stopPassengerMap[stopKey] || 0;
@@ -1245,11 +1283,9 @@ const markStop = () => {
   ));
 
   if (currentStop < routeStops.length - 1) {
-    // Not last stop — move to next
     setCurrentStop(c => c + 1);
     showToast(`✅ Stop reached: ${stop?.name} (+${boardingCount} passengers)`);
   } else {
-    // Last stop — mark all done, stay active until driver clicks End Trip
     setCurrentStop(routeStops.length);
     showToast(`✅ All stops completed! (+${boardingCount} passengers) — Click End Trip when ready`);
   }

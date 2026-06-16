@@ -129,6 +129,13 @@ const startTrip = asyncHandler(async (req, res) => {
     { status: 'completed', tripEnd: new Date() }
   );
 
+
+  // ── FIX: fetch route to get stop count ──────────────────
+  const Route = require('../models/Route');
+  const route = await Route.findById(routeId);
+  const totalStops = route?.stops?.length || 0;
+  // ────────────────────────────────────────────────────────
+
   const trip = await Trip.create({
     bus:      busId,
     route:    routeId,
@@ -136,6 +143,8 @@ const startTrip = asyncHandler(async (req, res) => {
     status:   'in_progress',
     tripStart: new Date(),
     date:     new Date(),
+    stopsCompleted: 0,       // ← explicitly start at 0
+    totalStops,              // ← now set from route
   });
 
   await trip.populate('bus',    'busNumber model');
@@ -163,6 +172,27 @@ const endTrip = asyncHandler(async (req, res) => {
   res.json({ success: true, trip });
 });
 
+// PATCH /api/driver/trip/stop  — call this when driver reaches each stop
+const completeStop = asyncHandler(async (req, res) => {
+  const { tripId } = req.body;
+
+  const trip = await Trip.findById(tripId);
+  if (!trip) {
+    return res.status(404).json({ success: false, message: 'Trip not found.' });
+  }
+
+  // Increment stopsCompleted but don't exceed totalStops
+  const newCount = Math.min(trip.stopsCompleted + 1, trip.totalStops);
+
+  const updated = await Trip.findByIdAndUpdate(
+    tripId,
+    { stopsCompleted: newCount },
+    { new: true }
+  );
+
+  res.json({ success: true, stopsCompleted: updated.stopsCompleted, totalStops: updated.totalStops });
+});
+
 // PATCH /api/driver/trip/location  — save location to DB every 10s
 const updateLocation = asyncHandler(async (req, res) => {
   const { busId, lat, lng, speed } = req.body;
@@ -177,4 +207,4 @@ const updateLocation = asyncHandler(async (req, res) => {
   res.json({ success: true });
 });
 
-module.exports = { getAllTrips, createTrip, updateTrip, deleteTrip, startTrip, endTrip, updateLocation };
+module.exports = { getAllTrips, createTrip, updateTrip, deleteTrip, startTrip, endTrip, updateLocation, completeStop, };
