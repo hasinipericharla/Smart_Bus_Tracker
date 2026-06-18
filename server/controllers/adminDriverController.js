@@ -282,12 +282,170 @@
 
 
 
+// const AdminDriver = require('../models/AdminDriver');
+// const Driver = require('../models/Driver');
+// const Bus = require('../models/Bus');
+// const { asyncHandler } = require('../middleware/error');
+
+// // GET /api/admin/drivers
+// const getAllDrivers = asyncHandler(async (req, res) => {
+//   const drivers = await AdminDriver.find()
+//     .populate('assignedBus', 'busNumber model capacity status')
+//     .populate('assignedRoute', 'routeId name')
+//     .sort({ createdAt: -1 });
+//   res.json({ success: true, count: drivers.length, drivers });
+// });
+
+// // POST /api/admin/drivers
+// const createDriver = asyncHandler(async (req, res) => {
+//   const { name, email, licenseNo, experience, phone, assignedBus, status } = req.body;
+
+//   if (!name || !email)
+//     return res.status(400).json({ success: false, message: 'Name and email are required.' });
+
+//   // Check for duplicate email
+//   const existingEmail = await AdminDriver.findOne({ email: email.toLowerCase() });
+//   if (existingEmail)
+//     return res.status(400).json({ success: false, message: 'A driver with this email already exists.' });
+
+//   // Link to existing auth account if driver already signed up
+//   const authAccount = await Driver.findOne({ email: email.toLowerCase() });
+
+//   // Auto-fill route from the assigned bus
+//   let assignedRoute = null;
+//   if (assignedBus) {
+//     const busDoc = await Bus.findById(assignedBus);
+//     if (busDoc?.assignedRoute) assignedRoute = busDoc.assignedRoute;
+//   }
+
+//   const driver = await AdminDriver.create({
+//     name,
+//     email: email.toLowerCase(),
+//     licenseNo,
+//     experience: Number(experience) || 0,
+//     phone,
+//     assignedBus: assignedBus || null,
+//     assignedRoute,
+//     status: status || 'active',
+//     authAccount: authAccount?._id || null,
+//   });
+
+//   // Sync: update Bus document with this driver
+//   if (assignedBus) {
+//     await Bus.findByIdAndUpdate(assignedBus, { assignedDriver: driver._id });
+//   }
+
+//   await driver.populate('assignedBus', 'busNumber model');
+//   await driver.populate('assignedRoute', 'routeId name');
+//   res.status(201).json({ success: true, driver });
+// });
+
+// // PUT /api/admin/drivers/:id
+// const updateDriver = asyncHandler(async (req, res) => {
+//   const oldDriver = await AdminDriver.findById(req.params.id);
+//   if (!oldDriver)
+//     return res.status(404).json({ success: false, message: 'Driver not found.' });
+
+//   let updateData = { ...req.body };
+
+//   // Convert empty string to null
+//   if (!updateData.assignedBus) updateData.assignedBus = null;
+
+//   // Auto-fill route from the newly assigned bus
+//   if (updateData.assignedBus) {
+//     const busDoc = await Bus.findById(updateData.assignedBus);
+//     if (busDoc?.assignedRoute) {
+//       updateData.assignedRoute = busDoc.assignedRoute;
+//     }
+//   } else {
+//     updateData.assignedRoute = null;
+//   }
+
+//   // If email is being updated, re-link auth account
+//   if (updateData.email) {
+//     const authAccount = await Driver.findOne({ email: updateData.email.toLowerCase() });
+//     updateData.authAccount = authAccount?._id || null;
+//   }
+
+//   const driver = await AdminDriver.findByIdAndUpdate(
+//     req.params.id,
+//     updateData,
+//     { new: true, runValidators: true }
+//   )
+//     .populate('assignedBus', 'busNumber model')
+//     .populate('assignedRoute', 'routeId name');
+
+//   if (!driver)
+//     return res.status(404).json({ success: false, message: 'Driver not found.' });
+
+//   const newBusId = updateData.assignedBus?.toString();
+//   const oldBusId = oldDriver.assignedBus?.toString();
+
+//   // Clear driver from old bus if bus changed
+//   if (oldBusId && oldBusId !== newBusId) {
+//     await Bus.findByIdAndUpdate(oldBusId, { assignedDriver: null });
+//   }
+
+//   // Set driver on new bus
+//   if (newBusId) {
+//     await Bus.findByIdAndUpdate(newBusId, { assignedDriver: driver._id });
+//   }
+
+//   res.json({ success: true, driver });
+// });
+
+// // DELETE /api/admin/drivers/:id
+// const deleteDriver = asyncHandler(async (req, res) => {
+//   const driver = await AdminDriver.findByIdAndDelete(req.params.id);
+//   if (!driver)
+//     return res.status(404).json({ success: false, message: 'Driver not found.' });
+
+//   // Clear the driver from the bus when deleted
+//   if (driver.assignedBus) {
+//     await Bus.findByIdAndUpdate(driver.assignedBus, { assignedDriver: null });
+//   }
+
+//   res.json({ success: true, message: 'Driver removed.' });
+// });
+
+// // GET /api/driver/my-info — driver sees their own record
+// // const getMyDriverInfo = asyncHandler(async (req, res) => {
+// //   const record = await AdminDriver.findOne({ email: req.driver.email })
+// //     .populate('assignedBus', 'busNumber model capacity')
+// //     .populate('assignedRoute', 'routeId name stops');
+// //   if (!record)
+// //     return res.status(404).json({ success: false, message: 'No profile found. Contact admin.' });
+// //   res.json({ success: true, driver: record });
+// // });
+// // GET /api/driver/my-info — driver sees their own record
+// const getMyDriverInfo = asyncHandler(async (req, res) => {
+//   const record = await AdminDriver.findOne({ email: req.driver.email })
+//     .populate('assignedBus', 'busNumber model capacity')
+//     .populate('assignedRoute', 'routeId name stops');
+
+//   if (!record)
+//     return res.status(404).json({ success: false, message: 'No profile found. Contact admin.' });
+
+//   // Merge driverId from the auth account (Driver model)
+//   const authDriver = await Driver.findById(req.driver._id).select('driverId');
+
+//   res.json({
+//     success: true,
+//     driver: {
+//       ...record.toObject(),
+//       driverId: authDriver?.driverId || '—',
+//     },
+//   });
+// });
+
+// module.exports = { getAllDrivers, createDriver, updateDriver, deleteDriver, getMyDriverInfo };
+
 const AdminDriver = require('../models/AdminDriver');
 const Driver = require('../models/Driver');
 const Bus = require('../models/Bus');
 const { asyncHandler } = require('../middleware/error');
+const logActivity = require('../utils/logActivity');
 
-// GET /api/admin/drivers
 const getAllDrivers = asyncHandler(async (req, res) => {
   const drivers = await AdminDriver.find()
     .populate('assignedBus', 'busNumber model capacity status')
@@ -296,22 +454,18 @@ const getAllDrivers = asyncHandler(async (req, res) => {
   res.json({ success: true, count: drivers.length, drivers });
 });
 
-// POST /api/admin/drivers
 const createDriver = asyncHandler(async (req, res) => {
   const { name, email, licenseNo, experience, phone, assignedBus, status } = req.body;
 
   if (!name || !email)
     return res.status(400).json({ success: false, message: 'Name and email are required.' });
 
-  // Check for duplicate email
   const existingEmail = await AdminDriver.findOne({ email: email.toLowerCase() });
   if (existingEmail)
     return res.status(400).json({ success: false, message: 'A driver with this email already exists.' });
 
-  // Link to existing auth account if driver already signed up
   const authAccount = await Driver.findOne({ email: email.toLowerCase() });
 
-  // Auto-fill route from the assigned bus
   let assignedRoute = null;
   if (assignedBus) {
     const busDoc = await Bus.findById(assignedBus);
@@ -330,17 +484,17 @@ const createDriver = asyncHandler(async (req, res) => {
     authAccount: authAccount?._id || null,
   });
 
-  // Sync: update Bus document with this driver
   if (assignedBus) {
     await Bus.findByIdAndUpdate(assignedBus, { assignedDriver: driver._id });
   }
 
   await driver.populate('assignedBus', 'busNumber model');
   await driver.populate('assignedRoute', 'routeId name');
+
+  await logActivity(req.admin._id, 'driver_created', `Added new driver ${driver.name}`, 'var(--green)');
   res.status(201).json({ success: true, driver });
 });
 
-// PUT /api/admin/drivers/:id
 const updateDriver = asyncHandler(async (req, res) => {
   const oldDriver = await AdminDriver.findById(req.params.id);
   if (!oldDriver)
@@ -348,20 +502,15 @@ const updateDriver = asyncHandler(async (req, res) => {
 
   let updateData = { ...req.body };
 
-  // Convert empty string to null
   if (!updateData.assignedBus) updateData.assignedBus = null;
 
-  // Auto-fill route from the newly assigned bus
   if (updateData.assignedBus) {
     const busDoc = await Bus.findById(updateData.assignedBus);
-    if (busDoc?.assignedRoute) {
-      updateData.assignedRoute = busDoc.assignedRoute;
-    }
+    if (busDoc?.assignedRoute) updateData.assignedRoute = busDoc.assignedRoute;
   } else {
     updateData.assignedRoute = null;
   }
 
-  // If email is being updated, re-link auth account
   if (updateData.email) {
     const authAccount = await Driver.findOne({ email: updateData.email.toLowerCase() });
     updateData.authAccount = authAccount?._id || null;
@@ -381,43 +530,30 @@ const updateDriver = asyncHandler(async (req, res) => {
   const newBusId = updateData.assignedBus?.toString();
   const oldBusId = oldDriver.assignedBus?.toString();
 
-  // Clear driver from old bus if bus changed
   if (oldBusId && oldBusId !== newBusId) {
     await Bus.findByIdAndUpdate(oldBusId, { assignedDriver: null });
   }
-
-  // Set driver on new bus
   if (newBusId) {
     await Bus.findByIdAndUpdate(newBusId, { assignedDriver: driver._id });
   }
 
+  await logActivity(req.admin._id, 'driver_updated', `Updated driver ${driver.name}`, 'var(--amber)');
   res.json({ success: true, driver });
 });
 
-// DELETE /api/admin/drivers/:id
 const deleteDriver = asyncHandler(async (req, res) => {
   const driver = await AdminDriver.findByIdAndDelete(req.params.id);
   if (!driver)
     return res.status(404).json({ success: false, message: 'Driver not found.' });
 
-  // Clear the driver from the bus when deleted
   if (driver.assignedBus) {
     await Bus.findByIdAndUpdate(driver.assignedBus, { assignedDriver: null });
   }
 
+  await logActivity(req.admin._id, 'driver_deleted', `Removed driver ${driver.name}`, 'var(--red)');
   res.json({ success: true, message: 'Driver removed.' });
 });
 
-// GET /api/driver/my-info — driver sees their own record
-// const getMyDriverInfo = asyncHandler(async (req, res) => {
-//   const record = await AdminDriver.findOne({ email: req.driver.email })
-//     .populate('assignedBus', 'busNumber model capacity')
-//     .populate('assignedRoute', 'routeId name stops');
-//   if (!record)
-//     return res.status(404).json({ success: false, message: 'No profile found. Contact admin.' });
-//   res.json({ success: true, driver: record });
-// });
-// GET /api/driver/my-info — driver sees their own record
 const getMyDriverInfo = asyncHandler(async (req, res) => {
   const record = await AdminDriver.findOne({ email: req.driver.email })
     .populate('assignedBus', 'busNumber model capacity')
@@ -426,7 +562,6 @@ const getMyDriverInfo = asyncHandler(async (req, res) => {
   if (!record)
     return res.status(404).json({ success: false, message: 'No profile found. Contact admin.' });
 
-  // Merge driverId from the auth account (Driver model)
   const authDriver = await Driver.findById(req.driver._id).select('driverId');
 
   res.json({

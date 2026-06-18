@@ -54,6 +54,8 @@ const { createNotification, getAllNotifications, deleteNotification } = require(
 const { getAllTrips, createTrip, updateTrip, deleteTrip } = require('../controllers/tripController');
 const { getAnalytics } = require('../controllers/analyticsController');
 
+const { getRecentActivity } = require('../controllers/activityController');
+
 // All routes require admin auth
 router.use(protect);
 
@@ -95,6 +97,8 @@ router.delete('/trips/:id', deleteTrip);
 
 // Analytics
 router.get('/analytics', getAnalytics);
+
+router.get('/activity', getRecentActivity);
 
 // GET ADMIN PROFILE (Alternative route via adminRoutes)
 router.get('/profile', protect, async (req, res) => {

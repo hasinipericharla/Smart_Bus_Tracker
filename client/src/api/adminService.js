@@ -260,3 +260,23 @@ export const changeAdminPassword = async (body) => {
     throw new Error(err.message);
   }
 };
+
+export const getRecentActivity = () =>
+  apiFetch('/admin/activity'); // adjust to however your other functions call the base API helper
+
+// export const getAdminActivity = async () => {
+//   const token = localStorage.getItem('adminToken'); // match whatever key you use
+//   const res = await fetch('/api/admin/activity', {
+//     headers: { Authorization: `Bearer ${token}` },
+//   });
+//   if (!res.ok) throw new Error('Failed to fetch activity');
+//   return res.json();
+// };
+export const getAdminActivity = async () => {
+  const token = localStorage.getItem('adminToken');
+  const res = await fetch('http://localhost:8000/api/admin/activity', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Failed to fetch activity');
+  return res.json();
+};

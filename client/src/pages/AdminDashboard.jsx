@@ -3,7 +3,7 @@ import {
   getBuses, createBus, updateBus, deleteBus,
   getRoutes, createRoute, updateRoute, deleteRoute,
   getAdminDrivers, createAdminDriver, updateAdminDriver, deleteAdminDriver,
-  getTrips, getAdminProfile, updateAdminProfile, changeAdminPassword
+  getTrips, getAdminProfile, updateAdminProfile, changeAdminPassword, getAdminActivity
 } from '../api/adminService';
 
 import { getAdminAnalytics } from '../api/adminService'; 
@@ -4328,7 +4328,45 @@ function PageProfile({ showToast }) {
   const [adminId, setAdminId] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [activities, setActivities] = useState([]);
 
+//   const getRecentActivity = async () => {
+//   try {
+//     const res = await fetch('/api/admin/activity', {
+//       headers: { Authorization: `Bearer ${token}` }, // use however you pass your token
+//     });
+//     const data = await res.json();
+//     if (data.success) setActivities(data.activities);
+//   } catch (err) {
+//     console.error('Failed to fetch activity:', err);
+//   }
+// };
+
+// // REPLACE with this (matches your adminService pattern):
+// const getRecentActivity = async () => {
+//   try {
+//     const data = await getAdminAnalytics(); // temporary, see note below
+//   } catch (err) {
+//     console.error('Failed to fetch activity:', err);
+//   }
+// };
+// const getRecentActivity = async () => {
+//   try {
+//     const data = await getAdminActivity();
+//     if (data.success) setActivities(data.activities || []);
+//   } catch (err) {
+//     console.error('Failed to fetch activity:', err);
+//   }
+// };
+const getRecentActivity = async () => {
+  try {
+    const data = await getAdminActivity();
+    if (data.success) setActivities(data.activities || []);
+  } catch (err) {
+    console.warn('Activity fetch skipped:', err.message);
+    setActivities([]); // fail silently, show empty list
+  }
+};
   // Fetch admin profile on mount
   useEffect(() => {
     const fetchAdminProfile = async () => {
@@ -4353,6 +4391,16 @@ function PageProfile({ showToast }) {
 
     fetchAdminProfile();
   }, []);
+
+//   useEffect(() => {
+//   getRecentActivity()
+//     .then(res => setActivities(res.activities || []))
+//     .catch(() => {});
+// }, []);
+
+useEffect(() => {
+  getRecentActivity();
+}, []);
 
   // Save profile changes
   const handleSave = async () => {
@@ -4397,14 +4445,14 @@ function PageProfile({ showToast }) {
     );
   }
 
-  const activities = [
-    { dot:"var(--green)",  text:"Added new bus KA-09-I to Route D",           time:"Today, 09:22 AM" },
-    { dot:"var(--accent)", text:"Updated driver P. Sharma's route assignment",  time:"Today, 08:45 AM" },
-    { dot:"var(--blue2)",  text:"Generated April analytics report",             time:"Yesterday, 05:10 PM" },
-    { dot:"var(--purple)", text:"Created Route E — East Extension",             time:"Apr 19, 03:40 PM" },
-    { dot:"var(--red)",    text:"Resolved bus KA-05-E engine warning",          time:"Apr 19, 11:15 AM" },
-    { dot:"var(--green)",  text:"Added 12 new students to Route B",             time:"Apr 18, 02:30 PM" },
-  ];
+  // const activities = [
+  //   { dot:"var(--green)",  text:"Added new bus KA-09-I to Route D",           time:"Today, 09:22 AM" },
+  //   { dot:"var(--accent)", text:"Updated driver P. Sharma's route assignment",  time:"Today, 08:45 AM" },
+  //   { dot:"var(--blue2)",  text:"Generated April analytics report",             time:"Yesterday, 05:10 PM" },
+  //   { dot:"var(--purple)", text:"Created Route E — East Extension",             time:"Apr 19, 03:40 PM" },
+  //   { dot:"var(--red)",    text:"Resolved bus KA-05-E engine warning",          time:"Apr 19, 11:15 AM" },
+  //   { dot:"var(--green)",  text:"Added 12 new students to Route B",             time:"Apr 18, 02:30 PM" },
+  // ];
 
   return (
     <div className="page">
@@ -4499,7 +4547,9 @@ function PageProfile({ showToast }) {
             {activities.map((a, i) => (
               <div className="activity-item" key={i}>
                 <div className="activity-dot" style={{ background: a.dot }} />
-                <div><div className="activity-text">{a.text}</div><div className="activity-time">{a.time}</div></div>
+                <div><div className="activity-text">{a.text}</div><div className="activity-time">
+  {new Date(a.time).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+</div></div>
               </div>
             ))}
           </div>
