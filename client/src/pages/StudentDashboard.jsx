@@ -529,10 +529,258 @@ useEffect(() => {
 // }
 
 
+// function PageTracking({ favs, toggleFav, showToast, myInfo }) {
+//   const busId      = myInfo?.assignedBus?._id;
+//   const myStopName = myInfo?.pickupStop;
+//   const routeStops = myInfo?.assignedRoute?.stops || STOPS;
+
+//   const [busPosition, setBusPosition] = useState(null);
+//   const [busSpeed, setBusSpeed]       = useState(0);
+//   const [busStatus, setBusStatus]     = useState('idle');
+//   const [currentStop, setCurrentStop] = useState(null);
+//   const socketRef = useRef(null);
+
+//   const defaultCenter = [15.8497, 74.4977]; // Belagavi
+
+//   useEffect(() => {
+//     socketRef.current = io('http://localhost:8000');
+
+//     if (busId) {
+//       // Live location updates
+//       socketRef.current.on(`bus:${busId}:location`, ({ lat, lng, speed }) => {
+//         setBusPosition([lat, lng]);
+//         setBusSpeed(speed || 0);
+//       });
+
+//       // Trip started/ended
+//       socketRef.current.on(`bus:${busId}:status`, ({ status }) => {
+//         setBusStatus(status);
+//       });
+
+//       // Stop reached
+//       socketRef.current.on(`bus:${busId}:stop`, ({ stopName, stopIndex }) => {
+//         setCurrentStop({ name: stopName, index: stopIndex });
+//       });
+//     }
+
+//     socketRef.current.emit('get:live:buses');
+
+//     return () => socketRef.current?.disconnect();
+//   }, [busId]);
+
+//   return (
+//     <div className="page">
+//       <div className="page-header">
+//         <div>
+//           <div className="page-title">Live Tracking</div>
+//           <div className="page-subtitle">
+//             Real-time bus position · {myInfo?.assignedRoute?.name || 'Route'}
+//           </div>
+//         </div>
+//         <span
+//           className={`status-pill ${busStatus === 'live' ? 'sp-green' : 'sp-gray'}`}
+//           style={{ fontSize: 12, padding: '6px 14px' }}
+//         >
+//           {busStatus === 'live' ? '● Bus is Live' : '○ Bus Idle'}
+//         </span>
+//       </div>
+
+//       {/* ETA Banner */}
+//       <div style={{
+//         background: 'linear-gradient(135deg,#1e293b,#334155)',
+//         borderRadius: 13, padding: '20px 24px',
+//         display: 'flex', alignItems: 'center',
+//         gap: 18, flexWrap: 'wrap', color: '#fff',
+//       }}>
+//         <div>
+//           <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>
+//             Bus Arriving At
+//           </div>
+//           <div style={{ fontSize: 15, fontWeight: 700 }}>
+//             {myStopName || 'Your Stop'}
+//           </div>
+//           <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
+//             {myInfo?.assignedRoute?.name || '—'}
+//           </div>
+//         </div>
+   
+//         {currentStop && (
+//           <div style={{
+//             background: 'rgba(255,255,255,.08)',
+//             borderRadius: 10, padding: '12px 18px', textAlign: 'center',
+//           }}>
+//             <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>
+//               Last Stop Reached
+//             </div>
+//             <div style={{ fontSize: 14, fontWeight: 700 }}>
+//               {currentStop.name}
+//             </div>
+//           </div>
+//         )}
+//       </div>
+
+//       {/* Leaflet Map */}
+//       <div className="card">
+//         <div className="card-header">
+//           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+//             stroke="var(--green)" strokeWidth="2">
+//             <circle cx="12" cy="12" r="10"/>
+//             <circle cx="12" cy="12" r="3"/>
+//           </svg>
+//           <span className="card-title">Live Bus Location</span>
+//           <div className="ch-right">
+//             <span className={`status-pill ${busStatus === 'live' ? 'sp-green' : 'sp-gray'}`}>
+//               {busStatus === 'live' ? '● Live' : '○ Idle'}
+//             </span>
+//           </div>
+//         </div>
+
+//         <div style={{ height: 380, borderRadius: '0 0 13px 13px', overflow: 'hidden' }}>
+//           <MapContainer
+//             center={busPosition || defaultCenter}
+//             zoom={14}
+//             style={{ width: '100%', height: '100%' }}
+//             zoomControl={true}
+//           >
+//             <TileLayer
+//               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+//               attribution='© OpenStreetMap contributors'
+//             />
+
+//             {/* Auto-follow bus */}
+//             {busPosition && <MapUpdater position={busPosition} />}
+
+//             {/* Bus marker */}
+//             {busPosition && (
+//               <Marker position={busPosition} icon={busIcon}>
+//                 <Popup>
+//                   <b>🚌 Bus</b><br/>
+//                   Speed: {busSpeed} km/h<br/>
+//                   Status: {busStatus}
+//                 </Popup>
+//               </Marker>
+//             )}
+
+//             {/* My stop marker */}
+//             {routeStops.map((stop, i) => {
+//               if (!stop.lat || !stop.lng) return null;
+//               const isMyStop =
+//                 stop.name?.toLowerCase() === myStopName?.toLowerCase();
+//               return (
+//                 <Marker
+//                   key={i}
+//                   position={[stop.lat, stop.lng]}
+//                   icon={isMyStop ? myStopIcon : L.divIcon({
+//                     html: `<div style="
+//                       background:${i < (currentStop?.index || 0) ? '#16a34a' : '#94a3b8'};
+//                       width:20px;height:20px;border-radius:50%;
+//                       border:2px solid #fff;
+//                       display:flex;align-items:center;justify-content:center;
+//                       font-size:9px;color:#fff;font-weight:800;
+//                     ">${i + 1}</div>`,
+//                     className: '',
+//                     iconSize: [20, 20],
+//                     iconAnchor: [10, 10],
+//                   })}
+//                 >
+//                   <Popup>
+//                     <b>Stop {i + 1}: {stop.name}</b>
+//                     {isMyStop && <><br/><span style={{color:'#2563eb',fontWeight:600}}>📍 Your Stop</span></>}
+//                   </Popup>
+//                 </Marker>
+//               );
+//             })}
+//           </MapContainer>
+//         </div>
+
+//         {busStatus !== 'live' && (
+//           <div style={{
+//             padding: '10px 18px',
+//             background: 'rgba(245,166,35,.06)',
+//             fontSize: 12,
+//             color: 'var(--accent2)',
+//             fontWeight: 600,
+//             textAlign: 'center',
+//           }}>
+//             ⚠️ Bus has not started the trip yet.
+//             Map will update automatically when driver starts.
+//           </div>
+//         )}
+//       </div>
+
+//       {/* Route Stops List */}
+//       <div className="card">
+//         <div className="card-header">
+//           <span className="card-title">Route Stops</span>
+//           <div className="ch-right">
+//             <span className="card-sub">{routeStops.length} stops</span>
+//           </div>
+//         </div>
+//         <div className="stops-list">
+//           {routeStops.map((stop, i) => {
+//             const isNext    = currentStop?.index === i;
+//             const isReached = currentStop && i < currentStop.index;
+//             const isMine    =
+//               stop.name?.toLowerCase() === myStopName?.toLowerCase();
+//             const isFav     =
+//               favs.includes(stop.id || stop._id || stop.name);
+//             return (
+//               <div
+//                 key={i}
+//                 className={`stop-item ${isNext ? 'active-stop' : ''} ${isReached ? 'reached-stop' : ''}`}
+//               >
+//                 <div className={`stop-circle ${isReached ? 'sc-green' : isNext ? 'sc-amber' : 'sc-gray'}`}>
+//                   {isReached ? '✓' : i + 1}
+//                 </div>
+//                 <div>
+//                   <div className="stop-name">
+//                     {stop.name}
+//                     {isMine && (
+//                       <span style={{
+//                         fontSize: 10,
+//                         background: 'rgba(37,99,235,.12)',
+//                         color: 'var(--blue)',
+//                         padding: '1px 7px',
+//                         borderRadius: 5,
+//                         marginLeft: 4,
+//                       }}>MY STOP</span>
+//                     )}
+//                   </div>
+//                   <div className="stop-meta">
+//                     {stop.mrnPickup || stop.morningPickup || ''}
+//                   </div>
+//                 </div>
+//                 <div className="stop-right">
+//                   {isNext && (
+//                     <span className="status-pill sp-amber">Next</span>
+//                   )}
+//                   <button
+//                     className="fav-btn"
+//                     onClick={() => {
+//                       toggleFav(stop.id || stop.name);
+//                       showToast(isFav ? 'Removed' : '❤️ Added to favorites');
+//                     }}
+//                   >
+//                     {isFav ? '❤️' : '🤍'}
+//                   </button>
+//                 </div>
+//               </div>
+//             );
+//           })}
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+
 function PageTracking({ favs, toggleFav, showToast, myInfo }) {
-  const busId      = myInfo?.assignedBus?._id;
+  const busId = myInfo?.assignedRoute?.assignedBuses?.[0]?._id
+             || myInfo?.assignedBus?._id;
+
   const myStopName = myInfo?.pickupStop;
-  const routeStops = myInfo?.assignedRoute?.stops || STOPS;
+  const routeStops = (myInfo?.assignedRoute?.stops || [])
+    .slice()
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
   const [busPosition, setBusPosition] = useState(null);
   const [busSpeed, setBusSpeed]       = useState(0);
@@ -540,30 +788,59 @@ function PageTracking({ favs, toggleFav, showToast, myInfo }) {
   const [currentStop, setCurrentStop] = useState(null);
   const socketRef = useRef(null);
 
-  const defaultCenter = [15.8497, 74.4977]; // Belagavi
+  const defaultCenter = [15.8497, 74.4977];
 
   useEffect(() => {
     socketRef.current = io('http://localhost:8000');
 
+    socketRef.current.emit('get:live:buses');
+    socketRef.current.on('live:buses', (buses) => {
+      if (busId && buses[busId]) {
+        const b = buses[busId];
+        if (b.lat && b.lng) setBusPosition([b.lat, b.lng]);
+        if (b.speed !== undefined) setBusSpeed(b.speed);
+        if (b.status) setBusStatus(b.status);
+      }
+    });
+
     if (busId) {
-      // Live location updates
       socketRef.current.on(`bus:${busId}:location`, ({ lat, lng, speed }) => {
         setBusPosition([lat, lng]);
         setBusSpeed(speed || 0);
+        setBusStatus('live');
       });
 
-      // Trip started/ended
       socketRef.current.on(`bus:${busId}:status`, ({ status }) => {
         setBusStatus(status);
+        if (status === 'idle') {
+          setBusPosition(null);
+          setCurrentStop(null);
+        }
       });
 
-      // Stop reached
       socketRef.current.on(`bus:${busId}:stop`, ({ stopName, stopIndex }) => {
         setCurrentStop({ name: stopName, index: stopIndex });
       });
-    }
 
-    socketRef.current.emit('get:live:buses');
+      // Fallback in case only admin-style events fire
+      socketRef.current.on('admin:bus:update', ({ busId: updBusId, lat, lng, speed }) => {
+        if (updBusId === busId) {
+          setBusPosition([lat, lng]);
+          setBusSpeed(speed || 0);
+          setBusStatus('live');
+        }
+      });
+      socketRef.current.on('admin:trip:started', ({ busId: startedId }) => {
+        if (startedId === busId) setBusStatus('live');
+      });
+      socketRef.current.on('admin:trip:ended', ({ busId: endedId }) => {
+        if (endedId === busId) {
+          setBusStatus('idle');
+          setBusPosition(null);
+          setCurrentStop(null);
+        }
+      });
+    }
 
     return () => socketRef.current?.disconnect();
   }, [busId]);
@@ -585,47 +862,40 @@ function PageTracking({ favs, toggleFav, showToast, myInfo }) {
         </span>
       </div>
 
-      {/* ETA Banner */}
       <div style={{
         background: 'linear-gradient(135deg,#1e293b,#334155)',
         borderRadius: 13, padding: '20px 24px',
-        display: 'flex', alignItems: 'center',
-        gap: 18, flexWrap: 'wrap', color: '#fff',
+        display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap', color: '#fff',
       }}>
         <div>
-          <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>
-            Bus Arriving At
-          </div>
-          <div style={{ fontSize: 15, fontWeight: 700 }}>
-            {myStopName || 'Your Stop'}
-          </div>
+          <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>Bus Arriving At</div>
+          <div style={{ fontSize: 15, fontWeight: 700 }}>{myStopName || 'Your Stop'}</div>
           <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
             {myInfo?.assignedRoute?.name || '—'}
           </div>
         </div>
-   
+
+        {busStatus === 'live' && (
+          <div style={{ background: 'rgba(255,255,255,.08)', borderRadius: 10, padding: '12px 18px', textAlign: 'center' }}>
+            <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>Speed</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--accent)', fontFamily: "'DM Mono',monospace" }}>
+              {busSpeed} km/h
+            </div>
+          </div>
+        )}
+
         {currentStop && (
-          <div style={{
-            background: 'rgba(255,255,255,.08)',
-            borderRadius: 10, padding: '12px 18px', textAlign: 'center',
-          }}>
-            <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>
-              Last Stop Reached
-            </div>
-            <div style={{ fontSize: 14, fontWeight: 700 }}>
-              {currentStop.name}
-            </div>
+          <div style={{ background: 'rgba(255,255,255,.08)', borderRadius: 10, padding: '12px 18px', textAlign: 'center' }}>
+            <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>Last Stop Reached</div>
+            <div style={{ fontSize: 14, fontWeight: 700 }}>{currentStop.name}</div>
           </div>
         )}
       </div>
 
-      {/* Leaflet Map */}
       <div className="card">
         <div className="card-header">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            stroke="var(--green)" strokeWidth="2">
-            <circle cx="12" cy="12" r="10"/>
-            <circle cx="12" cy="12" r="3"/>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2">
+            <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>
           </svg>
           <span className="card-title">Live Bus Location</span>
           <div className="ch-right">
@@ -647,37 +917,35 @@ function PageTracking({ favs, toggleFav, showToast, myInfo }) {
               attribution='© OpenStreetMap contributors'
             />
 
-            {/* Auto-follow bus */}
             {busPosition && <MapUpdater position={busPosition} />}
 
-            {/* Bus marker */}
-            {busPosition && (
+            {busPosition && busStatus === 'live' && (
               <Marker position={busPosition} icon={busIcon}>
                 <Popup>
                   <b>🚌 Bus</b><br/>
                   Speed: {busSpeed} km/h<br/>
-                  Status: {busStatus}
+                  {currentStop && <>Last stop: {currentStop.name}</>}
                 </Popup>
               </Marker>
             )}
 
-            {/* My stop marker */}
             {routeStops.map((stop, i) => {
               if (!stop.lat || !stop.lng) return null;
-              const isMyStop =
-                stop.name?.toLowerCase() === myStopName?.toLowerCase();
+              const isMyStop = stop.name?.toLowerCase() === myStopName?.toLowerCase();
+              const isReached = currentStop && i <= currentStop.index;
+
               return (
                 <Marker
                   key={i}
                   position={[stop.lat, stop.lng]}
                   icon={isMyStop ? myStopIcon : L.divIcon({
                     html: `<div style="
-                      background:${i < (currentStop?.index || 0) ? '#16a34a' : '#94a3b8'};
+                      background:${isReached ? '#16a34a' : '#94a3b8'};
                       width:20px;height:20px;border-radius:50%;
                       border:2px solid #fff;
                       display:flex;align-items:center;justify-content:center;
                       font-size:9px;color:#fff;font-weight:800;
-                    ">${i + 1}</div>`,
+                    ">${isReached ? '✓' : i + 1}</div>`,
                     className: '',
                     iconSize: [20, 20],
                     iconAnchor: [10, 10],
@@ -686,6 +954,7 @@ function PageTracking({ favs, toggleFav, showToast, myInfo }) {
                   <Popup>
                     <b>Stop {i + 1}: {stop.name}</b>
                     {isMyStop && <><br/><span style={{color:'#2563eb',fontWeight:600}}>📍 Your Stop</span></>}
+                    {isReached && <><br/><span style={{color:'#16a34a',fontWeight:600}}>✓ Bus passed</span></>}
                   </Popup>
                 </Marker>
               );
@@ -695,20 +964,14 @@ function PageTracking({ favs, toggleFav, showToast, myInfo }) {
 
         {busStatus !== 'live' && (
           <div style={{
-            padding: '10px 18px',
-            background: 'rgba(245,166,35,.06)',
-            fontSize: 12,
-            color: 'var(--accent2)',
-            fontWeight: 600,
-            textAlign: 'center',
+            padding: '10px 18px', background: 'rgba(245,166,35,.06)',
+            fontSize: 12, color: 'var(--accent2)', fontWeight: 600, textAlign: 'center',
           }}>
-            ⚠️ Bus has not started the trip yet.
-            Map will update automatically when driver starts.
+            ⚠️ Bus has not started the trip yet. Map will update automatically when driver starts.
           </div>
         )}
       </div>
 
-      {/* Route Stops List */}
       <div className="card">
         <div className="card-header">
           <span className="card-title">Route Stops</span>
@@ -720,10 +983,8 @@ function PageTracking({ favs, toggleFav, showToast, myInfo }) {
           {routeStops.map((stop, i) => {
             const isNext    = currentStop?.index === i;
             const isReached = currentStop && i < currentStop.index;
-            const isMine    =
-              stop.name?.toLowerCase() === myStopName?.toLowerCase();
-            const isFav     =
-              favs.includes(stop.id || stop._id || stop.name);
+            const isMine    = stop.name?.toLowerCase() === myStopName?.toLowerCase();
+            const isFav     = favs.includes(stop.id || stop._id || stop.name);
             return (
               <div
                 key={i}
@@ -737,12 +998,9 @@ function PageTracking({ favs, toggleFav, showToast, myInfo }) {
                     {stop.name}
                     {isMine && (
                       <span style={{
-                        fontSize: 10,
-                        background: 'rgba(37,99,235,.12)',
-                        color: 'var(--blue)',
-                        padding: '1px 7px',
-                        borderRadius: 5,
-                        marginLeft: 4,
+                        fontSize: 10, background: 'rgba(37,99,235,.12)',
+                        color: 'var(--blue)', padding: '1px 7px',
+                        borderRadius: 5, marginLeft: 4,
                       }}>MY STOP</span>
                     )}
                   </div>
@@ -751,9 +1009,7 @@ function PageTracking({ favs, toggleFav, showToast, myInfo }) {
                   </div>
                 </div>
                 <div className="stop-right">
-                  {isNext && (
-                    <span className="status-pill sp-amber">Next</span>
-                  )}
+                  {isNext && <span className="status-pill sp-amber">Next</span>}
                   <button
                     className="fav-btn"
                     onClick={() => {
@@ -772,8 +1028,6 @@ function PageTracking({ favs, toggleFav, showToast, myInfo }) {
     </div>
   );
 }
-
-
 
 
 // ─────────────────────────── PAGE ROUTES ─────────────────────────────────────

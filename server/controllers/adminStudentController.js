@@ -291,6 +291,7 @@
 
 const AdminStudent = require('../models/AdminStudent');
 const Student      = require('../models/Student');
+const Bus          = require('../models/Bus'); 
 const { asyncHandler } = require('../middleware/error');
 
 // ── GET all students ──────────────────────────────────────────
@@ -410,12 +411,91 @@ const deleteStudent = asyncHandler(async (req, res) => {
 
 // ── GET student's own info (called by student app) ────────────
 // GET /api/student/my-info
+// const getMyStudentInfo = asyncHandler(async (req, res) => {
+//   const record = await AdminStudent.findOne({ email: req.student.email })
+//     .populate('assignedRoute', 'routeId name description stops');
+
+//   if (!record)
+//     return res.status(404).json({ success: false, message: 'No profile found. Contact admin.' });
+
+//   res.json({
+//     success: true,
+//     student: {
+//       _id:              record._id,
+//       name:             record.name,
+//       email:            record.email,
+//       rollNo:           record.rollNo,
+//       className:        record.className,
+//       assignedRoute:    record.assignedRoute,
+//       pickupStop:       record.pickupStop       || '—',
+//       parentContact:    record.parentContact     || '—',
+//       status:           record.status,
+//       // ── trip schedule ──
+//       tripType:          record.tripType          || 'both',
+//       morningPickupTime: record.morningPickupTime || '',
+//       eveningPickupTime: record.eveningPickupTime || '',
+//     },
+//   });
+// });
+// ── GET student's own info (called by student app) ────────────
+// GET /api/student/my-info
+// const getMyStudentInfo = asyncHandler(async (req, res) => {
+//   const record = await AdminStudent.findOne({ email: req.student.email })
+//     .populate('assignedRoute', 'routeId name description stops');
+
+//   if (!record)
+//     return res.status(404).json({ success: false, message: 'No profile found. Contact admin.' });
+
+//   let assignedRoute = record.assignedRoute;
+
+//   // Find the bus assigned to this student's route, and attach it
+//   // in the shape the frontend expects: assignedRoute.assignedBuses[0]
+//   if (assignedRoute) {
+//     const bus = await Bus.findOne({ assignedRoute: assignedRoute._id })
+//       .select('_id busNumber capacity status');
+
+//     assignedRoute = {
+//       ...assignedRoute.toObject(),
+//       assignedBuses: bus ? [bus] : [],
+//     };
+//   }
+
+//   res.json({
+//     success: true,
+//     student: {
+//       _id:              record._id,
+//       name:             record.name,
+//       email:            record.email,
+//       rollNo:           record.rollNo,
+//       className:        record.className,
+//       assignedRoute,   // ← now includes assignedBuses
+//       pickupStop:       record.pickupStop       || '—',
+//       parentContact:    record.parentContact     || '—',
+//       status:           record.status,
+//       tripType:          record.tripType          || 'both',
+//       morningPickupTime: record.morningPickupTime || '',
+//       eveningPickupTime: record.eveningPickupTime || '',
+//     },
+//   });
+// });
 const getMyStudentInfo = asyncHandler(async (req, res) => {
   const record = await AdminStudent.findOne({ email: req.student.email })
     .populate('assignedRoute', 'routeId name description stops');
 
   if (!record)
     return res.status(404).json({ success: false, message: 'No profile found. Contact admin.' });
+
+  let assignedRoute = record.assignedRoute;
+
+  if (assignedRoute) {
+    const bus = await Bus.findOne({ assignedRoute: assignedRoute._id })
+      .select('_id busNumber capacity status');
+
+    assignedRoute = {
+      ...assignedRoute.toObject(),
+      assignedBuses: bus ? [bus] : [],
+    };
+  }
 
   res.json({
     success: true,
@@ -425,11 +505,10 @@ const getMyStudentInfo = asyncHandler(async (req, res) => {
       email:            record.email,
       rollNo:           record.rollNo,
       className:        record.className,
-      assignedRoute:    record.assignedRoute,
+      assignedRoute,
       pickupStop:       record.pickupStop       || '—',
       parentContact:    record.parentContact     || '—',
       status:           record.status,
-      // ── trip schedule ──
       tripType:          record.tripType          || 'both',
       morningPickupTime: record.morningPickupTime || '',
       eveningPickupTime: record.eveningPickupTime || '',
