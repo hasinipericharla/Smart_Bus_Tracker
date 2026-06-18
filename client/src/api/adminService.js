@@ -203,6 +203,9 @@ export const createTrip = (body)     => request('/admin/trips', { method: 'POST'
 export const updateTrip = (id, body) => request(`/admin/trips/${id}`, { method: 'PUT', body });
 export const deleteTrip = (id)       => request(`/admin/trips/${id}`, { method: 'DELETE' });
 
+// ── ANALYTICS ──────────────────────────────────────────────
+export const getAdminAnalytics = () => request('/admin/analytics');
+
 // ── ADMIN PROFILE ──────────────────────────────────────────
 export const getAdminProfile = async () => {
   try {

@@ -52,6 +52,7 @@ const { getAllStudents, createStudent, updateStudent, deleteStudent } = require(
 const { getAllDrivers, createDriver, updateDriver, deleteDriver } = require('../controllers/adminDriverController');
 const { createNotification, getAllNotifications, deleteNotification } = require('../controllers/notificationController');
 const { getAllTrips, createTrip, updateTrip, deleteTrip } = require('../controllers/tripController');
+const { getAnalytics } = require('../controllers/analyticsController');
 
 // All routes require admin auth
 router.use(protect);
@@ -91,6 +92,9 @@ router.get('/trips',        getAllTrips);
 router.post('/trips',       createTrip);
 router.put('/trips/:id',    updateTrip);
 router.delete('/trips/:id', deleteTrip);
+
+// Analytics
+router.get('/analytics', getAnalytics);
 
 // GET ADMIN PROFILE (Alternative route via adminRoutes)
 router.get('/profile', protect, async (req, res) => {
