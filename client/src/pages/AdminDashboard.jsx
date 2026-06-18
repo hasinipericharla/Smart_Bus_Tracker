@@ -1903,10 +1903,14 @@ function PageTracking({ showToast }) {
     socketRef.current.on('admin:trip:started', ({ busId, routeId, busNumber }) => {
       setLiveBuses(prev => ({ ...prev, [busId]: { ...prev[busId], status: 'live', routeId, busNumber } }));
     });
+    // socketRef.current.on('admin:trip:ended', ({ busId }) => {
+    //   setLiveBuses(prev => { const updated = { ...prev }; delete updated[busId]; return updated; });
+    //   if (selectedBus?.id === busId) setSelectedBus(null);
+    // });
     socketRef.current.on('admin:trip:ended', ({ busId }) => {
-      setLiveBuses(prev => { const updated = { ...prev }; delete updated[busId]; return updated; });
-      if (selectedBus?.id === busId) setSelectedBus(null);
-    });
+  setLiveBuses(prev => { const updated = { ...prev }; delete updated[busId]; return updated; });
+  setSelectedBus(prev => (prev?.id === busId ? null : prev));
+});
     return () => socketRef.current?.disconnect();
   }, []);
 

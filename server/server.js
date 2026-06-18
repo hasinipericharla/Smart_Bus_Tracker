@@ -272,6 +272,7 @@ io.on('connection', (socket) => {
 
   // Driver sends GPS location
   socket.on('driver:location', ({ busId, lat, lng, speed, busNumber }) => {
+    console.log('📍 location update:', busNumber, lat, lng);
     if (busLocations[busId]) {
       busLocations[busId] = { ...busLocations[busId], lat, lng, speed, updatedAt: Date.now() };
     }
