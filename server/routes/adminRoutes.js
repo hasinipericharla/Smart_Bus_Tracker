@@ -117,6 +117,7 @@ router.get('/profile', protect, async (req, res) => {
         email: admin.email,
         phone: admin.phone,
         department: admin.department,
+        twoFA: admin.twoFA,
         createdAt: admin.createdAt,
       },
     });
@@ -198,6 +199,19 @@ router.put('/change-password', protect, async (req, res) => {
   } catch (err) {
     console.error('Change password error:', err);
     res.status(500).json({ success: false, message: 'Failed to change password.' });
+  }
+});
+
+router.put('/toggle-2fa', protect, async (req, res) => {
+  try {
+    const admin = await Admin.findById(req.admin._id);
+    if (!admin) return res.status(404).json({ success: false, message: 'Admin not found.' });
+    admin.twoFA = !admin.twoFA;
+    await admin.save();
+    res.json({ success: true, twoFA: admin.twoFA,
+      message: `2FA ${admin.twoFA ? 'enabled' : 'disabled'} successfully.` });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to toggle 2FA.' });
   }
 });
 

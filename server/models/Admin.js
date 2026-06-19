@@ -48,6 +48,9 @@ const adminSchema = new mongoose.Schema(
     lastLogin: {
       type: Date,
     },
+
+    // ADD after: lastLogin: { type: Date },
+    twoFA: { type: Boolean, default: false },
   },
   {
     timestamps: true,

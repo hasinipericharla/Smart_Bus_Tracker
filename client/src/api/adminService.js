@@ -261,6 +261,9 @@ export const changeAdminPassword = async (body) => {
   }
 };
 
+export const toggleAdmin2FA = () =>
+  request('/admin/toggle-2fa', { method: 'PUT' });
+
 export const getRecentActivity = () =>
   apiFetch('/admin/activity'); // adjust to however your other functions call the base API helper
 

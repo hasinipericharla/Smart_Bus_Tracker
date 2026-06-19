@@ -3,7 +3,7 @@ import {
   getBuses, createBus, updateBus, deleteBus,
   getRoutes, createRoute, updateRoute, deleteRoute,
   getAdminDrivers, createAdminDriver, updateAdminDriver, deleteAdminDriver,
-  getTrips, getAdminProfile, updateAdminProfile, changeAdminPassword,
+  getTrips, getAdminProfile, updateAdminProfile, changeAdminPassword, toggleAdmin2FA 
 } from '../api/adminService';
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -3611,6 +3611,8 @@ function PageProfile({ showToast }) {
   const [adminId, setAdminId] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [twoFA, setTwoFA] = useState(false);
+  const [togglingFA, setTogglingFA] = useState(false);
 
   // Fetch admin profile on mount
   useEffect(() => {
@@ -3623,6 +3625,7 @@ function PageProfile({ showToast }) {
           setAdminId(data.admin._id);
           setName(data.admin.name || "");
           setEmail(data.admin.email || "");
+          setTwoFA(data.admin.twoFA || false);
           //setPhone(data.admin.phone || "");
           //setDept(data.admin.department || "");
         }
@@ -3771,8 +3774,36 @@ function PageProfile({ showToast }) {
               </button>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0" }}>
-              <div><div style={{ fontSize: 13, fontWeight: 600 }}>Two-Factor Authentication</div><div style={{ fontSize: 11.5, color: "var(--muted)" }}>Protect your account with 2FA</div></div>
-              <span className="status-pill sp-green" style={{ fontSize: 10 }}>Enabled</span>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>Two-Factor Authentication</div>
+                <div style={{ fontSize: 11.5, color: "var(--muted)" }}>
+                  {twoFA ? 'Your account has extra protection.' : 'Enable to protect your account.'}
+                </div>
+              </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span className={`status-pill ${twoFA ? 'sp-green' : 'sp-gray'}`} style={{ fontSize: 10 }}>
+                {twoFA ? 'Enabled' : 'Disabled'}
+              </span>
+              <button
+                className="fab-btn fab-secondary"
+                style={{ padding: '6px 14px', fontSize: 12, opacity: togglingFA ? .6 : 1 }}
+                disabled={togglingFA}
+                onClick={async () => {
+                  setTogglingFA(true);
+                  try {
+                      const res = await toggleAdmin2FA();
+                      setTwoFA(res.twoFA);
+                      showToast(res.message);
+                  } catch (err) {
+                    showToast('Failed: ' + err.message);
+                  } finally {
+                    setTogglingFA(false);
+                  }
+                  }}
+                >
+                  {togglingFA ? 'Updating…' : twoFA ? 'Disable 2FA' : 'Enable 2FA'}
+                </button>
+              </div>
             </div>
           </div>
           <div className="profile-section" style={{ borderTop: "1px solid var(--border)", paddingBottom: 0 }}>
