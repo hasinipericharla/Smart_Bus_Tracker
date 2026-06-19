@@ -3,16 +3,14 @@ import {
   getBuses, createBus, updateBus, deleteBus,
   getRoutes, createRoute, updateRoute, deleteRoute,
   getAdminDrivers, createAdminDriver, updateAdminDriver, deleteAdminDriver,
-  getTrips, getAdminProfile, updateAdminProfile, changeAdminPassword, getAdminActivity
+  getTrips, getAdminProfile, updateAdminProfile, changeAdminPassword,
 } from '../api/adminService';
-
-import { getAdminAnalytics } from '../api/adminService'; 
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { clearSession } from './AdminLogin';
 import { useNavigate } from 'react-router-dom';
 
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { io } from 'socket.io-client';
@@ -1335,160 +1333,16 @@ function ModalStudent({ onClose, onSave, editData }) {
 
 /* ─── PAGES ─────────────────────────────────────────────────────────── */
 
-// function PageDashboard({ showModal, unreadCount, onBellClick, onNavigate }) {
-//   // const [buses, setBuses] = useState([]);
-// //   useEffect(() => {
-// //   fetch("http://localhost:8000/api/admin/buses")
-// //     .then((res) => res.json())
-// //     .then((data) => setBuses(data.buses))
-// //     .catch((err) => console.error(err));
-// // }, []);
-//   //const [activePill, setActivePill] = useState("All");
-//   //const pills = ["All", "Route A", "Route B", "Route C"];
-//   return (
-//     <div className="page">
-//       <div className="page-header">
-//         <div>
-//           <div className="page-title">Dashboard</div>
-//           <div className="page-subtitle">{getGreeting()} — {getDateString()}</div>
-//         </div>
-         
-//       </div>
-//       <div className="stat-grid">
-//         <div className="stat-card s-green"><div className="stat-label">Active Buses</div><div className="stat-val green">18</div><div className="stat-sub"><span className="stat-trend up">+2</span> vs yesterday</div></div>
-//         <div className="stat-card s-amber"><div className="stat-label">Delayed Buses</div><div className="stat-val amber">3</div><div className="stat-sub"><span className="stat-trend down">▲ 1</span> alert active</div></div>
-//         <div className="stat-card s-blue"><div className="stat-label">Drivers on Duty</div><div className="stat-val blue">21</div><div className="stat-sub"><span className="stat-trend up">100%</span> assigned</div></div>
-//         <div className="stat-card s-purple"><div className="stat-label">Students Today</div><div className="stat-val purple">1,248</div><div className="stat-sub"><span className="stat-trend up">+34</span> this week</div></div>
-//       </div>
-//       <div className="map-card">
-//         <div className="card-header">
-//           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
-//           <span className="card-title">Live Map</span>
-//           <span className="card-sub">— all buses</span>
-//         </div>
-//         <div style={{
-//           padding: '28px 24px',
-//           display: 'flex',
-//           alignItems: 'center',
-//           justifyContent: 'space-between',
-//           gap: 20,
-//         }}>
-//           <div>
-//             <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 5 }}>
-//               Real-time bus tracking
-//             </div>
-//             <div style={{ fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.6 }}>
-//               Monitor all active buses, routes, and live locations across the fleet.
-//             </div>
-//             <div style={{ display: 'flex', gap: 18, marginTop: 12 }}>
-//               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-//                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green)' }} />
-//                 <span style={{ color: 'var(--muted)' }}>On time (18)</span>
-//               </div>
-//               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-//                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }} />
-//                 <span style={{ color: 'var(--muted)' }}>Delayed (3)</span>
-//               </div>
-//               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-//                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3a4a60' }} />
-//                 <span style={{ color: 'var(--muted)' }}>Idle (2)</span>
-//               </div>
-//             </div>
-//           </div>
-//           <button
-//             //onClick={() => showModal === undefined ? null : setActivePage('tracking')}
-//             onClick={() => onNavigate('tracking')}
-//             style={{
-//               background: 'var(--accent)',
-//               color: '#1a1a1a',
-//               border: 'none',
-//               borderRadius: 10,
-//               padding: '13px 32px',
-//               fontSize: 14,
-//               fontWeight: 700,
-//               cursor: 'pointer',
-//               display: 'flex',
-//               alignItems: 'center',
-//               gap: 8,
-//               fontFamily: "'DM Sans',sans-serif",
-//               whiteSpace: 'nowrap',
-//               flexShrink: 0,
-//               transition: 'all .15s',
-//               boxShadow: '0 4px 14px rgba(245,166,35,.35)',
-//             }}
-//             onMouseEnter={e => e.currentTarget.style.background = 'var(--accent2)'}
-//             onMouseLeave={e => e.currentTarget.style.background = 'var(--accent)'}
-//           >
-//             📍 Track Live
-//           </button>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
 function PageDashboard({ showModal, unreadCount, onBellClick, onNavigate }) {
-  const [stats, setStats] = useState({
-    activeBuses: 0,
-    delayedBuses: 0,
-    idleBuses: 0,
-    driversOnDuty: 0,
-    totalDrivers: 0,
-    studentsTotal: 0,
-    studentsActive: 0,
-  });
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchDashboardStats = async () => {
-      try {
-        setLoading(true);
-
-        const [busData, driverData, studentData] = await Promise.all([
-          getBuses(),
-          getAdminDrivers(),
-          getAdminStudents(),
-        ]);
-
-        const buses   = busData.buses     || [];
-        const drivers = driverData.drivers || [];
-        const students = studentData.students || [];
-
-        const activeBuses  = buses.filter(b => b.status === 'active').length;
-        const idleBuses    = buses.filter(b => b.status === 'idle').length;
-        // "Delayed" buses = buses whose assigned driver is on_leave or inactive
-        // Since trips are real-time, we derive delayed from non-active non-idle
-        const delayedBuses = buses.filter(
-          b => b.status !== 'active' && b.status !== 'idle'
-        ).length;
-
-        const driversOnDuty = drivers.filter(d => d.status === 'active').length;
-
-        const studentsActive = students.filter(s => s.status === 'active').length;
-
-        setStats({
-          activeBuses,
-          delayedBuses,
-          idleBuses,
-          driversOnDuty,
-          totalDrivers: drivers.length,
-          studentsTotal: students.length,
-          studentsActive,
-        });
-      } catch (err) {
-        console.error('Dashboard fetch error:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDashboardStats();
-  }, []);
-
-  const driverPct = stats.totalDrivers > 0
-    ? Math.round((stats.driversOnDuty / stats.totalDrivers) * 100)
-    : 0;
-
+  // const [buses, setBuses] = useState([]);
+//   useEffect(() => {
+//   fetch("http://localhost:8000/api/admin/buses")
+//     .then((res) => res.json())
+//     .then((data) => setBuses(data.buses))
+//     .catch((err) => console.error(err));
+// }, []);
+  //const [activePill, setActivePill] = useState("All");
+  //const pills = ["All", "Route A", "Route B", "Route C"];
   return (
     <div className="page">
       <div className="page-header">
@@ -1496,80 +1350,26 @@ function PageDashboard({ showModal, unreadCount, onBellClick, onNavigate }) {
           <div className="page-title">Dashboard</div>
           <div className="page-subtitle">{getGreeting()} — {getDateString()}</div>
         </div>
+         
       </div>
-
       <div className="stat-grid">
-        {/* Active Buses */}
-        <div className="stat-card s-green">
-          <div className="stat-label">Active Buses</div>
-          <div className="stat-val green">
-            {loading ? '—' : stats.activeBuses}
-          </div>
-          <div className="stat-sub">
-            <span className="stat-trend up">
-              {loading ? '—' : stats.idleBuses}
-            </span>
-            idle in fleet
-          </div>
-        </div>
-
-        {/* Delayed / Maintenance Buses */}
-        <div className="stat-card s-amber">
-          <div className="stat-label">Delayed Buses</div>
-          <div className="stat-val amber">
-            {loading ? '—' : stats.delayedBuses}
-          </div>
-          <div className="stat-sub">
-            <span className="stat-trend down">
-              {loading ? '—' : `▲ ${stats.delayedBuses}`}
-            </span>
-            {stats.delayedBuses === 1 ? 'alert' : 'alerts'} active
-          </div>
-        </div>
-
-        {/* Drivers on Duty */}
-        <div className="stat-card s-blue">
-          <div className="stat-label">Drivers on Duty</div>
-          <div className="stat-val blue">
-            {loading ? '—' : stats.driversOnDuty}
-          </div>
-          <div className="stat-sub">
-            <span className="stat-trend up">
-              {loading ? '—' : `${driverPct}%`}
-            </span>
-            assigned
-          </div>
-        </div>
-
-        {/* Students */}
-        <div className="stat-card s-purple">
-          <div className="stat-label">Students Enrolled</div>
-          <div className="stat-val purple">
-            {loading ? '—' : stats.studentsTotal.toLocaleString()}
-          </div>
-          <div className="stat-sub">
-            <span className="stat-trend up">
-              {loading ? '—' : stats.studentsActive}
-            </span>
-            active
-          </div>
-        </div>
+        <div className="stat-card s-green"><div className="stat-label">Active Buses</div><div className="stat-val green">18</div><div className="stat-sub"><span className="stat-trend up">+2</span> vs yesterday</div></div>
+        <div className="stat-card s-amber"><div className="stat-label">Delayed Buses</div><div className="stat-val amber">3</div><div className="stat-sub"><span className="stat-trend down">▲ 1</span> alert active</div></div>
+        <div className="stat-card s-blue"><div className="stat-label">Drivers on Duty</div><div className="stat-val blue">21</div><div className="stat-sub"><span className="stat-trend up">100%</span> assigned</div></div>
+        <div className="stat-card s-purple"><div className="stat-label">Students Today</div><div className="stat-val purple">1,248</div><div className="stat-sub"><span className="stat-trend up">+34</span> this week</div></div>
       </div>
-
-      {/* Live Map card — unchanged */}
       <div className="map-card">
         <div className="card-header">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            stroke="var(--accent)" strokeWidth="2">
-            <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>
-          </svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
           <span className="card-title">Live Map</span>
           <span className="card-sub">— all buses</span>
         </div>
         <div style={{
           padding: '28px 24px',
-          display: 'flex', alignItems: 'center',
-          justifyContent: 'space-between', gap: 20,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 20,
         }}>
           <div>
             <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 5 }}>
@@ -1580,34 +1380,38 @@ function PageDashboard({ showModal, unreadCount, onBellClick, onNavigate }) {
             </div>
             <div style={{ display: 'flex', gap: 18, marginTop: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green)' }}/>
-                <span style={{ color: 'var(--muted)' }}>
-                  Active ({loading ? '…' : stats.activeBuses})
-                </span>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green)' }} />
+                <span style={{ color: 'var(--muted)' }}>On time (18)</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }}/>
-                <span style={{ color: 'var(--muted)' }}>
-                  Delayed ({loading ? '…' : stats.delayedBuses})
-                </span>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }} />
+                <span style={{ color: 'var(--muted)' }}>Delayed (3)</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3a4a60' }}/>
-                <span style={{ color: 'var(--muted)' }}>
-                  Idle ({loading ? '…' : stats.idleBuses})
-                </span>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3a4a60' }} />
+                <span style={{ color: 'var(--muted)' }}>Idle (2)</span>
               </div>
             </div>
           </div>
           <button
+            //onClick={() => showModal === undefined ? null : setActivePage('tracking')}
             onClick={() => onNavigate('tracking')}
             style={{
-              background: 'var(--accent)', color: '#1a1a1a',
-              border: 'none', borderRadius: 10,
-              padding: '13px 32px', fontSize: 14, fontWeight: 700,
-              cursor: 'pointer', display: 'flex', alignItems: 'center',
-              gap: 8, fontFamily: "'DM Sans',sans-serif",
-              whiteSpace: 'nowrap', flexShrink: 0, transition: 'all .15s',
+              background: 'var(--accent)',
+              color: '#1a1a1a',
+              border: 'none',
+              borderRadius: 10,
+              padding: '13px 32px',
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              fontFamily: "'DM Sans',sans-serif",
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+              transition: 'all .15s',
               boxShadow: '0 4px 14px rgba(245,166,35,.35)',
             }}
             onMouseEnter={e => e.currentTarget.style.background = 'var(--accent2)'}
@@ -2071,399 +1875,6 @@ const ROUTE_COLORS = {
 //   );
 // }
 
-// function PageTracking({ showToast }) {
-//   const [liveBuses, setLiveBuses]     = useState({});
-//   const [selectedBus, setSelectedBus] = useState(null);
-//   const [activeRoute, setActiveRoute] = useState('ALL');
-//   const [dbRoutes, setDbRoutes]       = useState([]);
-//   const [showRouteSearch, setShowRouteSearch] = useState(false);
-//   const [routeSearchQuery, setRouteSearchQuery] = useState('');
-//   const socketRef = useRef(null);
-
-//   const defaultCenter = [15.8497, 74.4977];
-
-//   // Fetch real routes from DB
-//   useEffect(() => {
-//     getRoutes()
-//       .then(data => setDbRoutes(data.routes || []))
-//       .catch(() => {});
-//   }, []);
-
-//   useEffect(() => {
-//     socketRef.current = io('http://localhost:8000');
-//     socketRef.current.emit('get:live:buses');
-//     socketRef.current.on('live:buses', (buses) => { setLiveBuses(buses); });
-//     socketRef.current.on('admin:bus:update', ({ busId, lat, lng, speed, busNumber }) => {
-//       setLiveBuses(prev => ({ ...prev, [busId]: { ...prev[busId], lat, lng, speed, busNumber } }));
-//     });
-//     socketRef.current.on('admin:trip:started', ({ busId, routeId, busNumber }) => {
-//       setLiveBuses(prev => ({ ...prev, [busId]: { ...prev[busId], status: 'live', routeId, busNumber } }));
-//     });
-//     // socketRef.current.on('admin:trip:ended', ({ busId }) => {
-//     //   setLiveBuses(prev => { const updated = { ...prev }; delete updated[busId]; return updated; });
-//     //   if (selectedBus?.id === busId) setSelectedBus(null);
-//     // });
-//     socketRef.current.on('admin:trip:ended', ({ busId }) => {
-//   setLiveBuses(prev => { const updated = { ...prev }; delete updated[busId]; return updated; });
-//   setSelectedBus(prev => (prev?.id === busId ? null : prev));
-// });
-//     return () => socketRef.current?.disconnect();
-//   }, []);
-
-//   // Close dropdown when clicking outside
-//   useEffect(() => {
-//     if (!showRouteSearch) return;
-//     const handler = (e) => {
-//       if (!e.target.closest('[data-route-search]')) setShowRouteSearch(false);
-//     };
-//     document.addEventListener('mousedown', handler);
-//     return () => document.removeEventListener('mousedown', handler);
-//   }, [showRouteSearch]);
-
-//   const liveBusArray = Object.entries(liveBuses)
-//     .map(([id, data]) => ({ id, ...data }))
-//     .filter(b => activeRoute === 'ALL' || b.routeId === activeRoute);
-
-//   const visibleChipRoutes   = dbRoutes.slice(0, 2);
-//   const remainingRoutes     = dbRoutes.slice(2);
-//   const allSearchableRoutes = dbRoutes;
-
-
-//   // const filteredRemaining = remainingRoutes.filter(r =>
-//   //   !routeSearchQuery ||
-//   //   r.name?.toLowerCase().includes(routeSearchQuery.toLowerCase()) ||
-//   //   r.routeId?.toLowerCase().includes(routeSearchQuery.toLowerCase())
-//   // );
-
-//   const filteredRemaining = allSearchableRoutes.filter(r =>
-//     !routeSearchQuery ||
-//     r.name?.toLowerCase().includes(routeSearchQuery.toLowerCase()) ||
-//     r.routeId?.toLowerCase().includes(routeSearchQuery.toLowerCase())
-//   );
-
-//   return (
-//     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 58px)', overflow: 'hidden' }}>
-
-//       {/* ── Top bar ── */}
-//       <div style={{
-//         padding: '10px 16px', background: '#fff',
-//         borderBottom: '1px solid var(--border)',
-//         display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap',
-//       }}>
-//         <span style={{ fontWeight: 700, fontSize: 14 }}>Live Tracking</span>
-//         <span style={{ fontSize: 12, color: 'var(--muted)' }}>
-//           {liveBusArray.length} buses live
-//         </span>
-
-//         {/* ── Route chips + search ── */}
-//         <div style={{ display: 'flex', gap: 6, marginLeft: 'auto', alignItems: 'center', flexWrap: 'wrap' }}>
-
-//           {/* All Routes chip */}
-//           <button
-//             onClick={() => setActiveRoute('ALL')}
-//             style={{
-//               padding: '5px 14px', borderRadius: 16, fontSize: 12, fontWeight: 600,
-//               cursor: 'pointer', border: 'none', fontFamily: "'DM Sans',sans-serif",
-//               background: activeRoute === 'ALL' ? 'var(--accent)' : '#f1f5f9',
-//               color:      activeRoute === 'ALL' ? '#1a1a1a'       : 'var(--muted)',
-//               transition: 'all .15s',
-//             }}
-//           >
-//             All Routes
-//           </button>
-
-//           {/* First 2 routes from DB */}
-//           {visibleChipRoutes.map(r => (
-//             <button key={r._id}
-//               onClick={() => setActiveRoute(r.routeId)}
-//               style={{
-//                 padding: '5px 14px', borderRadius: 16, fontSize: 12, fontWeight: 600,
-//                 cursor: 'pointer', border: 'none', fontFamily: "'DM Sans',sans-serif",
-//                 background: activeRoute === r.routeId ? 'var(--accent)' : '#f1f5f9',
-//                 color:      activeRoute === r.routeId ? '#1a1a1a'       : 'var(--muted)',
-//                 transition: 'all .15s',
-//               }}
-//             >
-//               {r.routeId} — {r.name}
-//             </button>
-//           ))}
-
-//           {/* Search button for remaining routes */}
-          
-//           {dbRoutes.length > 0 && (
-//             <div data-route-search style={{ position: 'relative' }}>
-//               <button
-//                 onClick={() => setShowRouteSearch(p => !p)}
-//                 style={{
-//                   padding: '5px 12px', borderRadius: 16, fontSize: 12, fontWeight: 600,
-//                   cursor: 'pointer', fontFamily: "'DM Sans',sans-serif",
-//                   border: `1.5px solid ${showRouteSearch ? 'var(--accent)' : 'var(--border)'}`,
-//                   background: showRouteSearch ? 'rgba(245,166,35,.08)' : '#fff',
-//                   color: showRouteSearch ? 'var(--accent2)' : 'var(--text)',
-//                   display: 'flex', alignItems: 'center', gap: 5, transition: 'all .15s',
-//                 }}
-//               >
-//                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
-//                   stroke="currentColor" strokeWidth="2.5">
-//                   <circle cx="11" cy="11" r="8"/>
-//                   <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-//                 </svg>
-//                 Search Routes
-//                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
-//                   stroke="currentColor" strokeWidth="2.5"
-//                   style={{ transform: showRouteSearch ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}>
-//                   <polyline points="6 9 12 15 18 9"/>
-//                 </svg>
-//               </button>
-
-//               {/* Dropdown */}
-//               {showRouteSearch && (
-//                 <div style={{
-//                   position: 'absolute', top: 38, right: 0, zIndex: 300,
-//                   background: '#fff', border: '1px solid var(--border)',
-//                   borderRadius: 12, boxShadow: '0 8px 28px rgba(0,0,0,.14)',
-//                   minWidth: 240, overflow: 'hidden',
-//                 }}>
-//                   {/* Search input */}
-//                   <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)' }}>
-//                     <div style={{
-//                       display: 'flex', alignItems: 'center', gap: 7,
-//                       background: '#f8fafc', borderRadius: 8,
-//                       border: '1px solid var(--border)', padding: '7px 10px',
-//                     }}>
-//                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-//                         stroke="var(--muted)" strokeWidth="2.5">
-//                         <circle cx="11" cy="11" r="8"/>
-//                         <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-//                       </svg>
-//                       <input
-//                         autoFocus
-//                         placeholder="Search route..."
-//                         value={routeSearchQuery}
-//                         onChange={e => setRouteSearchQuery(e.target.value)}
-//                         style={{
-//                           border: 'none', outline: 'none', background: 'transparent',
-//                           fontSize: 12.5, color: 'var(--text)', width: '100%',
-//                           fontFamily: "'DM Sans',sans-serif",
-//                         }}
-//                       />
-//                       {routeSearchQuery && (
-//                         <button onClick={() => setRouteSearchQuery('')}
-//                           style={{ background: 'none', border: 'none', cursor: 'pointer',
-//                             color: 'var(--muted)', fontSize: 15, lineHeight: 1, padding: 0 }}>
-//                           ×
-//                         </button>
-//                       )}
-//                     </div>
-//                   </div>
-
-//                   {/* Route list */}
-//                   <div style={{ maxHeight: 220, overflowY: 'auto' }}>
-//                     {filteredRemaining.length === 0 ? (
-//                       <div style={{ padding: '16px 14px', color: 'var(--muted)',
-//                         fontSize: 12.5, textAlign: 'center' }}>
-//                         No routes found
-//                       </div>
-//                     ) : filteredRemaining.map((r, idx) => (
-//                       <div key={r._id}
-//                         onClick={() => {
-//                           setActiveRoute(r.routeId);
-//                           setShowRouteSearch(false);
-//                           setRouteSearchQuery('');
-//                         }}
-//                         style={{
-//                           padding: '10px 14px', cursor: 'pointer', fontSize: 13,
-//                           color: activeRoute === r.routeId ? 'var(--accent2)' : 'var(--text)',
-//                           background: activeRoute === r.routeId
-//                             ? 'rgba(245,166,35,.08)' : 'transparent',
-//                           fontWeight: activeRoute === r.routeId ? 700 : 400,
-//                           borderBottom: idx < filteredRemaining.length - 1
-//                             ? '1px solid var(--border)' : 'none',
-//                           display: 'flex', alignItems: 'center', gap: 8,
-//                           transition: 'background .12s',
-//                         }}
-//                         onMouseEnter={e => {
-//                           if (activeRoute !== r.routeId)
-//                             e.currentTarget.style.background = '#f8fafc';
-//                         }}
-//                         onMouseLeave={e => {
-//                           if (activeRoute !== r.routeId)
-//                             e.currentTarget.style.background = 'transparent';
-//                         }}
-//                       >
-//                         <span style={{
-//                           fontSize: 10, fontWeight: 700, padding: '2px 7px',
-//                           borderRadius: 8, background: 'rgba(37,99,235,.1)',
-//                           color: 'var(--blue2)', flexShrink: 0,
-//                         }}>
-//                           {r.routeId}
-//                         </span>
-//                         {r.name}
-//                         {activeRoute === r.routeId && (
-//                           <span style={{ marginLeft: 'auto', color: 'var(--accent)', fontSize: 14 }}>✓</span>
-//                         )}
-//                       </div>
-//                     ))}
-//                   </div>
-//                 </div>
-//               )}
-//             </div>
-//           )}
-//         </div>
-
-//         {/* Live indicator */}
-//         <div style={{
-//           display: 'flex', alignItems: 'center',
-//           gap: 6, fontSize: 12, color: '#0f9d58', fontWeight: 600,
-//         }}>
-//           <div style={{
-//             width: 7, height: 7, borderRadius: '50%',
-//             background: '#0f9d58', animation: 'livePulse 1.8s infinite',
-//           }}/>
-//           Live updates
-//         </div>
-//       </div>
-
-//       {/* ── Map ── */}
-//       <div style={{ flex: 1, position: 'relative' }}>
-//         <MapContainer
-//           center={defaultCenter} zoom={13}
-//           style={{ width: '100%', height: '100%' }}
-//           zoomControl={true}
-//         >
-//           <TileLayer
-//             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-//             attribution='© OpenStreetMap contributors'
-//           />
-//           {liveBusArray.map(bus => {
-//             if (!bus.lat || !bus.lng) return null;
-//             const color = ROUTE_COLORS[bus.routeId] || '#1a73e8';
-//             return (
-//               <Marker key={bus.id} position={[bus.lat, bus.lng]}
-//                 icon={makeBusIcon(color)}
-//                 eventHandlers={{ click: () => setSelectedBus(bus) }}
-//               >
-//                 <Popup>
-//                   <div style={{ minWidth: 160 }}>
-//                     <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
-//                       🚌 {bus.busNumber || bus.id}
-//                     </div>
-//                     <div style={{ fontSize: 12, color: '#5f6368' }}>Route: <b>{bus.routeId || '—'}</b></div>
-//                     <div style={{ fontSize: 12, color: '#5f6368' }}>Speed: <b>{bus.speed || 0} km/h</b></div>
-//                     <div style={{ fontSize: 12, color: '#0f9d58', fontWeight: 600 }}>● Live</div>
-//                   </div>
-//                 </Popup>
-//               </Marker>
-//             );
-//           })}
-//         </MapContainer>
-
-//         {/* Selected bus panel */}
-//         {selectedBus && (
-//           <div style={{
-//             position: 'absolute', top: 12, left: 12,
-//             background: '#fff', borderRadius: 14,
-//             boxShadow: '0 4px 24px rgba(0,0,0,.2)',
-//             width: 240, zIndex: 1000, overflow: 'hidden',
-//           }}>
-//             <div style={{
-//               padding: '12px 14px', borderBottom: '1px solid #f1f3f4',
-//               display: 'flex', alignItems: 'center', gap: 10,
-//             }}>
-//               <div style={{
-//                 width: 36, height: 36, borderRadius: '50%',
-//                 background: ROUTE_COLORS[selectedBus.routeId] || '#1a73e8',
-//                 display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16,
-//               }}>🚌</div>
-//               <div style={{ flex: 1 }}>
-//                 <div style={{ fontWeight: 700, fontSize: 14 }}>{selectedBus.busNumber || selectedBus.id}</div>
-//                 <div style={{ fontSize: 11, color: '#5f6368' }}>Route {selectedBus.routeId || '—'}</div>
-//               </div>
-//               <button onClick={() => setSelectedBus(null)}
-//                 style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#5f6368' }}>
-//                 ×
-//               </button>
-//             </div>
-//             <div style={{ padding: '10px 14px' }}>
-//               {[
-//                 ['Speed',  `${selectedBus.speed || 0} km/h`],
-//                 ['Status', '● Live'],
-//                 ['Lat',    selectedBus.lat?.toFixed(5) || '—'],
-//                 ['Lng',    selectedBus.lng?.toFixed(5) || '—'],
-//               ].map(([k, v]) => (
-//                 <div key={k} style={{
-//                   display: 'flex', justifyContent: 'space-between',
-//                   fontSize: 12, padding: '5px 0', borderBottom: '0.5px solid #f1f3f4',
-//                 }}>
-//                   <span style={{ color: '#5f6368' }}>{k}</span>
-//                   <span style={{ fontWeight: 600 }}>{v}</span>
-//                 </div>
-//               ))}
-//             </div>
-//           </div>
-//         )}
-//       </div>
-
-//       {/* ── Bottom bus cards ── */}
-//       <div style={{ background: '#fff', borderTop: '1px solid var(--border)' }}>
-//         <div style={{ display: 'flex', gap: 10, padding: '10px 12px', overflowX: 'auto' }}>
-//           {liveBusArray.length === 0 ? (
-//             <div style={{ padding: '12px 16px', fontSize: 13, color: 'var(--muted)' }}>
-//               No buses live yet. Waiting for drivers to start trips…
-//             </div>
-//           ) : liveBusArray.map(bus => (
-//             <div key={bus.id} onClick={() => setSelectedBus(bus)}
-//               style={{
-//                 minWidth: 180, flexShrink: 0,
-//                 background: selectedBus?.id === bus.id ? '#e8f0fe' : '#f8fafc',
-//                 border: `2px solid ${selectedBus?.id === bus.id ? '#1a73e8' : 'var(--border)'}`,
-//                 borderRadius: 13, padding: '10px 12px', cursor: 'pointer', transition: 'all .15s',
-//               }}
-//             >
-//               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-//                 <div style={{
-//                   width: 28, height: 28, borderRadius: '50%',
-//                   background: ROUTE_COLORS[bus.routeId] || '#1a73e8',
-//                   display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14,
-//                 }}>🚌</div>
-//                 <div>
-//                   <div style={{ fontSize: 12.5, fontWeight: 700 }}>{bus.busNumber || bus.id}</div>
-//                   <div style={{ fontSize: 10, color: 'var(--muted)' }}>Route {bus.routeId || '—'}</div>
-//                 </div>
-//                 <span style={{
-//                   marginLeft: 'auto', fontSize: 10, padding: '2px 7px', borderRadius: 9,
-//                   background: '#e6f4ea', color: '#1e7e34', fontWeight: 700,
-//                 }}>Live</span>
-//               </div>
-//               <div style={{ fontSize: 10.5, color: 'var(--muted)' }}>
-//                 Speed: <b style={{ color: 'var(--text)' }}>{bus.speed || 0} km/h</b>
-//               </div>
-//             </div>
-//           ))}
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-// ── Drop-in replacement for PageTracking in AdminDashboard.jsx ──────────
-// Key fixes:
-//  1. admin:trip:started now also stores busId into liveBuses entry
-//  2. admin:bus:update merges busId so the card panel always has it
-//  3. selectedBus closure bug fixed (functional updater)
-//  4. No other logic changed
-
-// Add this component above PageTracking
-function AdminMapUpdater({ buses }) {
-  const map = useMap();
-  useEffect(() => {
-    const liveBus = buses.find(b => b.lat && b.lng);
-    if (liveBus) {
-      map.setView([liveBus.lat, liveBus.lng], map.getZoom());
-    }
-  }, [buses, map]);
-  return null;
-}
-
 function PageTracking({ showToast }) {
   const [liveBuses, setLiveBuses]     = useState({});
   const [selectedBus, setSelectedBus] = useState(null);
@@ -2471,11 +1882,11 @@ function PageTracking({ showToast }) {
   const [dbRoutes, setDbRoutes]       = useState([]);
   const [showRouteSearch, setShowRouteSearch] = useState(false);
   const [routeSearchQuery, setRouteSearchQuery] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
   const socketRef = useRef(null);
 
   const defaultCenter = [15.8497, 74.4977];
 
+  // Fetch real routes from DB
   useEffect(() => {
     getRoutes()
       .then(data => setDbRoutes(data.routes || []))
@@ -2484,95 +1895,54 @@ function PageTracking({ showToast }) {
 
   useEffect(() => {
     socketRef.current = io('http://localhost:8000');
-
-    // ── Request current snapshot on connect ──
-    socketRef.current.on('connect', () => {
-      socketRef.current.emit('get:live:buses');
-    });
-    // Also emit immediately in case we connected before the listener was set
     socketRef.current.emit('get:live:buses');
-
-    socketRef.current.on('live:buses', (buses) => {
-      // buses is { [busId]: { lat, lng, speed, busNumber, routeId, ... } }
-      // Normalise so every entry has its own busId key
-      const normalised = {};
-      Object.entries(buses).forEach(([id, data]) => {
-        normalised[id] = { ...data, id };
-      });
-      setLiveBuses(normalised);
-    });
-
-    // ── Real-time location update ──
+    socketRef.current.on('live:buses', (buses) => { setLiveBuses(buses); });
     socketRef.current.on('admin:bus:update', ({ busId, lat, lng, speed, busNumber }) => {
-      setLiveBuses(prev => ({
-        ...prev,
-        [busId]: { ...prev[busId], id: busId, lat, lng, speed, busNumber },
-      }));
-      // Keep selectedBus panel in sync
-      setSelectedBus(prev =>
-        prev && prev.id === busId
-          ? { ...prev, lat, lng, speed, busNumber }
-          : prev
-      );
+      setLiveBuses(prev => ({ ...prev, [busId]: { ...prev[busId], lat, lng, speed, busNumber } }));
     });
-
-    // ── Trip started ──
-    socketRef.current.on('admin:trip:started', ({ busId, routeId, busNumber, driverId }) => {
-      setLiveBuses(prev => ({
-        ...prev,
-        [busId]: {
-          ...prev[busId],
-          id: busId,
-          status: 'live',
-          routeId,
-          busNumber,
-          driverId,
-        },
-      }));
+    socketRef.current.on('admin:trip:started', ({ busId, routeId, busNumber }) => {
+      setLiveBuses(prev => ({ ...prev, [busId]: { ...prev[busId], status: 'live', routeId, busNumber } }));
     });
-
-    // ── Trip ended ──
+    // socketRef.current.on('admin:trip:ended', ({ busId }) => {
+    //   setLiveBuses(prev => { const updated = { ...prev }; delete updated[busId]; return updated; });
+    //   if (selectedBus?.id === busId) setSelectedBus(null);
+    // });
     socketRef.current.on('admin:trip:ended', ({ busId }) => {
-      setLiveBuses(prev => {
-        const updated = { ...prev };
-        delete updated[busId];
-        return updated;
-      });
-      setSelectedBus(prev => (prev?.id === busId ? null : prev));
-    });
-
+  setLiveBuses(prev => { const updated = { ...prev }; delete updated[busId]; return updated; });
+  setSelectedBus(prev => (prev?.id === busId ? null : prev));
+});
     return () => socketRef.current?.disconnect();
   }, []);
 
-  // Close route-search dropdown on outside click
+  // Close dropdown when clicking outside
   useEffect(() => {
     if (!showRouteSearch) return;
     const handler = (e) => {
       if (!e.target.closest('[data-route-search]')) setShowRouteSearch(false);
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    //document.addEventListener('mousedown', handler);
+    //return () => document.removeEventListener('mousedown', handler);
+
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
   }, [showRouteSearch]);
 
-  // const liveBusArray = Object.values(liveBuses).filter(
-  //   b => activeRoute === 'ALL' || b.routeId === activeRoute
+  const liveBusArray = Object.entries(liveBuses)
+    .map(([id, data]) => ({ id, ...data }))
+    .filter(b => activeRoute === 'ALL' || b.routeId === activeRoute);
+
+  const visibleChipRoutes   = dbRoutes.slice(0, 2);
+  //const remainingRoutes     = dbRoutes.slice(2);
+  const allSearchableRoutes = dbRoutes;
+
+
+  // const filteredRemaining = remainingRoutes.filter(r =>
+  //   !routeSearchQuery ||
+  //   r.name?.toLowerCase().includes(routeSearchQuery.toLowerCase()) ||
+  //   r.routeId?.toLowerCase().includes(routeSearchQuery.toLowerCase())
   // );
-  const liveBusArray = Object.values(liveBuses).filter(b => {
-  const matchRoute = activeRoute === 'ALL' || b.routeId === activeRoute;
 
-  const q = searchQuery.toLowerCase().trim();
-  const matchSearch =
-    !q ||
-    b.busNumber?.toLowerCase().includes(q) ||
-    b.routeId?.toLowerCase().includes(q) ||
-    b.driverId?.toLowerCase().includes(q);
-
-  return matchRoute && matchSearch;
-});
-
-  const visibleChipRoutes = dbRoutes.slice(0, 2);
-
-  const filteredRemaining = dbRoutes.filter(r =>
+  const filteredRemaining = allSearchableRoutes.filter(r =>
     !routeSearchQuery ||
     r.name?.toLowerCase().includes(routeSearchQuery.toLowerCase()) ||
     r.routeId?.toLowerCase().includes(routeSearchQuery.toLowerCase())
@@ -2586,14 +1956,17 @@ function PageTracking({ showToast }) {
         padding: '10px 16px', background: '#fff',
         borderBottom: '1px solid var(--border)',
         display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap',
+        position: 'relative',
       }}>
         <span style={{ fontWeight: 700, fontSize: 14 }}>Live Tracking</span>
         <span style={{ fontSize: 12, color: 'var(--muted)' }}>
-          {liveBusArray.length} bus{liveBusArray.length !== 1 ? 'es' : ''} live
+          {liveBusArray.length} buses live
         </span>
 
-        {/* Route chips */}
+        {/* ── Route chips + search ── */}
         <div style={{ display: 'flex', gap: 6, marginLeft: 'auto', alignItems: 'center', flexWrap: 'wrap' }}>
+
+          {/* All Routes chip */}
           <button
             onClick={() => setActiveRoute('ALL')}
             style={{
@@ -2603,8 +1976,11 @@ function PageTracking({ showToast }) {
               color:      activeRoute === 'ALL' ? '#1a1a1a'       : 'var(--muted)',
               transition: 'all .15s',
             }}
-          >All Routes</button>
+          >
+            All Routes
+          </button>
 
+          {/* First 2 routes from DB */}
           {visibleChipRoutes.map(r => (
             <button key={r._id}
               onClick={() => setActiveRoute(r.routeId)}
@@ -2615,121 +1991,203 @@ function PageTracking({ showToast }) {
                 color:      activeRoute === r.routeId ? '#1a1a1a'       : 'var(--muted)',
                 transition: 'all .15s',
               }}
-            >{r.routeId} — {r.name}</button>
+            >
+              {r.routeId} — {r.name}
+            </button>
           ))}
 
-          {dbRoutes.length > 0 && (
-            <div data-route-search style={{ position: 'relative' }}>
-              <button
-                onClick={() => setShowRouteSearch(p => !p)}
-                style={{
-                  padding: '5px 12px', borderRadius: 16, fontSize: 12, fontWeight: 600,
-                  cursor: 'pointer', fontFamily: "'DM Sans',sans-serif",
-                  border: `1.5px solid ${showRouteSearch ? 'var(--accent)' : 'var(--border)'}`,
-                  background: showRouteSearch ? 'rgba(245,166,35,.08)' : '#fff',
-                  color: showRouteSearch ? 'var(--accent2)' : 'var(--text)',
-                  display: 'flex', alignItems: 'center', gap: 5, transition: 'all .15s',
-                }}
-              >
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                </svg>
-                Search Routes
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-                  style={{ transform: showRouteSearch ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}>
-                  <polyline points="6 9 12 15 18 9"/>
-                </svg>
-              </button>
+        {/* Search button for remaining routes */}
+<div data-route-search style={{ position: 'relative' }}>
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      setShowRouteSearch(p => !p);
+    }}
+    style={{
+      padding: '5px 12px', borderRadius: 16, fontSize: 12, fontWeight: 600,
+      cursor: 'pointer', fontFamily: "'DM Sans',sans-serif",
+      border: `1.5px solid ${showRouteSearch ? 'var(--accent)' : 'var(--border)'}`,
+      background: showRouteSearch ? 'rgba(245,166,35,.08)' : '#fff',
+      color: showRouteSearch ? 'var(--accent2)' : 'var(--text)',
+      display: 'flex', alignItems: 'center', gap: 5, transition: 'all .15s',
+    }}
+  >
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2.5">
+      <circle cx="11" cy="11" r="8"/>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    Search Routes
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2.5"
+      style={{ transform: showRouteSearch ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}>
+      <polyline points="6 9 12 15 18 9"/>
+    </svg>
+  </button>
 
-              {showRouteSearch && (
-                <div style={{
-                  position: 'absolute', top: 38, right: 0, zIndex: 300,
-                  background: '#fff', border: '1px solid var(--border)',
-                  borderRadius: 12, boxShadow: '0 8px 28px rgba(0,0,0,.14)',
-                  minWidth: 240, overflow: 'hidden',
-                }}>
-                  <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)' }}>
-                    <div style={{
-                      display: 'flex', alignItems: 'center', gap: 7,
-                      background: '#f8fafc', borderRadius: 8,
-                      border: '1px solid var(--border)', padding: '7px 10px',
-                    }}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2.5">
-                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                      </svg>
-                      <input
-                        autoFocus
-                        placeholder="Search route..."
-                        value={routeSearchQuery}
-                        onChange={e => setRouteSearchQuery(e.target.value)}
-                        style={{
-                          border: 'none', outline: 'none', background: 'transparent',
-                          fontSize: 12.5, color: 'var(--text)', width: '100%',
-                          fontFamily: "'DM Sans',sans-serif",
-                        }}
-                      />
-                      {routeSearchQuery && (
-                        <button onClick={() => setRouteSearchQuery('')}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 15, lineHeight: 1, padding: 0 }}>
-                          ×
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <div style={{ maxHeight: 220, overflowY: 'auto' }}>
-                    {filteredRemaining.length === 0 ? (
-                      <div style={{ padding: '16px 14px', color: 'var(--muted)', fontSize: 12.5, textAlign: 'center' }}>
-                        No routes found
-                      </div>
-                    ) : filteredRemaining.map((r, idx) => (
-                      <div key={r._id}
-                        onClick={() => { setActiveRoute(r.routeId); setShowRouteSearch(false); setRouteSearchQuery(''); }}
-                        style={{
-                          padding: '10px 14px', cursor: 'pointer', fontSize: 13,
-                          color: activeRoute === r.routeId ? 'var(--accent2)' : 'var(--text)',
-                          background: activeRoute === r.routeId ? 'rgba(245,166,35,.08)' : 'transparent',
-                          fontWeight: activeRoute === r.routeId ? 700 : 400,
-                          borderBottom: idx < filteredRemaining.length - 1 ? '1px solid var(--border)' : 'none',
-                          display: 'flex', alignItems: 'center', gap: 8, transition: 'background .12s',
-                        }}
-                      >
-                        <span style={{
-                          fontSize: 10, fontWeight: 700, padding: '2px 7px',
-                          borderRadius: 8, background: 'rgba(37,99,235,.1)', color: 'var(--blue2)', flexShrink: 0,
-                        }}>{r.routeId}</span>
-                        {r.name}
-                        {activeRoute === r.routeId && (
-                          <span style={{ marginLeft: 'auto', color: 'var(--accent)', fontSize: 14 }}>✓</span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+  {/* Dropdown */}
+  {showRouteSearch && (
+    <div style={{
+      position: 'absolute', top: 38, right: 0, zIndex: 1000,
+      background: '#fff', border: '1px solid var(--border)',
+      borderRadius: 12, boxShadow: '0 8px 28px rgba(0,0,0,.14)',
+      minWidth: 240, overflow: 'hidden',
+    }}>
+      {/* Search input */}
+      <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)' }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 7,
+          background: '#f8fafc', borderRadius: 8,
+          border: '1px solid var(--border)', padding: '7px 10px',
+        }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+            stroke="var(--muted)" strokeWidth="2.5">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            autoFocus
+            placeholder="Search route..."
+            value={routeSearchQuery}
+            onChange={e => setRouteSearchQuery(e.target.value)}
+            style={{
+              border: 'none', outline: 'none', background: 'transparent',
+              fontSize: 12.5, color: 'var(--text)', width: '100%',
+              fontFamily: "'DM Sans',sans-serif",
+            }}
+          />
+          {routeSearchQuery && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setRouteSearchQuery(''); }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer',
+                color: 'var(--muted)', fontSize: 15, lineHeight: 1, padding: 0 }}>
+              ×
+            </button>
           )}
         </div>
+      </div>
+
+      {/* Route list — ALL routes */}
+      <div style={{ maxHeight: 220, overflowY: 'auto' }}>
+
+        {/* All Routes option at top */}
+        {!routeSearchQuery && (
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveRoute('ALL');
+              setShowRouteSearch(false);
+              setRouteSearchQuery('');
+            }}
+            style={{
+              padding: '10px 14px', cursor: 'pointer', fontSize: 13,
+              color: activeRoute === 'ALL' ? 'var(--accent2)' : 'var(--text)',
+              background: activeRoute === 'ALL' ? 'rgba(245,166,35,.08)' : 'transparent',
+              fontWeight: activeRoute === 'ALL' ? 700 : 400,
+              borderBottom: '1px solid var(--border)',
+              display: 'flex', alignItems: 'center', gap: 8,
+              transition: 'background .12s',
+            }}
+            onMouseEnter={e => { if (activeRoute !== 'ALL') e.currentTarget.style.background = '#f8fafc'; }}
+            onMouseLeave={e => { if (activeRoute !== 'ALL') e.currentTarget.style.background = 'transparent'; }}
+          >
+            <span style={{
+              fontSize: 10, fontWeight: 700, padding: '2px 7px',
+              borderRadius: 8, background: 'rgba(245,166,35,.1)',
+              color: 'var(--accent2)', flexShrink: 0,
+            }}>ALL</span>
+            All Routes
+            {activeRoute === 'ALL' && (
+              <span style={{ marginLeft: 'auto', color: 'var(--accent)', fontSize: 14 }}>✓</span>
+            )}
+          </div>
+        )}
+
+        {/* All DB routes */}
+        {allSearchableRoutes.filter(r =>
+          !routeSearchQuery ||
+          r.name?.toLowerCase().includes(routeSearchQuery.toLowerCase()) ||
+          r.routeId?.toLowerCase().includes(routeSearchQuery.toLowerCase())
+        ).length === 0 ? (
+          <div style={{ padding: '16px 14px', color: 'var(--muted)',
+            fontSize: 12.5, textAlign: 'center' }}>
+            {dbRoutes.length === 0 ? 'No routes in database yet' : 'No routes match search'}
+          </div>
+        ) : allSearchableRoutes.filter(r =>
+          !routeSearchQuery ||
+          r.name?.toLowerCase().includes(routeSearchQuery.toLowerCase()) ||
+          r.routeId?.toLowerCase().includes(routeSearchQuery.toLowerCase())
+        ).map((r, idx, arr) => (
+          <div key={r._id}
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveRoute(r.routeId);
+              setShowRouteSearch(false);
+              setRouteSearchQuery('');
+            }}
+            style={{
+              padding: '10px 14px', cursor: 'pointer', fontSize: 13,
+              color: activeRoute === r.routeId ? 'var(--accent2)' : 'var(--text)',
+              background: activeRoute === r.routeId ? 'rgba(245,166,35,.08)' : 'transparent',
+              fontWeight: activeRoute === r.routeId ? 700 : 400,
+              borderBottom: idx < arr.length - 1 ? '1px solid var(--border)' : 'none',
+              display: 'flex', alignItems: 'center', gap: 8,
+              transition: 'background .12s',
+            }}
+            onMouseEnter={e => { if (activeRoute !== r.routeId) e.currentTarget.style.background = '#f8fafc'; }}
+            onMouseLeave={e => { if (activeRoute !== r.routeId) e.currentTarget.style.background = 'transparent'; }}
+          >
+            <span style={{
+              fontSize: 10, fontWeight: 700, padding: '2px 7px',
+              borderRadius: 8, background: 'rgba(37,99,235,.1)',
+              color: 'var(--blue2)', flexShrink: 0,
+            }}>
+              {r.routeId}
+            </span>
+            {r.name}
+            {activeRoute === r.routeId && (
+              <span style={{ marginLeft: 'auto', color: 'var(--accent)', fontSize: 14 }}>✓</span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )}
+</div>
+
+</div>  {/* ← closes the route chips + search wrapper div */}
 
         {/* Live indicator */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#0f9d58', fontWeight: 600 }}>
-          <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#0f9d58', animation: 'livePulse 1.8s infinite' }}/>
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          gap: 6, fontSize: 12, color: '#0f9d58', fontWeight: 600,
+        }}>
+          <div style={{
+            width: 7, height: 7, borderRadius: '50%',
+            background: '#0f9d58', animation: 'livePulse 1.8s infinite',
+          }}/>
           Live updates
         </div>
       </div>
 
       {/* ── Map ── */}
       <div style={{ flex: 1, position: 'relative' }}>
-        <MapContainer center={defaultCenter} zoom={13} style={{ width: '100%', height: '100%' }} zoomControl>
+        <MapContainer
+          center={defaultCenter} zoom={13}
+          style={{ width: '100%', height: '100%' }}
+          zoomControl={true}
+        >
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution="© OpenStreetMap contributors"
+            attribution='© OpenStreetMap contributors'
           />
-          <AdminMapUpdater buses={liveBusArray} />
           {liveBusArray.map(bus => {
             if (!bus.lat || !bus.lng) return null;
             const color = ROUTE_COLORS[bus.routeId] || '#1a73e8';
             return (
-              <Marker key={bus.id} position={[bus.lat, bus.lng]}
+              <Marker
+                key={`${bus.id}-${bus.lat}-${bus.lng}`}   // ← NEW
+                position={[bus.lat, bus.lng]}          // ← ADD THIS LINE
                 icon={makeBusIcon(color)}
                 eventHandlers={{ click: () => setSelectedBus(bus) }}
               >
@@ -2775,20 +2233,23 @@ function PageTracking({ showToast }) {
               </button>
             </div>
             <div style={{ padding: '10px 14px' }}>
-              {[
-                ['Speed',  `${selectedBus.speed || 0} km/h`],
-                ['Status', '● Live'],
-                ['Lat',    selectedBus.lat?.toFixed(5) || '—'],
-                ['Lng',    selectedBus.lng?.toFixed(5) || '—'],
-              ].map(([k, v]) => (
-                <div key={k} style={{
-                  display: 'flex', justifyContent: 'space-between',
-                  fontSize: 12, padding: '5px 0', borderBottom: '0.5px solid #f1f3f4',
-                }}>
+              {(() => {
+                const live = liveBuses[selectedBus.id] || selectedBus;
+                return [
+                  ['Speed',  `${live.speed || 0} km/h`],
+                  ['Status', '● Live'],
+                  ['Lat',    live.lat?.toFixed(5) || '—'],
+                  ['Lng',    live.lng?.toFixed(5) || '—'],
+                ].map(([k, v]) => (
+                  <div key={k} style={{
+                    display: 'flex', justifyContent: 'space-between',
+                    fontSize: 12, padding: '5px 0', borderBottom: '0.5px solid #f1f3f4',
+                  }}>
                   <span style={{ color: '#5f6368' }}>{k}</span>
                   <span style={{ fontWeight: 600 }}>{v}</span>
-                </div>
-              ))}
+                  </div>
+                ));
+              })()}
             </div>
           </div>
         )}
@@ -2835,6 +2296,7 @@ function PageTracking({ showToast }) {
     </div>
   );
 }
+
 
 function PageBuses({ showModal, showToast, requestConfirm }) {
   const [buses, setBuses] = useState([]);
@@ -3710,271 +3172,75 @@ function PageHistory({ showToast }) {
 }
 
 
-// function PageAnalytics() {
-//   const [busData, setBusData] = useState(null);
-//   const [routeData, setRouteData] = useState(null);
-//   const [studentData, setStudentData] = useState(null);
-//   const [loading, setLoading] = useState(true);
-
-//   useEffect(() => {
-//     const fetchAnalytics = async () => {
-//       try {
-//         setLoading(true);
-        
-//         // Fetch buses data
-//         const busRes = await fetch('http://localhost:8000/api/admin/buses');
-//         const busesData = await busRes.json();
-        
-//         // Fetch routes data
-//         const routeRes = await fetch('http://localhost:8000/api/admin/routes');
-//         const routesData = await routeRes.json();
-        
-//         // Fetch students data
-//         const studentRes = await fetch('http://localhost:8000/api/admin/students');
-//         const studentsData = await studentRes.json();
-
-//         // Process bus data
-//         const buses = busesData.buses || [];
-//         const activeBuses = buses.filter(b => b.status === 'active').length;
-//         const maintenanceBuses = buses.filter(b => b.status === 'maintenance').length;
-//         const idleBuses = buses.filter(b => b.status === 'idle').length;
-
-//         setBusData({
-//           total: buses.length,
-//           active: activeBuses,
-//           maintenance: maintenanceBuses,
-//           idle: idleBuses,
-//           utilization: buses.length > 0 ? Math.round((activeBuses / buses.length) * 100) : 0,
-//         });
-
-//         // Process route data
-//         const routes = routesData.routes || [];
-//         setRouteData({
-//           total: routes.length,
-//           busesPerRoute: routes.map(r => ({
-//             name: r.name,
-//             buses: r.assignedBuses?.length || 0,
-//           })),
-//           avgStopsPerRoute: routes.length > 0 
-//             ? Math.round(routes.reduce((sum, r) => sum + (r.stops?.length || 0), 0) / routes.length)
-//             : 0,
-//         });
-
-//         // Process student data
-//         const students = studentsData.students || [];
-//         const activeStudents = students.filter(s => s.status === 'active').length;
-//         const pendingStudents = students.filter(s => s.status === 'pending').length;
-
-//         setStudentData({
-//           total: students.length,
-//           active: activeStudents,
-//           pending: pendingStudents,
-//           inactive: students.length - activeStudents - pendingStudents,
-//         });
-
-//         setLoading(false);
-//       } catch (err) {
-//         console.error('Failed to load analytics:', err);
-//         setLoading(false);
-//       }
-//     };
-
-//     fetchAnalytics();
-//   }, []);
-
-//   if (loading) {
-//     return (
-//       <div className="page">
-//         <div className="page-header">
-//           <div>
-//             <div className="page-title">Analytics</div>
-//             <div className="page-subtitle">Fleet and operations analytics</div>
-//           </div>
-//         </div>
-//         <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>
-//           Loading analytics...
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <div className="page">
-//       <div className="page-header">
-//         <div>
-//           <div className="page-title">Analytics</div>
-//           <div className="page-subtitle">Fleet and operations overview</div>
-//         </div>
-//       </div>
-
-//       {/* BUS ANALYTICS */}
-//       <div style={{ marginBottom: 20 }}>
-//         <div className="page-title" style={{ fontSize: 16, marginBottom: 14 }}>🚌 Bus Fleet Analytics</div>
-//         <div className="stat-grid">
-//           <div className="stat-card s-blue">
-//             <div className="stat-label">Total Buses</div>
-//             <div className="stat-val blue">{busData?.total || 0}</div>
-//             <div className="stat-sub">Fleet size</div>
-//           </div>
-//           <div className="stat-card s-green">
-//             <div className="stat-label">Active Buses</div>
-//             <div className="stat-val green">{busData?.active || 0}</div>
-//             <div className="stat-sub">
-//               <span className="stat-trend up">{busData?.utilization || 0}%</span> utilization
-//             </div>
-//           </div>
-//           <div className="stat-card s-amber">
-//             <div className="stat-label">In Maintenance</div>
-//             <div className="stat-val amber">{busData?.maintenance || 0}</div>
-//             <div className="stat-sub">Unavailable</div>
-//           </div>
-//           <div className="stat-card s-purple">
-//             <div className="stat-label">Idle Buses</div>
-//             <div className="stat-val purple">{busData?.idle || 0}</div>
-//             <div className="stat-sub">Not in use</div>
-//           </div>
-//         </div>
-//       </div>
-
-//       {/* ROUTE ANALYTICS */}
-//       <div style={{ marginBottom: 20 }}>
-//         <div className="page-title" style={{ fontSize: 16, marginBottom: 14 }}>🗺️ Route Analytics</div>
-//         <div className="stat-grid">
-//           <div className="stat-card s-blue">
-//             <div className="stat-label">Total Routes</div>
-//             <div className="stat-val blue">{routeData?.total || 0}</div>
-//             <div className="stat-sub">Active routes</div>
-//           </div>
-//           <div className="stat-card s-green">
-//             <div className="stat-label">Avg Stops Per Route</div>
-//             <div className="stat-val green">{routeData?.avgStopsPerRoute || 0}</div>
-//             <div className="stat-sub">Coverage</div>
-//           </div>
-//         </div>
-
-//         {routeData?.busesPerRoute && routeData.busesPerRoute.length > 0 && (
-//           <div className="table-card" style={{ marginTop: 14 }}>
-//             <div className="card-header">
-//               <span className="card-title">Buses per Route</span>
-//             </div>
-//             <table className="data-table">
-//               <thead>
-//                 <tr>
-//                   <th>Route Name</th>
-//                   <th>Assigned Buses</th>
-//                 </tr>
-//               </thead>
-//               <tbody>
-//                 {routeData.busesPerRoute.map((route, idx) => (
-//                   <tr key={idx}>
-//                     <td><strong>{route.name}</strong></td>
-//                     <td>
-//                       <span className="status-pill sp-blue">{route.buses} buses</span>
-//                     </td>
-//                   </tr>
-//                 ))}
-//               </tbody>
-//             </table>
-//           </div>
-//         )}
-//       </div>
-
-//       {/* STUDENT ANALYTICS */}
-//       <div>
-//         <div className="page-title" style={{ fontSize: 16, marginBottom: 14 }}>👥 Student Analytics</div>
-//         <div className="stat-grid">
-//           <div className="stat-card s-purple">
-//             <div className="stat-label">Total Students</div>
-//             <div className="stat-val purple">{studentData?.total || 0}</div>
-//             <div className="stat-sub">Enrolled</div>
-//           </div>
-//           <div className="stat-card s-green">
-//             <div className="stat-label">Active Students</div>
-//             <div className="stat-val green">{studentData?.active || 0}</div>
-//             <div className="stat-sub">Using service</div>
-//           </div>
-//           <div className="stat-card s-amber">
-//             <div className="stat-label">Pending Approval</div>
-//             <div className="stat-val amber">{studentData?.pending || 0}</div>
-//             <div className="stat-sub">Awaiting verification</div>
-//           </div>
-//           <div className="stat-card s-blue">
-//             <div className="stat-label">Inactive</div>
-//             <div className="stat-val blue">{studentData?.inactive || 0}</div>
-//             <div className="stat-sub">Not active</div>
-//           </div>
-//         </div>
-//       </div>
-
-//       {/* SUMMARY */}
-//       <div className="table-card" style={{ marginTop: 20 }}>
-//         <div className="card-header">
-//           <span className="card-title">📊 Quick Summary</span>
-//         </div>
-//         <div style={{ padding: '18px' }}>
-//           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, fontSize: 13 }}>
-//             <div>
-//               <div style={{ color: 'var(--muted)', marginBottom: 4 }}>Fleet Efficiency</div>
-//               <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--green)' }}>
-//                 {busData?.utilization || 0}%
-//               </div>
-//               <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
-//                 Active buses out of total fleet
-//               </div>
-//             </div>
-//             <div>
-//               <div style={{ color: 'var(--muted)', marginBottom: 4 }}>Student Coverage</div>
-//               <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--blue2)' }}>
-//                 {studentData?.total || 0}
-//               </div>
-//               <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
-//                 Students enrolled in bus service
-//               </div>
-//             </div>
-//             <div>
-//               <div style={{ color: 'var(--muted)', marginBottom: 4 }}>Network Reach</div>
-//               <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--accent)' }}>
-//                 {routeData?.total || 0} Routes
-//               </div>
-//               <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
-//                 Covering {routeData?.avgStopsPerRoute || 0} stops average
-//               </div>
-//             </div>
-//             <div>
-//               <div style={{ color: 'var(--muted)', marginBottom: 4 }}>Maintenance Status</div>
-//               <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--red)' }}>
-//                 {busData?.maintenance || 0}
-//               </div>
-//               <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
-//                 Buses in maintenance
-//               </div>
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
-
-
 function PageAnalytics() {
-  const [data, setData]       = useState(null);
+  const [busData, setBusData] = useState(null);
+  const [routeData, setRouteData] = useState(null);
+  const [studentData, setStudentData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState('');
 
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
         setLoading(true);
-        const res = await getAdminAnalytics();
-        setData(res);
+        
+        // Fetch buses data
+        const busRes = await fetch('http://localhost:8000/api/admin/buses');
+        const busesData = await busRes.json();
+        
+        // Fetch routes data
+        const routeRes = await fetch('http://localhost:8000/api/admin/routes');
+        const routesData = await routeRes.json();
+        
+        // Fetch students data
+        const studentRes = await fetch('http://localhost:8000/api/admin/students');
+        const studentsData = await studentRes.json();
+
+        // Process bus data
+        const buses = busesData.buses || [];
+        const activeBuses = buses.filter(b => b.status === 'active').length;
+        const maintenanceBuses = buses.filter(b => b.status === 'maintenance').length;
+        const idleBuses = buses.filter(b => b.status === 'idle').length;
+
+        setBusData({
+          total: buses.length,
+          active: activeBuses,
+          maintenance: maintenanceBuses,
+          idle: idleBuses,
+          utilization: buses.length > 0 ? Math.round((activeBuses / buses.length) * 100) : 0,
+        });
+
+        // Process route data
+        const routes = routesData.routes || [];
+        setRouteData({
+          total: routes.length,
+          busesPerRoute: routes.map(r => ({
+            name: r.name,
+            buses: r.assignedBuses?.length || 0,
+          })),
+          avgStopsPerRoute: routes.length > 0 
+            ? Math.round(routes.reduce((sum, r) => sum + (r.stops?.length || 0), 0) / routes.length)
+            : 0,
+        });
+
+        // Process student data
+        const students = studentsData.students || [];
+        const activeStudents = students.filter(s => s.status === 'active').length;
+        const pendingStudents = students.filter(s => s.status === 'pending').length;
+
+        setStudentData({
+          total: students.length,
+          active: activeStudents,
+          pending: pendingStudents,
+          inactive: students.length - activeStudents - pendingStudents,
+        });
+
+        setLoading(false);
       } catch (err) {
-        setError(err.message || 'Failed to load analytics');
-      } finally {
+        console.error('Failed to load analytics:', err);
         setLoading(false);
       }
     };
+
     fetchAnalytics();
   }, []);
 
@@ -3994,24 +3260,6 @@ function PageAnalytics() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="page">
-        <div className="page-header">
-          <div>
-            <div className="page-title">Analytics</div>
-            <div className="page-subtitle">Fleet and operations analytics</div>
-          </div>
-        </div>
-        <div style={{ padding: 40, textAlign: 'center', color: 'var(--red)' }}>
-          ⚠️ {error}
-        </div>
-      </div>
-    );
-  }
-
-  const { buses, routes, students, drivers } = data;
-
   return (
     <div className="page">
       <div className="page-header">
@@ -4027,22 +3275,24 @@ function PageAnalytics() {
         <div className="stat-grid">
           <div className="stat-card s-blue">
             <div className="stat-label">Total Buses</div>
-            <div className="stat-val blue">{buses.total}</div>
+            <div className="stat-val blue">{busData?.total || 0}</div>
             <div className="stat-sub">Fleet size</div>
           </div>
           <div className="stat-card s-green">
             <div className="stat-label">Active Buses</div>
-            <div className="stat-val green">{buses.active}</div>
-            <div className="stat-sub"><span className="stat-trend up">{buses.utilization}%</span> utilization</div>
+            <div className="stat-val green">{busData?.active || 0}</div>
+            <div className="stat-sub">
+              <span className="stat-trend up">{busData?.utilization || 0}%</span> utilization
+            </div>
           </div>
           <div className="stat-card s-amber">
             <div className="stat-label">In Maintenance</div>
-            <div className="stat-val amber">{buses.maintenance}</div>
+            <div className="stat-val amber">{busData?.maintenance || 0}</div>
             <div className="stat-sub">Unavailable</div>
           </div>
           <div className="stat-card s-purple">
             <div className="stat-label">Idle Buses</div>
-            <div className="stat-val purple">{buses.idle}</div>
+            <div className="stat-val purple">{busData?.idle || 0}</div>
             <div className="stat-sub">Not in use</div>
           </div>
         </div>
@@ -4054,26 +3304,35 @@ function PageAnalytics() {
         <div className="stat-grid">
           <div className="stat-card s-blue">
             <div className="stat-label">Total Routes</div>
-            <div className="stat-val blue">{routes.total}</div>
+            <div className="stat-val blue">{routeData?.total || 0}</div>
             <div className="stat-sub">Active routes</div>
           </div>
           <div className="stat-card s-green">
             <div className="stat-label">Avg Stops Per Route</div>
-            <div className="stat-val green">{routes.avgStopsPerRoute}</div>
+            <div className="stat-val green">{routeData?.avgStopsPerRoute || 0}</div>
             <div className="stat-sub">Coverage</div>
           </div>
         </div>
 
-        {routes.busesPerRoute.length > 0 && (
+        {routeData?.busesPerRoute && routeData.busesPerRoute.length > 0 && (
           <div className="table-card" style={{ marginTop: 14 }}>
-            <div className="card-header"><span className="card-title">Buses per Route</span></div>
+            <div className="card-header">
+              <span className="card-title">Buses per Route</span>
+            </div>
             <table className="data-table">
-              <thead><tr><th>Route Name</th><th>Assigned Buses</th></tr></thead>
+              <thead>
+                <tr>
+                  <th>Route Name</th>
+                  <th>Assigned Buses</th>
+                </tr>
+              </thead>
               <tbody>
-                {routes.busesPerRoute.map((route, idx) => (
+                {routeData.busesPerRoute.map((route, idx) => (
                   <tr key={idx}>
-                    <td><strong>{route.routeId} — {route.name}</strong></td>
-                    <td><span className="status-pill sp-blue">{route.buses} buses</span></td>
+                    <td><strong>{route.name}</strong></td>
+                    <td>
+                      <span className="status-pill sp-blue">{route.buses} buses</span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -4083,51 +3342,74 @@ function PageAnalytics() {
       </div>
 
       {/* STUDENT ANALYTICS */}
-      <div style={{ marginBottom: 20 }}>
+      <div>
         <div className="page-title" style={{ fontSize: 16, marginBottom: 14 }}>👥 Student Analytics</div>
         <div className="stat-grid">
-          <div className="stat-card s-purple"><div className="stat-label">Total Students</div><div className="stat-val purple">{students.total}</div><div className="stat-sub">Enrolled</div></div>
-          <div className="stat-card s-green"><div className="stat-label">Active Students</div><div className="stat-val green">{students.active}</div><div className="stat-sub">Using service</div></div>
-          <div className="stat-card s-amber"><div className="stat-label">Pending Approval</div><div className="stat-val amber">{students.pending}</div><div className="stat-sub">Awaiting verification</div></div>
-          <div className="stat-card s-blue"><div className="stat-label">Inactive</div><div className="stat-val blue">{students.inactive}</div><div className="stat-sub">Not active</div></div>
-        </div>
-      </div>
-
-      {/* DRIVER ANALYTICS — new, now that the data's already in the same call */}
-      <div style={{ marginBottom: 20 }}>
-        <div className="page-title" style={{ fontSize: 16, marginBottom: 14 }}>🧑‍✈️ Driver Analytics</div>
-        <div className="stat-grid">
-          <div className="stat-card s-blue"><div className="stat-label">Total Drivers</div><div className="stat-val blue">{drivers.total}</div><div className="stat-sub">Registered</div></div>
-          <div className="stat-card s-green"><div className="stat-label">Active Drivers</div><div className="stat-val green">{drivers.active}</div><div className="stat-sub">On duty</div></div>
-          <div className="stat-card s-amber"><div className="stat-label">On Leave</div><div className="stat-val amber">{drivers.onLeave}</div><div className="stat-sub">Temporarily out</div></div>
-          <div className="stat-card s-purple"><div className="stat-label">Inactive</div><div className="stat-val purple">{drivers.inactive}</div><div className="stat-sub">Not assigned</div></div>
+          <div className="stat-card s-purple">
+            <div className="stat-label">Total Students</div>
+            <div className="stat-val purple">{studentData?.total || 0}</div>
+            <div className="stat-sub">Enrolled</div>
+          </div>
+          <div className="stat-card s-green">
+            <div className="stat-label">Active Students</div>
+            <div className="stat-val green">{studentData?.active || 0}</div>
+            <div className="stat-sub">Using service</div>
+          </div>
+          <div className="stat-card s-amber">
+            <div className="stat-label">Pending Approval</div>
+            <div className="stat-val amber">{studentData?.pending || 0}</div>
+            <div className="stat-sub">Awaiting verification</div>
+          </div>
+          <div className="stat-card s-blue">
+            <div className="stat-label">Inactive</div>
+            <div className="stat-val blue">{studentData?.inactive || 0}</div>
+            <div className="stat-sub">Not active</div>
+          </div>
         </div>
       </div>
 
       {/* SUMMARY */}
       <div className="table-card" style={{ marginTop: 20 }}>
-        <div className="card-header"><span className="card-title">📊 Quick Summary</span></div>
+        <div className="card-header">
+          <span className="card-title">📊 Quick Summary</span>
+        </div>
         <div style={{ padding: '18px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, fontSize: 13 }}>
             <div>
               <div style={{ color: 'var(--muted)', marginBottom: 4 }}>Fleet Efficiency</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--green)' }}>{buses.utilization}%</div>
-              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>Active buses out of total fleet</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--green)' }}>
+                {busData?.utilization || 0}%
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
+                Active buses out of total fleet
+              </div>
             </div>
             <div>
               <div style={{ color: 'var(--muted)', marginBottom: 4 }}>Student Coverage</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--blue2)' }}>{students.total}</div>
-              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>Students enrolled in bus service</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--blue2)' }}>
+                {studentData?.total || 0}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
+                Students enrolled in bus service
+              </div>
             </div>
             <div>
               <div style={{ color: 'var(--muted)', marginBottom: 4 }}>Network Reach</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--accent)' }}>{routes.total} Routes</div>
-              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>Covering {routes.avgStopsPerRoute} stops average</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--accent)' }}>
+                {routeData?.total || 0} Routes
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
+                Covering {routeData?.avgStopsPerRoute || 0} stops average
+              </div>
             </div>
             <div>
               <div style={{ color: 'var(--muted)', marginBottom: 4 }}>Maintenance Status</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--red)' }}>{buses.maintenance}</div>
-              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>Buses in maintenance</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--red)' }}>
+                {busData?.maintenance || 0}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
+                Buses in maintenance
+              </div>
             </div>
           </div>
         </div>
@@ -4135,6 +3417,7 @@ function PageAnalytics() {
     </div>
   );
 }
+
 
 
 
@@ -4328,45 +3611,7 @@ function PageProfile({ showToast }) {
   const [adminId, setAdminId] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [activities, setActivities] = useState([]);
 
-//   const getRecentActivity = async () => {
-//   try {
-//     const res = await fetch('/api/admin/activity', {
-//       headers: { Authorization: `Bearer ${token}` }, // use however you pass your token
-//     });
-//     const data = await res.json();
-//     if (data.success) setActivities(data.activities);
-//   } catch (err) {
-//     console.error('Failed to fetch activity:', err);
-//   }
-// };
-
-// // REPLACE with this (matches your adminService pattern):
-// const getRecentActivity = async () => {
-//   try {
-//     const data = await getAdminAnalytics(); // temporary, see note below
-//   } catch (err) {
-//     console.error('Failed to fetch activity:', err);
-//   }
-// };
-// const getRecentActivity = async () => {
-//   try {
-//     const data = await getAdminActivity();
-//     if (data.success) setActivities(data.activities || []);
-//   } catch (err) {
-//     console.error('Failed to fetch activity:', err);
-//   }
-// };
-const getRecentActivity = async () => {
-  try {
-    const data = await getAdminActivity();
-    if (data.success) setActivities(data.activities || []);
-  } catch (err) {
-    console.warn('Activity fetch skipped:', err.message);
-    setActivities([]); // fail silently, show empty list
-  }
-};
   // Fetch admin profile on mount
   useEffect(() => {
     const fetchAdminProfile = async () => {
@@ -4391,16 +3636,6 @@ const getRecentActivity = async () => {
 
     fetchAdminProfile();
   }, []);
-
-//   useEffect(() => {
-//   getRecentActivity()
-//     .then(res => setActivities(res.activities || []))
-//     .catch(() => {});
-// }, []);
-
-useEffect(() => {
-  getRecentActivity();
-}, []);
 
   // Save profile changes
   const handleSave = async () => {
@@ -4445,14 +3680,14 @@ useEffect(() => {
     );
   }
 
-  // const activities = [
-  //   { dot:"var(--green)",  text:"Added new bus KA-09-I to Route D",           time:"Today, 09:22 AM" },
-  //   { dot:"var(--accent)", text:"Updated driver P. Sharma's route assignment",  time:"Today, 08:45 AM" },
-  //   { dot:"var(--blue2)",  text:"Generated April analytics report",             time:"Yesterday, 05:10 PM" },
-  //   { dot:"var(--purple)", text:"Created Route E — East Extension",             time:"Apr 19, 03:40 PM" },
-  //   { dot:"var(--red)",    text:"Resolved bus KA-05-E engine warning",          time:"Apr 19, 11:15 AM" },
-  //   { dot:"var(--green)",  text:"Added 12 new students to Route B",             time:"Apr 18, 02:30 PM" },
-  // ];
+  const activities = [
+    { dot:"var(--green)",  text:"Added new bus KA-09-I to Route D",           time:"Today, 09:22 AM" },
+    { dot:"var(--accent)", text:"Updated driver P. Sharma's route assignment",  time:"Today, 08:45 AM" },
+    { dot:"var(--blue2)",  text:"Generated April analytics report",             time:"Yesterday, 05:10 PM" },
+    { dot:"var(--purple)", text:"Created Route E — East Extension",             time:"Apr 19, 03:40 PM" },
+    { dot:"var(--red)",    text:"Resolved bus KA-05-E engine warning",          time:"Apr 19, 11:15 AM" },
+    { dot:"var(--green)",  text:"Added 12 new students to Route B",             time:"Apr 18, 02:30 PM" },
+  ];
 
   return (
     <div className="page">
@@ -4547,9 +3782,7 @@ useEffect(() => {
             {activities.map((a, i) => (
               <div className="activity-item" key={i}>
                 <div className="activity-dot" style={{ background: a.dot }} />
-                <div><div className="activity-text">{a.text}</div><div className="activity-time">
-  {new Date(a.time).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
-</div></div>
+                <div><div className="activity-text">{a.text}</div><div className="activity-time">{a.time}</div></div>
               </div>
             ))}
           </div>
