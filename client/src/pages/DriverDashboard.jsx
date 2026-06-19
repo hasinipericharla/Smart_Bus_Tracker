@@ -127,6 +127,7 @@ const IconFile   = () => <svg className="ni" viewBox="0 0 24 24" fill="none" str
 const IconLogout = () => <svg className="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>;
 const BusLogo    = () => <svg viewBox="0 0 24 24" fill="#1a1a1a"><path d="M4 16c0 .88.39 1.67 1 2.22V20a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1h8v1a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm9 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM4 9h16v4H4V9z"/></svg>;
 
+
 // Fix leaflet default icon
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -811,6 +812,291 @@ function PageHistory({ driverInfo }) {
 //   );
 // }
 
+// function PageProfile({ navigate, driverInfo: propInfo }) {
+//   const [driverInfo, setDriverInfo] = useState(propInfo || null);
+//   const [loading, setLoading] = useState(!propInfo);
+//   const [showPwdModal, setShowPwdModal] = useState(false);
+//   const [twoFAEnabled, setTwoFAEnabled] = useState(false);
+//   const [pwdForm, setPwdForm] = useState({ current: '', newPwd: '', confirm: '' });
+//   const [showPwd, setShowPwd] = useState({ current: false, newPwd: false, confirm: false });
+//   const [pwdError, setPwdError] = useState('');
+//   const [pwdLoading, setPwdLoading] = useState(false);
+//   const [toast2, setToast2] = useState('');
+//   const [recentActivity, setRecentActivity]   = useState([]);
+//   const [activityLoading, setActivityLoading] = useState(true);
+
+//   const fmtActivity = (dateStr) => {
+//   if (!dateStr) return '—';
+//   const date      = new Date(dateStr);
+//   const now       = new Date();
+//   const time      = date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+//   if (date.toDateString() === now.toDateString())
+//     return `Today, ${time}`;
+//   if (date.toDateString() === new Date(now - 86400000).toDateString())
+//     return `Yesterday, ${time}`;
+//   return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) + `, ${time}`;
+// };
+
+//   useEffect(() => {
+//     if (propInfo) return;
+//     getMyDriverInfo()
+//       .then(d => setDriverInfo(d.driver))
+//       .catch(() => {})
+//       .finally(() => setLoading(false));
+//   }, []);
+
+//   useEffect(() => {
+//     if (propInfo) { setDriverInfo(propInfo); setLoading(false); }
+//   }, [propInfo]);
+
+//   const showLocalToast = (msg) => {
+//     setToast2(msg);
+//     setTimeout(() => setToast2(''), 2500);
+//   };
+
+//   const handleChangePassword = async () => {
+//     if (!pwdForm.current)                   { setPwdError('Enter your current password'); return; }
+//     if (pwdForm.newPwd.length < 6)          { setPwdError('New password must be at least 6 characters'); return; }
+//     if (pwdForm.newPwd !== pwdForm.confirm) { setPwdError('Passwords do not match'); return; }
+//     setPwdLoading(true);
+//     setPwdError('');
+//     try {
+//       await changeDriverPwd(pwdForm.current, pwdForm.newPwd); // ← wire up after backend
+//       showLocalToast('🔐 Password changed successfully');
+//       setShowPwdModal(false);
+//       setPwdForm({ current: '', newPwd: '', confirm: '' });
+//     } catch (err) {
+//       setPwdError(err.message || 'Failed to change password');
+//     } finally {
+//       setPwdLoading(false);
+//     }
+//   };
+
+//   const name      = driverInfo?.name                    || 'Driver';
+//   const licenseNo = driverInfo?.licenseNo               || '—';
+//   const phone     = driverInfo?.phone                   || '—';
+//   const busNumber = driverInfo?.assignedBus?.busNumber  || '—';
+//   const routeName = driverInfo?.assignedRoute?.name     || '—';
+//   const initials  = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+
+//   const inputStyle = {
+//     width: '100%', padding: '9px 12px', border: '1.5px solid var(--border)',
+//     borderRadius: 9, fontSize: 13, fontFamily: "'DM Sans',sans-serif",
+//     color: 'var(--text)', background: '#f8fafc', outline: 'none',
+//     boxSizing: 'border-box', transition: 'border-color .15s', cursor: 'text',
+//   };
+
+//   if (loading) return (
+//     <div className="page">
+//       <div className="page-header">
+//         <div><div className="page-title">My Profile</div></div>
+//       </div>
+//       <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>Loading profile…</div>
+//     </div>
+//   );
+
+//   return (
+//     <div className="page">
+//       {toast2 && <div className="toast">{toast2}</div>}
+
+//       <div className="page-header">
+//         <div>
+//           <div className="page-title">My Profile</div>
+//           <div className="page-subtitle">Driver account details</div>
+//         </div>
+//       </div>
+
+//       <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 14 }}>
+
+//         {/* ── Left card ── */}
+//         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+//           <div className="profile-card">
+//             <div className="profile-avatar">{initials}</div>
+//             <div className="profile-name">{name}</div>
+//             <div className="profile-id">{licenseNo}</div>
+//             <span className="status-pill sp-green">Active</span>
+
+//             {/* Stats row */}
+//             <div style={{ display: 'flex', width: '100%', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border)', marginTop: 4 }}>
+//               {[['124', 'TRIPS'], ['96%', 'ON TIME'], ['1', 'ROUTE']].map(([val, label], i) => (
+//                 <div key={label} style={{
+//                   flex: 1, textAlign: 'center', padding: '10px 4px',
+//                   borderRight: i < 2 ? '1px solid var(--border)' : 'none',
+//                   background: '#f8fafc',
+//                 }}>
+//                   <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)' }}>{val}</div>
+//                   <div style={{ fontSize: 9, color: 'var(--muted)', fontWeight: 700, letterSpacing: .5, marginTop: 2 }}>{label}</div>
+//                 </div>
+//               ))}
+//             </div>
+
+//             {/* Meta rows */}
+//             <div style={{ width: '100%', fontSize: 12.5, color: 'var(--muted)' }}>
+//               {[['Bus', busNumber], ['Route', routeName], ['Phone', phone], ['License', licenseNo]].map(([k, v]) => (
+//                 <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid var(--border)' }}>
+//                   <span>{k}</span>
+//                   <span style={{ fontWeight: 600, color: 'var(--text)' }}>{v}</span>
+//                 </div>
+//               ))}
+//             </div>
+
+//             <button className="fab-btn fab-secondary"
+//               style={{ width: '100%', justifyContent: 'center', marginTop: 6 }}
+//               onClick={() => { clearDriverSession(); navigate('/driver/login'); }}>
+//               ← Logout
+//             </button>
+//           </div>
+//         </div>
+
+//         {/* ── Right column ── */}
+//         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+//           {/* Personal Information */}
+//           <div className="card">
+//             <div className="card-header">
+//               <span className="card-title">Personal Information</span>
+//             </div>
+//             <div style={{ padding: '18px 20px' }}>
+//               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+//                 {[
+//                   ['Full Name',   name],
+//                   ['Driver ID',   driverInfo?.driverId || '—'],
+//                   ['Phone',       phone],
+//                   ['License No',  licenseNo],
+//                   ['Bus',         busNumber],
+//                   ['Route',       routeName],
+//                 ].map(([label, val]) => (
+//                   <div key={label}>
+//                     <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: .5, marginBottom: 6 }}>
+//                       {label}
+//                     </div>
+//                     <div style={{
+//                       padding: '9px 12px', background: '#f8fafc',
+//                       border: '1.5px solid var(--border)', borderRadius: 9,
+//                       fontSize: 13, color: val && val !== '—' ? 'var(--text)' : 'var(--muted)',
+//                     }}>
+//                       {val || '—'}
+//                     </div>
+//                   </div>
+//                 ))}
+//               </div>
+//             </div>
+//           </div>
+
+//           {/* Security */}
+//           <div className="card">
+//             <div className="card-header"><span className="card-title">Security</span></div>
+//             <div style={{ padding: '6px 0' }}>
+//               {/* Change Password */}
+//               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
+//                 <div>
+//                   <div style={{ fontSize: 13.5, fontWeight: 600 }}>Password</div>
+//                   <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>Last changed 3 months ago</div>
+//                 </div>
+//                 <button className="fab-btn fab-secondary" onClick={() => setShowPwdModal(true)}>
+//                   Change Password
+//                 </button>
+//               </div>
+//               {/* 2FA */}
+//               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px' }}>
+//                 <div>
+//                   <div style={{ fontSize: 13.5, fontWeight: 600 }}>Two-Factor Authentication</div>
+//                   <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>Protect your account with 2FA</div>
+//                 </div>
+//                 <button
+//                   onClick={() => { setTwoFAEnabled(v => !v); showLocalToast(twoFAEnabled ? '2FA disabled' : '🔐 2FA enabled'); }}
+//                   style={{
+//                     padding: '6px 16px', borderRadius: 20, fontSize: 12.5, fontWeight: 700,
+//                     cursor: 'pointer', border: 'none', fontFamily: "'DM Sans',sans-serif",
+//                     background: twoFAEnabled ? 'rgba(22,163,74,.15)' : '#f1f5f9',
+//                     color: twoFAEnabled ? 'var(--green)' : 'var(--muted)',
+//                     transition: 'all .2s',
+//                   }}
+//                 >
+//                   {twoFAEnabled ? '✓ Enabled' : 'Enable'}
+//                 </button>
+//               </div>
+//             </div>
+//           </div>
+
+//           {/* Recent Activity */}
+// <div className="card">
+//   <div className="card-header"><span className="card-title">Recent Activity</span></div>
+//   <div style={{ padding: '6px 0' }}>
+//     {activityLoading ? (
+//       <div style={{ padding: 24, textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>Loading activity…</div>
+//     ) : recentActivity.length === 0 ? (
+//       <div style={{ padding: 24, textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>No recent activity found.</div>
+//     ) : recentActivity.map((a, i) => (
+//       <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '11px 20px', borderBottom: i < recentActivity.length - 1 ? '1px solid var(--border)' : 'none' }}>
+//         <div style={{ width: 8, height: 8, borderRadius: '50%', background: a.color, marginTop: 4, flexShrink: 0 }} />
+//         <div>
+//           <div style={{ fontSize: 13, color: 'var(--text)' }}>{a.text}</div>
+//           <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2, fontFamily: "'DM Mono',monospace" }}>{a.time}</div>
+//         </div>
+//       </div>
+//     ))}
+//   </div>
+// </div>
+
+//         </div>
+//       </div>
+
+//       {/* ── Change Password Modal ── */}
+//       {showPwdModal && (
+//         <div style={{
+//           position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)',
+//           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200,
+//         }}>
+//           <div style={{
+//             background: '#fff', borderRadius: 16, padding: 28, width: 400,
+//             boxShadow: '0 20px 60px rgba(0,0,0,.2)', animation: 'fadeIn .2s ease',
+//           }}>
+//             <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>🔐 Change Password</div>
+//             <div style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 20 }}>Enter your current and new password below.</div>
+//             {[['current', 'Current Password'], ['newPwd', 'New Password'], ['confirm', 'Confirm New Password']].map(([field, label]) => (
+//               <div key={field} style={{ marginBottom: 14 }}>
+//                 <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: .5, marginBottom: 5 }}>{label}</div>
+//                 <div style={{ position: 'relative' }}>
+//                   <input
+//                     type={showPwd[field] ? 'text' : 'password'}
+//                     style={{ ...inputStyle, paddingRight: 38 }}
+//                     value={pwdForm[field]}
+//                     onChange={e => setPwdForm(f => ({ ...f, [field]: e.target.value }))}
+//                     placeholder={label}
+//                     onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+//                     onBlur={e => e.target.style.borderColor = 'var(--border)'}
+//                   />
+//                   <button type="button" onClick={() => setShowPwd(p => ({ ...p, [field]: !p[field] }))}
+//                     style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+//                       background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 16 }}>
+//                     {showPwd[field] ? '🙈' : '👁'}
+//                   </button>
+//                 </div>
+//               </div>
+//             ))}
+
+
+//             {pwdError && (
+//               <div style={{ fontSize: 12, color: 'var(--red)', marginBottom: 12, padding: '8px 12px', background: 'rgba(220,38,38,.08)', borderRadius: 8 }}>
+//                 ⚠️ {pwdError}
+//               </div>
+//             )}
+
+//             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 20 }}>
+//               <button className="fab-btn fab-secondary" onClick={() => { setShowPwdModal(false); setPwdError(''); setPwdForm({ current: '', newPwd: '', confirm: '' }); }}>
+//                 Cancel
+//               </button>
+//               <button className="fab-btn fab-primary" onClick={handleChangePassword} disabled={pwdLoading} style={{ opacity: pwdLoading ? .7 : 1 }}>
+//                 {pwdLoading ? 'Updating…' : 'Update Password'}
+//               </button>
+//             </div>
+//           </div>
+//         </div>
+//       )}
+//     </div>
+//   );
+// }
 function PageProfile({ navigate, driverInfo: propInfo }) {
   const [driverInfo, setDriverInfo] = useState(propInfo || null);
   const [loading, setLoading] = useState(!propInfo);
@@ -821,6 +1107,20 @@ function PageProfile({ navigate, driverInfo: propInfo }) {
   const [pwdError, setPwdError] = useState('');
   const [pwdLoading, setPwdLoading] = useState(false);
   const [toast2, setToast2] = useState('');
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [activityLoading, setActivityLoading] = useState(true);
+
+  const fmtActivity = (dateStr) => {
+    if (!dateStr) return '—';
+    const date = new Date(dateStr);
+    const now  = new Date();
+    const time = date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+    if (date.toDateString() === now.toDateString())
+      return `Today, ${time}`;
+    if (date.toDateString() === new Date(now - 86400000).toDateString())
+      return `Yesterday, ${time}`;
+    return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) + `, ${time}`;
+  };
 
   useEffect(() => {
     if (propInfo) return;
@@ -834,6 +1134,52 @@ function PageProfile({ navigate, driverInfo: propInfo }) {
     if (propInfo) { setDriverInfo(propInfo); setLoading(false); }
   }, [propInfo]);
 
+  // ── NEW: fetch recent activity ──
+  useEffect(() => {
+    fetch('http://localhost:8000/api/driver/my-trips', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('driverToken')}` },
+    })
+      .then(r => r.json())
+      .then(data => {
+        const trips = (data.trips || []).slice(0, 3);
+        const activities = [];
+        trips.forEach(t => {
+          const routeName    = t.route?.name || 'Route';
+          const busNum       = t.bus?.busNumber || propInfo?.assignedBus?.busNumber || '';
+          const stopsSummary = `${t.stopsCompleted}/${t.totalStops} stops`;
+          if (t.tripEnd) {
+            if (t.status === 'completed') {
+              activities.push({
+                color: 'var(--green)',
+                text:  `Completed morning trip — ${routeName} (${stopsSummary})`,
+                time:  fmtActivity(t.tripEnd),
+                ts:    new Date(t.tripEnd).getTime(),
+              });
+            } else if (t.status === 'delayed' || t.status === 'minor_delay') {
+              activities.push({
+                color: 'var(--accent)',
+                text:  `Minor delay reported — ${routeName} (${stopsSummary})`,
+                time:  fmtActivity(t.tripEnd),
+                ts:    new Date(t.tripEnd).getTime(),
+              });
+            }
+          }
+          if (t.tripStart) {
+            activities.push({
+              color: 'var(--blue)',
+              text:  `Trip started — ${routeName}${busNum ? ', ' + busNum : ''}`,
+              time:  fmtActivity(t.tripStart),
+              ts:    new Date(t.tripStart).getTime(),
+            });
+          }
+        });
+        activities.sort((a, b) => b.ts - a.ts);
+        setRecentActivity(activities.slice(0, 5));
+      })
+      .catch(() => setRecentActivity([]))
+      .finally(() => setActivityLoading(false));
+  }, []);
+
   const showLocalToast = (msg) => {
     setToast2(msg);
     setTimeout(() => setToast2(''), 2500);
@@ -846,7 +1192,7 @@ function PageProfile({ navigate, driverInfo: propInfo }) {
     setPwdLoading(true);
     setPwdError('');
     try {
-      await changeDriverPwd(pwdForm.current, pwdForm.newPwd); // ← wire up after backend
+      await changeDriverPwd(pwdForm.current, pwdForm.newPwd);
       showLocalToast('🔐 Password changed successfully');
       setShowPwdModal(false);
       setPwdForm({ current: '', newPwd: '', confirm: '' });
@@ -857,11 +1203,11 @@ function PageProfile({ navigate, driverInfo: propInfo }) {
     }
   };
 
-  const name      = driverInfo?.name                    || 'Driver';
-  const licenseNo = driverInfo?.licenseNo               || '—';
-  const phone     = driverInfo?.phone                   || '—';
-  const busNumber = driverInfo?.assignedBus?.busNumber  || '—';
-  const routeName = driverInfo?.assignedRoute?.name     || '—';
+  const name      = driverInfo?.name                   || 'Driver';
+  const licenseNo = driverInfo?.licenseNo              || '—';
+  const phone     = driverInfo?.phone                  || '—';
+  const busNumber = driverInfo?.assignedBus?.busNumber || '—';
+  const routeName = driverInfo?.assignedRoute?.name    || '—';
   const initials  = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
   const inputStyle = {
@@ -901,7 +1247,6 @@ function PageProfile({ navigate, driverInfo: propInfo }) {
             <div className="profile-id">{licenseNo}</div>
             <span className="status-pill sp-green">Active</span>
 
-            {/* Stats row */}
             <div style={{ display: 'flex', width: '100%', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border)', marginTop: 4 }}>
               {[['124', 'TRIPS'], ['96%', 'ON TIME'], ['1', 'ROUTE']].map(([val, label], i) => (
                 <div key={label} style={{
@@ -915,7 +1260,6 @@ function PageProfile({ navigate, driverInfo: propInfo }) {
               ))}
             </div>
 
-            {/* Meta rows */}
             <div style={{ width: '100%', fontSize: 12.5, color: 'var(--muted)' }}>
               {[['Bus', busNumber], ['Route', routeName], ['Phone', phone], ['License', licenseNo]].map(([k, v]) => (
                 <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid var(--border)' }}>
@@ -944,12 +1288,12 @@ function PageProfile({ navigate, driverInfo: propInfo }) {
             <div style={{ padding: '18px 20px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 {[
-                  ['Full Name',   name],
-                  ['Driver ID',   driverInfo?.driverId || '—'],
-                  ['Phone',       phone],
-                  ['License No',  licenseNo],
-                  ['Bus',         busNumber],
-                  ['Route',       routeName],
+                  ['Full Name',  name],
+                  ['Driver ID', driverInfo?.driverId || '—'],
+                  ['Phone',     phone],
+                  ['License No', licenseNo],
+                  ['Bus',       busNumber],
+                  ['Route',     routeName],
                 ].map(([label, val]) => (
                   <div key={label}>
                     <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: .5, marginBottom: 6 }}>
@@ -972,7 +1316,6 @@ function PageProfile({ navigate, driverInfo: propInfo }) {
           <div className="card">
             <div className="card-header"><span className="card-title">Security</span></div>
             <div style={{ padding: '6px 0' }}>
-              {/* Change Password */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
                 <div>
                   <div style={{ fontSize: 13.5, fontWeight: 600 }}>Password</div>
@@ -982,7 +1325,6 @@ function PageProfile({ navigate, driverInfo: propInfo }) {
                   Change Password
                 </button>
               </div>
-              {/* 2FA */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px' }}>
                 <div>
                   <div style={{ fontSize: 13.5, fontWeight: 600 }}>Two-Factor Authentication</div>
@@ -1008,12 +1350,20 @@ function PageProfile({ navigate, driverInfo: propInfo }) {
           <div className="card">
             <div className="card-header"><span className="card-title">Recent Activity</span></div>
             <div style={{ padding: '6px 0' }}>
-              {[
-                { color: 'var(--green)', text: 'Completed morning trip — Route A (8/8 stops)', time: 'Today, 07:52 AM' },
-                { color: 'var(--accent)', text: 'Minor delay reported at Rail Station stop', time: 'Yesterday, 07:38 AM' },
-                { color: 'var(--blue)', text: 'Trip started — Route A, ' + busNumber, time: 'Yesterday, 07:00 AM' },
-              ].map((a, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '11px 20px', borderBottom: i < 2 ? '1px solid var(--border)' : 'none' }}>
+              {activityLoading ? (
+                <div style={{ padding: 24, textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>
+                  Loading activity…
+                </div>
+              ) : recentActivity.length === 0 ? (
+                <div style={{ padding: 24, textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>
+                  No recent activity found.
+                </div>
+              ) : recentActivity.map((a, i) => (
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'flex-start', gap: 12,
+                  padding: '11px 20px',
+                  borderBottom: i < recentActivity.length - 1 ? '1px solid var(--border)' : 'none',
+                }}>
                   <div style={{ width: 8, height: 8, borderRadius: '50%', background: a.color, marginTop: 4, flexShrink: 0 }} />
                   <div>
                     <div style={{ fontSize: 13, color: 'var(--text)' }}>{a.text}</div>
@@ -1053,14 +1403,15 @@ function PageProfile({ navigate, driverInfo: propInfo }) {
                     onBlur={e => e.target.style.borderColor = 'var(--border)'}
                   />
                   <button type="button" onClick={() => setShowPwd(p => ({ ...p, [field]: !p[field] }))}
-                    style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
-                      background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 16 }}>
+                    style={{
+                      position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                      background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 16,
+                    }}>
                     {showPwd[field] ? '🙈' : '👁'}
                   </button>
                 </div>
               </div>
             ))}
-
 
             {pwdError && (
               <div style={{ fontSize: 12, color: 'var(--red)', marginBottom: 12, padding: '8px 12px', background: 'rgba(220,38,38,.08)', borderRadius: 8 }}>
@@ -1082,7 +1433,6 @@ function PageProfile({ navigate, driverInfo: propInfo }) {
     </div>
   );
 }
-
 export default function DriverDashboard() {
   const navigate = useNavigate();
   const [activePage, setActivePage] = useState('home');
