@@ -188,9 +188,15 @@ export const updateAdminDriver = (id, body) => request(`/admin/drivers/${id}`, {
 export const deleteAdminDriver = (id)       => request(`/admin/drivers/${id}`, { method: 'DELETE' });
 
 // ── NOTIFICATIONS ──────────────────────────────────────────
+//export const getAdminNotifications   = ()     => request('/admin/notifications');
+//export const createAdminNotification = (body) => request('/admin/notifications', { method: 'POST', body });
+//export const deleteAdminNotification = (id)   => request(`/admin/notifications/${id}`, { method: 'DELETE' });
+
+// ── NOTIFICATIONS ──────────────────────────────────────────
 export const getAdminNotifications   = ()     => request('/admin/notifications');
 export const createAdminNotification = (body) => request('/admin/notifications', { method: 'POST', body });
 export const deleteAdminNotification = (id)   => request(`/admin/notifications/${id}`, { method: 'DELETE' });
+export const markAdminNotifRead      = (id)   => request(`/admin/notifications/${id}/read`, { method: 'PATCH' });
 
 // ── TRIPS ──────────────────────────────────────────────────
 export const getTrips = (date, busId) => {

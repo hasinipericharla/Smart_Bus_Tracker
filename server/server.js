@@ -154,8 +154,13 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const dotenv = require('dotenv');
 
+// const connectDB = require('./config/db');
+// const { errorHandler } = require('./middleware/error');
+
+// dotenv.config();
 const connectDB = require('./config/db');
 const { errorHandler } = require('./middleware/error');
+const Notification = require('./models/Notification');
 
 dotenv.config();
 
@@ -273,16 +278,33 @@ const io = new Server(server, {
 
 // Store live bus locations in memory
 const busLocations = {};
-
+// Creates a Notification in MongoDB AND pushes it live to any connected student
+async function notifyStudents({ title, message, type }) {
+  try {
+    const notification = await Notification.create({
+      title, message, type, targetRole: 'students',
+    });
+    io.emit('notification:new', { ...notification.toObject(), read: false });
+    return notification;
+  } catch (err) {
+    console.error('Failed to create/broadcast notification:', err.message);
+  }
+}
 io.on('connection', (socket) => {
   console.log('🔌 Socket connected:', socket.id);
 
   // Driver starts trip
-  socket.on('driver:trip:start', ({ busId, routeId, driverId, busNumber }) => {
+  socket.on('driver:trip:start', async ({ busId, routeId, driverId, busNumber }) => {
     busLocations[busId] = { status: 'live', routeId, driverId, busNumber };
     io.emit(`bus:${busId}:status`, { status: 'live', routeId });
     io.emit('admin:trip:started', { busId, routeId, busNumber });
     console.log(`🚌 Trip started: ${busNumber}`);
+
+    await notifyStudents({
+      title: 'Bus Departed',
+      message: `Bus ${busNumber || ''} has started its trip and is now live.`,
+      type: 'ok',
+    });
   });
 
   // Driver sends GPS location
@@ -298,17 +320,32 @@ io.on('connection', (socket) => {
   });
 
   // Driver marks a stop reached
-  socket.on('driver:stop:reached', ({ busId, stopName, stopIndex }) => {
+  socket.on('driver:stop:reached', async ({ busId, stopName, stopIndex }) => {
     io.emit(`bus:${busId}:stop`, { stopName, stopIndex });
     io.emit('admin:stop:update', { busId, stopName, stopIndex });
+
+    const busNumber = busLocations[busId]?.busNumber || '';
+    await notifyStudents({
+      title: 'Stop Reached',
+      message: `Bus ${busNumber} reached ${stopName}.`,
+      type: 'info',
+    });
+
+
   });
 
   // Driver ends trip
-  socket.on('driver:trip:end', ({ busId, busNumber }) => {
+  socket.on('driver:trip:end', async ({ busId, busNumber }) => {
     delete busLocations[busId];
     io.emit(`bus:${busId}:status`, { status: 'idle' });
     io.emit('admin:trip:ended', { busId, busNumber });
     console.log(`🏁 Trip ended: ${busNumber}`);
+
+    await notifyStudents({
+      title: 'Trip Completed',
+      message: `Bus ${busNumber || ''} has completed its trip.`,
+      type: 'ok',
+    });
   });
 
   // Anyone can request current live buses

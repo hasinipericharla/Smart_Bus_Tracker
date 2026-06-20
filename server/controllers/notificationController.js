@@ -131,6 +131,7 @@ const createNotification = asyncHandler(async (req, res) => {
 
 
 // ==============================
+// ==============================
 // GET /api/admin/notifications
 // ==============================
 const getAllNotifications = asyncHandler(async (req, res) => {
@@ -139,9 +140,47 @@ const getAllNotifications = asyncHandler(async (req, res) => {
     .sort({ createdAt: -1 })
     .limit(50);
 
+  const result = notifications.map((n) => ({
+    ...n.toObject(),
+    read: n.readBy.some(
+      id => id.toString() === req.admin._id.toString()
+    )
+  }));
+
   res.json({
     success: true,
-    notifications
+    notifications: result
+  });
+
+});
+
+
+// ======================================
+// PATCH /api/admin/notifications/:id/read
+// ======================================
+const markAdminNotifRead = asyncHandler(async (req, res) => {
+
+  const notif = await Notification.findById(req.params.id);
+
+  if (!notif) {
+    return res.status(404).json({
+      success: false,
+      message: 'Notification not found.'
+    });
+  }
+
+  const alreadyRead = notif.readBy.some(
+    id => id.toString() === req.admin._id.toString()
+  );
+
+  if (!alreadyRead) {
+    notif.readBy.push(req.admin._id);
+    await notif.save();
+  }
+
+  res.json({
+    success: true,
+    message: 'Notification marked as read.'
   });
 
 });
@@ -323,6 +362,7 @@ module.exports = {
   createNotification,
   getAllNotifications,
   deleteNotification,
+  markAdminNotifRead,
 
   getStudentNotifications,
   markStudentNotifRead,

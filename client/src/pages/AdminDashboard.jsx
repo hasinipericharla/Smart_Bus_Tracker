@@ -1,10 +1,13 @@
+
 import {
   getAdminStudents, createAdminStudent, updateAdminStudent, deleteAdminStudent,
   getBuses, createBus, updateBus, deleteBus,
   getRoutes, createRoute, updateRoute, deleteRoute,
   getAdminDrivers, createAdminDriver, updateAdminDriver, deleteAdminDriver,
-  getTrips, getAdminProfile, updateAdminProfile, changeAdminPassword, toggleAdmin2FA 
+  getTrips, getAdminProfile, updateAdminProfile, changeAdminPassword, toggleAdmin2FA,
+  getAdminNotifications, markAdminNotifRead
 } from '../api/adminService';
+
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { clearSession } from './AdminLogin';
@@ -433,11 +436,46 @@ const INITIAL_NOTIFS = [
   {id:6,type:'ok',  icon:'✓',title:'Route A — all stops done',    desc:'Morning loop finished 2 min ahead of schedule.',         time:'07:38 AM',read:true},
 ];
 
+const NOTIF_ICON_MAP = { info: 'i', warn: '⚠', err: '!', ok: '✓' };
+
+function mapAdminNotification(n) {
+  return {
+    id: n._id,
+    type: n.type,
+    icon: NOTIF_ICON_MAP[n.type] || 'i',
+    title: n.title,
+    desc: n.message,
+    time: new Date(n.createdAt).toLocaleString('en-IN', {
+      day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+    }),
+    read: n.read,
+  };
+}
+
 /* ─── NOTIFICATIONS PAGE (student-style standalone page) ─────────────── */
 function PageNotifications({ notifs, setNotifs }) {
   const unread = notifs.filter(n => !n.read).length;
-  const markAll = () => setNotifs(n => n.map(x => ({ ...x, read: true })));
-  const markOne = (id) => setNotifs(prev => prev.map(x => x.id === id ? { ...x, read: true } : x));
+
+  const markAll = async () => {
+    const unreadIds = notifs.filter(n => !n.read).map(n => n.id);
+    setNotifs(n => n.map(x => ({ ...x, read: true })));
+    try {
+      await Promise.all(unreadIds.map(id => markAdminNotifRead(id)));
+    } catch (err) {
+      console.error('Failed to mark all as read:', err);
+    }
+  };
+
+  const markOne = async (id) => {
+    const target = notifs.find(x => x.id === id);
+    if (target?.read) return;
+    setNotifs(prev => prev.map(x => x.id === id ? { ...x, read: true } : x));
+    try {
+      await markAdminNotifRead(id);
+    } catch (err) {
+      console.error('Failed to mark as read:', err);
+    }
+  };
 
   return (
     <div className="page">
@@ -3841,7 +3879,8 @@ export default function BusNavDashboard() {
   const [modalRefresh, setModalRefresh] = useState(null);
   const [toast, setToast] = useState(null);
   const [clock, setClock] = useState("");
-  const [notifs, setNotifs] = useState(INITIAL_NOTIFS);
+  //const [notifs, setNotifs] = useState(INITIAL_NOTIFS);
+  const [notifs, setNotifs] = useState([]);
   const toastTimer = useRef(null);
   //const [confirmConfig, setConfirmConfig] = useState(null);
   //const requestConfirm = (config) => setConfirmConfig(config);
@@ -3865,10 +3904,30 @@ export default function BusNavDashboard() {
     .catch(() => {});
 }, []);
 
-  const showToast = (msg) => { setToast(msg); clearTimeout(toastTimer.current); toastTimer.current = setTimeout(() => setToast(null), 2800); };
+  //const showToast = (msg) => { setToast(msg); clearTimeout(toastTimer.current); toastTimer.current = setTimeout(() => setToast(null), 2800); };
   //const showModal = (type) => setModal(type);
   //const hideModal = () => setModal(null);
   //const saveAndClose = (msg) => { hideModal(); showToast(msg); };
+
+  const showToast = (msg) => { setToast(msg); clearTimeout(toastTimer.current); toastTimer.current = setTimeout(() => setToast(null), 2800); };
+
+  // Fetch real notifications on load
+  useEffect(() => {
+    getAdminNotifications()
+      .then(d => setNotifs((d.notifications || []).map(mapAdminNotification)))
+      .catch(() => setNotifs([]));
+  }, []);
+
+  // Live push: new notifications appear instantly without a refresh
+  useEffect(() => {
+    const notifSocket = io('http://localhost:8000');
+    notifSocket.on('notification:new', (notif) => {
+      setNotifs(ns => [mapAdminNotification(notif), ...ns]);
+      showToast(`🔔 ${notif.title}`);
+    });
+    return () => notifSocket.disconnect();
+  }, []);
+  
   const showModal = (type, data = null, refreshFn = null) => {
     setModal(type);
     setModalData(data);

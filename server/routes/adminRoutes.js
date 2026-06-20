@@ -50,7 +50,8 @@ const { getAllBuses, createBus, updateBus, deleteBus } = require('../controllers
 const { getAllRoutes, createRoute, updateRoute, deleteRoute } = require('../controllers/routeController');
 const { getAllStudents, createStudent, updateStudent, deleteStudent } = require('../controllers/adminStudentController');
 const { getAllDrivers, createDriver, updateDriver, deleteDriver } = require('../controllers/adminDriverController');
-const { createNotification, getAllNotifications, deleteNotification } = require('../controllers/notificationController');
+//const { createNotification, getAllNotifications, deleteNotification } = require('../controllers/notificationController');
+const { createNotification, getAllNotifications, deleteNotification, markAdminNotifRead } = require('../controllers/notificationController');
 const { getAllTrips, createTrip, updateTrip, deleteTrip } = require('../controllers/tripController');
 const { getAnalytics } = require('../controllers/analyticsController');
 
@@ -83,10 +84,16 @@ router.post('/drivers',       createDriver);
 router.put('/drivers/:id',    updateDriver);
 router.delete('/drivers/:id', deleteDriver);
 
+// // Notifications
+// router.get('/notifications',        getAllNotifications);
+// router.post('/notifications',       createNotification);
+// router.delete('/notifications/:id', deleteNotification);
+
 // Notifications
-router.get('/notifications',        getAllNotifications);
-router.post('/notifications',       createNotification);
-router.delete('/notifications/:id', deleteNotification);
+router.get('/notifications',             getAllNotifications);
+router.post('/notifications',            createNotification);
+router.delete('/notifications/:id',      deleteNotification);
+router.patch('/notifications/:id/read',  markAdminNotifRead);
 
 
 

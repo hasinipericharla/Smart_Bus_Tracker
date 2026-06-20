@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-//import { getMyInfo, toggleStudent2FA  } from '../api/studentService';
 //import { getMyInfo, requestStudent2FAToggle, verifyStudent2FA } from '../api/studentService';
-import { getMyInfo, requestStudent2FAToggle, verifyStudent2FA } from '../api/studentService';
+//import { getMyInfo, requestStudent2FAToggle, verifyStudent2FA } from '../api/studentService';
+import { getMyInfo, requestStudent2FAToggle, verifyStudent2FA, getNotifications, markNotifRead } from '../api/studentService';
 import { clearStudentSession } from './StudentLogin';
 import { getMyRoutes } from '../api/studentService';
 import { changePassword } from '../api/studentService';
@@ -166,7 +166,28 @@ const STOPS = [
   { id:8, name:"Tilakwadi",         dist:"8.9 km", mrnPickup:"07:52 AM", mrnDrop:"07:00 AM", evnPickup:"05:52 PM", evnDrop:"05:00 PM" },
 ];
 
+
 const MY_STOP_IDX = 3; // City Park
+const NOTIF_TYPE_MAP = {
+  info: { icon: '📍', color: 'blue' },
+  warn: { icon: '⚠️', color: 'amber' },
+  err:  { icon: '🛑', color: 'red' },
+  ok:   { icon: '✅', color: 'green' },
+};
+
+function mapNotification(n) {
+  const meta = NOTIF_TYPE_MAP[n.type] || NOTIF_TYPE_MAP.info;
+  return {
+    id: n._id,
+    icon: meta.icon,
+    color: meta.color,
+    text: `<strong>${n.title}:</strong> ${n.message}`,
+    time: new Date(n.createdAt).toLocaleString('en-IN', {
+      day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+    }),
+    read: n.read,
+  };
+}
 
 // Fix leaflet default icon issue
 delete L.Icon.Default.prototype._getIconUrl;
@@ -219,7 +240,8 @@ function MapUpdater({ position }) {
 }
 
 
-function PageHome({ showToast, setActivePage, onNameLoaded }) {
+//function PageHome({ showToast, setActivePage, onNameLoaded }) {
+function PageHome({ showToast, setActivePage, onNameLoaded, notifs = [] }) {
   const [myInfo, setMyInfo] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -393,11 +415,12 @@ useEffect(() => {
           </div>
         </div>
         <div className="notif-list">
-          {[
-            { icon: '🚌', color: 'amber', text: '<strong>Bus</strong> is arriving at your stop in 8 minutes', time: 'Just now', read: false },
-            { icon: '✅', color: 'green', text: '<strong>Bus departed</strong> on time this morning', time: '07:00 AM', read: true },
-          ].map((n, i) => (
-            <div key={i} className={`notif-item${n.read ? '' : ' unread'}`}>
+          {notifs.length === 0 ? (
+            <div style={{ padding: '20px 18px', textAlign: 'center', color: 'var(--muted)', fontSize: 12.5 }}>
+              No alerts yet.
+            </div>
+          ) : notifs.slice(0, 2).map((n) => (
+            <div key={n.id} className={`notif-item${n.read ? '' : ' unread'}`}>
               <div className={`notif-icon ni-${n.color}`}>{n.icon}</div>
               <div style={{ flex: 1 }}>
                 <div className="notif-text" dangerouslySetInnerHTML={{ __html: n.text }} />
@@ -1350,6 +1373,27 @@ function PageTracking({ favs, toggleFav, showToast, myInfo }) {
 
 function PageNotifications({ notifs, setNotifs }) {
   const unread = notifs.filter(n => !n.read).length;
+
+  const handleMarkAllRead = async () => {
+    const unreadIds = notifs.filter(n => !n.read).map(n => n.id);
+    setNotifs(ns => ns.map(n => ({ ...n, read: true })));
+    try {
+      await Promise.all(unreadIds.map(id => markNotifRead(id)));
+    } catch (err) {
+      console.error('Failed to mark all as read:', err);
+    }
+  };
+
+  const handleItemClick = async (n) => {
+    if (n.read) return;
+    setNotifs(ns => ns.map(x => x.id === n.id ? { ...x, read: true } : x));
+    try {
+      await markNotifRead(n.id);
+    } catch (err) {
+      console.error('Failed to mark as read:', err);
+    }
+  };
+
   return (
     <div className="page">
       <div className="page-header">
@@ -1357,20 +1401,21 @@ function PageNotifications({ notifs, setNotifs }) {
           <div className="page-title">Notifications</div>
           <div className="page-subtitle">{unread} unread alerts</div>
         </div>
-        <button
-          className="fab-btn fab-secondary"
-          onClick={() => setNotifs(ns => ns.map(n => ({ ...n, read: true })))}
-        >
+        <button className="fab-btn fab-secondary" onClick={handleMarkAllRead}>
           ✓ Mark all read
         </button>
       </div>
       <div className="card">
         <div className="notif-list">
-          {notifs.map((n, i) => (
+          {notifs.length === 0 ? (
+            <div style={{ padding: '32px 18px', textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>
+              No notifications yet.
+            </div>
+          ) : notifs.map((n) => (
             <div
-              key={i}
+              key={n.id}
               className={`notif-item${n.read ? '' : ' unread'}`}
-              onClick={() => setNotifs(ns => ns.map((x, j) => j === i ? { ...x, read: true } : x))}
+              onClick={() => handleItemClick(n)}
             >
               <div className={`notif-icon ni-${n.color}`}>{n.icon}</div>
               <div style={{ flex: 1 }}>
@@ -1385,6 +1430,7 @@ function PageNotifications({ notifs, setNotifs }) {
     </div>
   );
 }
+ 
 
 
 function PageRoutes({ favs, toggleFav, showToast }) {
@@ -2455,13 +2501,20 @@ const getInitials = (name) =>
     ? name.trim().split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
     : '??';
 
-  const [notifs, setNotifs] = useState([
-    {icon:'🚌',color:'amber',text:'<strong>Bus KA-01-B</strong> is arriving at City Park in 8 minutes',time:'09:14 AM',read:false},
-    {icon:'⚠️',color:'red',text:'<strong>Route A</strong> delayed by 5 minutes due to traffic',time:'08:55 AM',read:false},
-    {icon:'✅',color:'green',text:'<strong>Bus departed</strong> College Main Gate on time',time:'07:00 AM',read:true},
-    {icon:'📍',color:'blue',text:'<strong>Stop update:</strong> North Bridge stop timing changed to 07:16 AM',time:'Yesterday',read:true},
-    {icon:'🔔',color:'amber',text:"<strong>Reminder:</strong> Tomorrow's first bus departs at 07:00 AM",time:'Yesterday',read:true},
-  ]);
+  // const [notifs, setNotifs] = useState([
+  //   {icon:'🚌',color:'amber',text:'<strong>Bus KA-01-B</strong> is arriving at City Park in 8 minutes',time:'09:14 AM',read:false},
+  //   {icon:'⚠️',color:'red',text:'<strong>Route A</strong> delayed by 5 minutes due to traffic',time:'08:55 AM',read:false},
+  //   {icon:'✅',color:'green',text:'<strong>Bus departed</strong> College Main Gate on time',time:'07:00 AM',read:true},
+  //   {icon:'📍',color:'blue',text:'<strong>Stop update:</strong> North Bridge stop timing changed to 07:16 AM',time:'Yesterday',read:true},
+  //   {icon:'🔔',color:'amber',text:"<strong>Reminder:</strong> Tomorrow's first bus departs at 07:00 AM",time:'Yesterday',read:true},
+  // ]);
+  const [notifs, setNotifs] = useState([]);
+
+  useEffect(() => {
+    getNotifications()
+      .then(d => setNotifs((d.notifications || []).map(mapNotification)))
+      .catch(() => setNotifs([]));
+  }, []);
 
   useEffect(() => {
     const tick = () => setClock(new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}));
@@ -2475,6 +2528,16 @@ const getInitials = (name) =>
     clearTimeout(toastRef.current);
     toastRef.current = setTimeout(() => setToast(null), 2500);
   };
+
+  // Live push: new notifications appear instantly without a refresh
+  useEffect(() => {
+    const notifSocket = io('http://localhost:8000');
+    notifSocket.on('notification:new', (notif) => {
+      setNotifs(ns => [mapNotification(notif), ...ns]);
+      showToast(`🔔 ${notif.title}`);
+    });
+    return () => notifSocket.disconnect();
+  }, []);
 
   const toggleFav = (id) => setFavs(f => f.includes(id) ? f.filter(x=>x!==id) : [...f, id]);
   const unreadCount = notifs.filter(n => !n.read).length;
@@ -2507,10 +2570,11 @@ const getInitials = (name) =>
     switch(activePage) {
       // case 'home':          return <PageHome showToast={showToast} setActivePage={setActivePage} onNameLoaded={setStudentName}/>;
       case 'home': return <PageHome 
-  showToast={showToast} 
-  setActivePage={setActivePage} 
-  onNameLoaded={(name, info) => { setStudentName(name); setStudentInfo(info); }}
-/>;
+        showToast={showToast} 
+        setActivePage={setActivePage} 
+        onNameLoaded={(name, info) => { setStudentName(name); setStudentInfo(info); }}
+        notifs={notifs}
+      />;
       case 'tracking':      return <PageTracking favs={favs} toggleFav={toggleFav} showToast={showToast} myInfo={studentInfo}/>;
       case 'routes':        return <PageRoutes favs={favs} toggleFav={toggleFav} showToast={showToast}/>;
       //case 'favorites':     return <PageFavorites favs={favs} toggleFav={toggleFav} showToast={showToast}/>;
