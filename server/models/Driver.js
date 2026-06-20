@@ -14,6 +14,7 @@ const driverSchema = new mongoose.Schema({
     purpose:   { type: String, enum: ['email_verification', 'password_reset'], select: false },
   },
   lastLogin: { type: Date },
+  twoFA: { type: Boolean, default: false },
 }, { timestamps: true });
 
 // Hash password before saving

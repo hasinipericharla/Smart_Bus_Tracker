@@ -63,3 +63,6 @@ export const completeStop = (tripId) =>
 
 export const getStopPassengerCounts = (routeId) =>
   request(`/driver/trip/stop-counts/${routeId}`);
+
+export const toggleDriver2FA = () =>
+  request('/driver/toggle-2fa', { method: 'PUT' });

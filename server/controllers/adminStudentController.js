@@ -669,6 +669,7 @@ const getMyStudentInfo = asyncHandler(async (req, res) => {
       tripType:          record.tripType          || 'both',
       morningPickupTime: record.morningPickupTime || '',
       eveningPickupTime: record.eveningPickupTime || '',
+      twoFA: record.twoFA,   // ← ADD if not already spread
     },
   });
 });

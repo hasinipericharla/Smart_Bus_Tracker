@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { getMyInfo } from '../api/studentService';
+import { getMyInfo, toggleStudent2FA  } from '../api/studentService';
 import { clearStudentSession } from './StudentLogin';
 import { getMyRoutes } from '../api/studentService';
 import { changePassword } from '../api/studentService';
@@ -8,6 +8,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { io } from 'socket.io-client';
+
 
 const css = `
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Mono:wght@400;500&display=swap');
@@ -1976,6 +1977,7 @@ function PageProfile({ navigate, studentName, myInfo }) {
   const [editMode, setEditMode] = useState(false);
   const [showPwdModal, setShowPwdModal] = useState(false);
   const [twoFAEnabled, setTwoFAEnabled] = useState(false);
+  const [togglingFA, setTogglingFA] = useState(false);
   const [editForm, setEditForm] = useState({
     name: '',
     phone: '',
@@ -1989,15 +1991,16 @@ function PageProfile({ navigate, studentName, myInfo }) {
   const [pwdLoading, setPwdLoading] = useState(false);
 
   useEffect(() => {
-    if (myInfo) {
-      setEditForm({
-        name: myInfo.name || '',
-        phone: myInfo.phone || '',
-        email: myInfo.email || '',
-        parentContact: myInfo.parentContact || '',
-      });
-    }
-  }, [myInfo]);
+  if (myInfo) {
+    setEditForm({
+      name: myInfo.name || '',
+      phone: myInfo.phone || '',
+      email: myInfo.email || '',
+      parentContact: myInfo.parentContact || '',
+    });
+    setTwoFAEnabled(myInfo.twoFA || false);  // ← ADD THIS LINE
+  }
+}, [myInfo]);
 
   const showLocalToast = (msg) => {
     setToast2(msg);
@@ -2193,18 +2196,39 @@ function PageProfile({ navigate, studentName, myInfo }) {
                   <div style={{ fontSize: 13.5, fontWeight: 600 }}>Two-Factor Authentication</div>
                   <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>Protect your account with 2FA</div>
                 </div>
-                <button
-                  onClick={() => { setTwoFAEnabled(v => !v); showLocalToast(twoFAEnabled ? '2FA disabled' : '🔐 2FA enabled'); }}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span
+                    className={`status-pill ${twoFAEnabled ? 'sp-green' : 'sp-gray'}`}
+                    style={{ fontSize: 10 }}
+                  >
+                    {twoFAEnabled ? 'Enabled' : 'Disabled'}
+                  </span>
+                  <button
+                    disabled={togglingFA}
+                    onClick={async () => {
+                      setTogglingFA(true);
+                    try {
+                      const res = await toggleStudent2FA();
+                      setTwoFAEnabled(res.twoFA);
+                      showLocalToast(res.message);
+                    } catch (err) {
+                      showLocalToast('Failed: ' + err.message);
+                    } finally {
+                      setTogglingFA(false);
+                    }
+                  }}
                   style={{
                     padding: '6px 16px', borderRadius: 20, fontSize: 12.5, fontWeight: 700,
                     cursor: 'pointer', border: 'none', fontFamily: "'DM Sans',sans-serif",
-                    background: twoFAEnabled ? 'rgba(22,163,74,.15)' : '#f1f5f9',
-                    color: twoFAEnabled ? 'var(--green)' : 'var(--muted)',
+                    background: twoFAEnabled ? 'rgba(220,38,38,.12)' : 'rgba(22,163,74,.12)',
+                    color: twoFAEnabled ? 'var(--red)' : 'var(--green)',
+                    opacity: togglingFA ? .6 : 1,
                     transition: 'all .2s',
                   }}
                 >
-                  {twoFAEnabled ? '✓ Enabled' : 'Enable'}
+                  {togglingFA ? 'Updating…' : twoFAEnabled ? 'Disable 2FA' : 'Enable 2FA'}
                 </button>
+              </div>
               </div>
             </div>
           </div>
@@ -2277,6 +2301,17 @@ export default function StudentDashboard() {
   const toastRef = useRef(null);
   const [studentName, setStudentName] = useState('');
   const [studentInfo, setStudentInfo] = useState(null);
+
+  useEffect(() => {
+  getMyInfo()
+    .then(d => {
+      if (d.student) {
+        setStudentName(d.student.name || '');
+        setStudentInfo(d.student);
+      }
+    })
+    .catch(() => {});
+}, []);
 
 // Helper to get initials
 // const getInitials = (name) =>

@@ -26,3 +26,6 @@ export const changePassword = (currentPassword, newPassword) =>
     method: 'PATCH',
     body: { currentPassword, newPassword },
   });
+
+  export const toggleStudent2FA = () =>
+  request('/student/toggle-2fa', { method: 'PUT' });

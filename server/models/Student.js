@@ -147,6 +147,7 @@ const studentSchema = new mongoose.Schema(
     tripType:          { type: String, enum: ['morning', 'evening', 'both'], default: 'both' },
     morningPickupTime: { type: String, default: '' },
     eveningPickupTime: { type: String, default: '' },
+    twoFA: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
