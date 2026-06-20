@@ -100,8 +100,45 @@ const resendOtp = asyncHandler(async (req, res) => {
 // @desc   Login admin with email + password
 // @access Public
 // ─────────────────────────────────────────────
+// const login = asyncHandler(async (req, res) => {
+//   const { email, password, remember } = req.body;
+
+//   if (!email || !password) {
+//     return res.status(400).json({ success: false, message: 'Please provide email and password.' });
+//   }
+
+//   const admin = await Admin.findOne({ email }).select('+password');
+//   if (!admin) {
+//     return res.status(401).json({ success: false, message: 'Invalid credentials.' });
+//   }
+
+//   const isMatch = await admin.comparePassword(password);
+//   if (!isMatch) {
+//     return res.status(401).json({ success: false, message: 'Invalid credentials.' });
+//   }
+
+//   if (!admin.isVerified) {
+//     // Resend OTP so they can verify
+//     const otp = await admin.generateOTP('email_verification');
+//     await sendEmail({ to: email, type: 'verification', name: admin.name, otp });
+
+//     return res.status(403).json({
+//       success: false,
+//       message: 'Email not verified. A new OTP has been sent to your email.',
+//       requiresVerification: true,
+//       email,
+//     });
+//   }
+
+//   // Update last login
+//   admin.lastLogin = new Date();
+//   await admin.save({ validateBeforeSave: false });
+
+//   sendTokenResponse(admin, 200, res);
+// });
+
 const login = asyncHandler(async (req, res) => {
-  const { email, password, remember } = req.body;
+  const { email, password, remember, deviceId } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ success: false, message: 'Please provide email and password.' });
@@ -118,7 +155,6 @@ const login = asyncHandler(async (req, res) => {
   }
 
   if (!admin.isVerified) {
-    // Resend OTP so they can verify
     const otp = await admin.generateOTP('email_verification');
     await sendEmail({ to: email, type: 'verification', name: admin.name, otp });
 
@@ -130,7 +166,30 @@ const login = asyncHandler(async (req, res) => {
     });
   }
 
-  // Update last login
+  // ── 2FA check ──────────────────────────────────────────────
+  if (admin.twoFA) {
+    const now = new Date();
+    const isTrusted =
+      deviceId &&
+      admin.trustedDevices?.some(
+        (d) => d.deviceId === deviceId && d.expiresAt > now
+      );
+
+    if (!isTrusted) {
+      // Not a trusted device → send OTP, don't log in yet
+      const otp = await admin.generateOTP('login_2fa');
+      await sendEmail({ to: email, type: 'loginOtp', name: admin.name, otp });
+
+      return res.status(200).json({
+        success: true,
+        requiresOtp: true,
+        message: `OTP sent to ${email}. Enter it to complete sign-in.`,
+        email,
+      });
+    }
+  }
+  // ───────────────────────────────────────────────────────────
+
   admin.lastLogin = new Date();
   await admin.save({ validateBeforeSave: false });
 
@@ -255,11 +314,72 @@ const getMe = asyncHandler(async (req, res) => {
   res.json({ success: true, admin: req.admin });
 });
 
+
+// ─────────────────────────────────────────────
+// @route  POST /api/admin/auth/verify-login-otp
+// @desc   Verify OTP after password step when 2FA is on
+//         → issues session token + trusts this device for 90 days
+// @access Public
+// ─────────────────────────────────────────────
+const verifyLoginOtp = asyncHandler(async (req, res) => {
+  const { email, otp, deviceId } = req.body;
+
+  if (!email || !otp) {
+    return res.status(400).json({ success: false, message: 'Email and OTP are required.' });
+  }
+
+  const admin = await Admin.findOne({ email });
+  if (!admin) {
+    return res.status(404).json({ success: false, message: 'No account found with this email.' });
+  }
+
+  const result = await admin.verifyOTP(otp, 'login_2fa');
+  if (!result.valid) {
+    return res.status(400).json({ success: false, message: result.message });
+  }
+
+  // Generate a new device id if the frontend didn't already have one
+  const crypto = require('crypto');
+  const newDeviceId = deviceId || crypto.randomBytes(24).toString('hex');
+  const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000); // 90 days
+
+  // Re-fetch fresh doc to safely push into the array
+  const freshAdmin = await Admin.findById(admin._id);
+  freshAdmin.trustedDevices = freshAdmin.trustedDevices || [];
+  freshAdmin.trustedDevices.push({ deviceId: newDeviceId, expiresAt });
+  freshAdmin.lastLogin = new Date();
+  await freshAdmin.save({ validateBeforeSave: false });
+
+  const { generateToken } = require('../utils/jwt');
+  const token = generateToken(freshAdmin._id);
+
+  res
+    .status(200)
+    .cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    })
+    .json({
+      success: true,
+      token,
+      deviceId: newDeviceId,
+      admin: {
+        id: freshAdmin._id,
+        name: freshAdmin.name,
+        email: freshAdmin.email,
+        isVerified: freshAdmin.isVerified,
+      },
+    });
+});
+
 module.exports = {
   signup,
   verifyEmail,
   resendOtp,
   login,
+  verifyLoginOtp,
   forgotPassword,
   verifyResetOtp,
   resetPassword,

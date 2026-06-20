@@ -260,7 +260,8 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { login } from '../api/auth'; // ✅ adjust path as needed
+//import { login } from '../api/auth'; // ✅ adjust path as needed
+import { login, verifyLoginOtp } from '../api/auth';
 
 // ─── Token helpers ────────────────────────────────────────────────────────────
 // When "remember" is true  → localStorage  (survives browser close)
@@ -291,8 +292,14 @@ export default function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  //const [remember, setRemember] = useState(false);
+  //const [error, setError] = useState('');
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState('');
+  const [otpStage, setOtpStage] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [otpError, setOtpError] = useState('');
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
 
   // ✅ Auto-redirect if already logged in
   useEffect(() => {
@@ -323,6 +330,31 @@ export default function AdminLogin() {
     letterSpacing: '0.04em', textTransform: 'uppercase'
   };
 
+  // const handleLogin = async () => {
+  //   if (!email || !password) {
+  //     setError('Please enter both Admin ID and Password.');
+  //     return;
+  //   }
+  //   setError('');
+  //   try {
+  //     const data = await login({ email, password, remember });
+
+  //     if (data.requiresVerification) {
+  //       navigate('/admin/verify-email', { state: { email: data.email } });
+  //       return;
+  //     }
+
+  //     // ✅ Save token based on "remember" choice
+  //     // Assumes your login() API returns { token: '...' }
+  //     // If your API returns a different field, adjust accordingly
+  //     saveSession(data.token, remember);
+
+  //     navigate('/admin/dashboard');
+  //   } catch (err) {
+  //     setError(err.message);
+  //   }
+  // };
+
   const handleLogin = async () => {
     if (!email || !password) {
       setError('Please enter both Admin ID and Password.');
@@ -337,18 +369,37 @@ export default function AdminLogin() {
         return;
       }
 
-      // ✅ Save token based on "remember" choice
-      // Assumes your login() API returns { token: '...' }
-      // If your API returns a different field, adjust accordingly
-      saveSession(data.token, remember);
+      if (data.requiresOtp) {
+        setOtpStage(true);
+        return;
+      }
 
+      saveSession(data.token, remember);
       navigate('/admin/dashboard');
     } catch (err) {
       setError(err.message);
     }
   };
 
+  const handleVerifyOtp = async () => {
+    if (!otp || otp.length < 6) {
+      setOtpError('Please enter the 6-digit OTP.');
+      return;
+    }
+    setVerifyingOtp(true);
+    setOtpError('');
+    try {
+      const data = await verifyLoginOtp({ email, otp });
+      saveSession(data.token, remember);
+      navigate('/admin/dashboard');
+    } catch (err) {
+      setOtpError(err.message || 'Invalid or expired OTP.');
+      setVerifyingOtp(false);
+    }
+  };
+
   return (
+
     <div style={{
       minHeight: '100vh',
       background: '#EEF2F7',
@@ -399,14 +450,78 @@ export default function AdminLogin() {
           🛠️ Admin Portal
         </div>
 
-        <h2 style={{ fontSize: '21px', fontWeight: '800', color: '#1B2B4B', marginBottom: '0.3rem' }}>
-          Welcome back, Admin
-        </h2>
-        <p style={{ fontSize: '13px', color: '#8898A9', fontWeight: '600', marginBottom: '1.8rem', textAlign: 'center' }}>
-          Sign in to manage routes, drivers & settings
-        </p>
+        {otpStage ? (
+          <>
+            <h2 style={{ fontSize: '21px', fontWeight: '800', color: '#1B2B4B', marginBottom: '0.3rem' }}>
+              Verify It's You
+            </h2>
+            <p style={{ fontSize: '13px', color: '#8898A9', fontWeight: '600', marginBottom: '1.8rem', textAlign: 'center' }}>
+              We sent a 6-digit code to <strong>{email}</strong>
+            </p>
+          </>
+        ) : (
+          <>
+            <h2 style={{ fontSize: '21px', fontWeight: '800', color: '#1B2B4B', marginBottom: '0.3rem' }}>
+              Welcome back, Admin
+            </h2>
+            <p style={{ fontSize: '13px', color: '#8898A9', fontWeight: '600', marginBottom: '1.8rem', textAlign: 'center' }}>
+              Sign in to manage routes, drivers & settings
+            </p>
+          </>
+        )}
 
         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        {otpStage ? (
+          <>
+            {otpError && (
+              <div style={{
+                background: '#FFF0F0', border: '1.5px solid #F5C6C6',
+                borderRadius: '10px', padding: '10px 14px',
+                fontSize: '13px', color: '#C0392B', fontWeight: '700'
+              }}>⚠️ {otpError}</div>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={labelStyle}>Enter OTP</label>
+              <input
+                type="text"
+                placeholder="123456"
+                value={otp}
+                onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                onKeyDown={e => e.key === 'Enter' && handleVerifyOtp()}
+                style={{ ...inputStyle, textAlign: 'center', fontSize: '20px', fontWeight: '800', letterSpacing: '6px' }}
+                onFocus={focusStyle} onBlur={blurStyle}
+                maxLength={6}
+                autoFocus
+              />
+            </div>
+            <button
+              onClick={handleVerifyOtp}
+              disabled={verifyingOtp}
+              style={{
+                width: '100%', padding: '13px 0', marginTop: '4px',
+                background: '#1B2B4B', color: '#fff', border: 'none',
+                borderRadius: '12px', fontSize: '15px', fontWeight: '800',
+                fontFamily: "'Nunito', sans-serif", cursor: 'pointer',
+                opacity: verifyingOtp ? 0.7 : 1,
+              }}>
+              {verifyingOtp ? 'Verifying…' : 'Verify & Sign In'}
+            </button>
+            <button
+              onClick={() => { setOtpStage(false); setOtp(''); setOtpError(''); }}
+              style={{
+                width: '100%', padding: '11px 0',
+                background: 'transparent', color: '#1B2B4B',
+                border: '1.5px solid #D8E2EE', borderRadius: '12px',
+                fontSize: '13px', fontWeight: '700', fontFamily: "'Nunito', sans-serif",
+                cursor: 'pointer',
+              }}>
+              ← Back to login
+            </button>
+          </>
+        ) : (
+        <>
+
+        
 
           {/* Error */}
           {error && (
@@ -527,7 +642,8 @@ export default function AdminLogin() {
             }}>
             ← Back to Role Selection
           </button>
-
+        </>
+        )}
         </div>
 
         {/* Footer dots */}

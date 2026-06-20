@@ -36,6 +36,7 @@ const {
   verifyEmail,
   resendOtp,
   login,
+  verifyLoginOtp,
   forgotPassword,
   verifyResetOtp,
   resetPassword,
@@ -50,6 +51,7 @@ router.post('/signup', signup);
 router.post('/verify-email', verifyEmail);
 router.post('/resend-otp', resendOtp);
 router.post('/login', login);
+router.post('/verify-login-otp', verifyLoginOtp);
 router.post('/forgot-password', forgotPassword);
 router.post('/verify-reset-otp', verifyResetOtp);
 router.post('/reset-password', resetPassword);

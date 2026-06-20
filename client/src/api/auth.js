@@ -154,15 +154,51 @@ const handleResponse = async (res) => {
 
 // ── ADMIN ──────────────────────────────────────────────────────────────────
 
+// export const login = async ({ email, password, remember }) => {
+//   const res = await fetch(`${BASE_URL}/login`, {
+//     method: 'POST',
+//     headers: { 'Content-Type': 'application/json' },
+//     credentials: 'include',
+//     body: JSON.stringify({ email, password, remember }),
+//   });
+//   const data = await handleResponse(res);
+//   if (data.token) localStorage.setItem('adminToken', data.token);  // ← ADD
+//   return data;
+// };
+
+// device id persists in localStorage permanently, independent of session storage choice
+export function getDeviceId() {
+  let id = localStorage.getItem('admin_device_id');
+  return id || null; // null until a device is actually trusted via OTP
+}
+export function setDeviceId(id) {
+  localStorage.setItem('admin_device_id', id);
+}
+
 export const login = async ({ email, password, remember }) => {
+  const deviceId = getDeviceId();
   const res = await fetch(`${BASE_URL}/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
-    body: JSON.stringify({ email, password, remember }),
+    body: JSON.stringify({ email, password, remember, deviceId }),
   });
   const data = await handleResponse(res);
-  if (data.token) localStorage.setItem('adminToken', data.token);  // ← ADD
+  if (data.token) localStorage.setItem('adminToken', data.token);
+  return data;
+};
+
+export const verifyLoginOtp = async ({ email, otp }) => {
+  const deviceId = getDeviceId();
+  const res = await fetch(`${BASE_URL}/verify-login-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ email, otp, deviceId }),
+  });
+  const data = await handleResponse(res);
+  if (data.deviceId) setDeviceId(data.deviceId);
+  if (data.token) localStorage.setItem('adminToken', data.token);
   return data;
 };
 

@@ -41,7 +41,7 @@ const adminSchema = new mongoose.Schema(
       expiresAt: { type: Date, select: false },
       purpose: {
         type: String,
-        enum: ['email_verification', 'password_reset'],
+        enum: ['email_verification', 'password_reset', '2fa_toggle', 'login_2fa'],
         select: false,
       },
     },
@@ -51,6 +51,12 @@ const adminSchema = new mongoose.Schema(
 
     // ADD after: lastLogin: { type: Date },
     twoFA: { type: Boolean, default: false },
+    trustedDevices: [
+      {
+        deviceId: { type: String },
+        expiresAt: { type: Date },
+      },
+    ],
   },
   {
     timestamps: true,
