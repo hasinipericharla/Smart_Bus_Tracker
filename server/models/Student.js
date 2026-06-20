@@ -127,13 +127,26 @@ const studentSchema = new mongoose.Schema(
     otp: {
       code:      { type: String, select: false },
       expiresAt: { type: Date,   select: false },
+      // purpose: {
+      //   type: String,
+      //   enum: ['email_verification', 'password_reset'],
+      //   select: false,
+      // },
       purpose: {
         type: String,
-        enum: ['email_verification', 'password_reset'],
+        enum: ['email_verification', 'password_reset', '2fa_toggle', 'login_2fa'],
         select: false,
       },
     },
+    //lastLogin: { type: Date },
     lastLogin: { type: Date },
+    trustedDevices: [
+      {
+        deviceId: { type: String },
+        expiresAt: { type: Date },
+      },
+    ],
+
 
     // ── Admin-managed fields ──────────────────────────
     rollNo:        { type: String, unique: true, sparse: true, trim: true },

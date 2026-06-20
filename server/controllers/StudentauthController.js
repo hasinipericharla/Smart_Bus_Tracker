@@ -90,8 +90,54 @@ const resendOtp = asyncHandler(async (req, res) => {
 });
 
 // POST /api/student/auth/login
+// const login = asyncHandler(async (req, res) => {
+//   const { identifier, password, remember } = req.body;
+
+//   if (!identifier || !password)
+//     return res.status(400).json({ success: false, message: 'Please provide your Student ID / Email and password.' });
+
+//   const isEmail = /\S+@\S+\.\S+/.test(identifier);
+//   const query = isEmail
+//     ? { email: identifier.toLowerCase() }
+//     : { studentId: identifier.toUpperCase() };
+
+//   const student = await Student.findOne(query).select('+password');
+//   if (!student)
+//     return res.status(401).json({ success: false, message: 'Invalid credentials.' });
+
+//   // ── ENROLLMENT CHECK ──────────────────────────────────────
+//   const adminRecord = await AdminStudent.findOne({ email: student.email });
+//   if (!adminRecord) {
+//     return res.status(403).json({
+//       success: false,
+//       message: 'You are not enrolled. Please contact your admin.',
+//     });
+//   }
+//   // ─────────────────────────────────────────────────────────
+
+//   const isMatch = await student.comparePassword(password);
+//   if (!isMatch)
+//     return res.status(401).json({ success: false, message: 'Invalid credentials.' });
+
+//   if (!student.isVerified) {
+//     const otp = await student.generateOTP('email_verification');
+//     await sendEmail({ to: student.email, type: 'studentVerification', name: student.name, otp });
+//     return res.status(403).json({
+//       success: false,
+//       message: 'Email not verified. A new OTP has been sent to your email.',
+//       requiresVerification: true,
+//       email: student.email,
+//     });
+//   }
+
+//   student.lastLogin = new Date();
+//   await student.save({ validateBeforeSave: false });
+//   sendTokenResponse(student, 200, res);
+// });
+
+// POST /api/student/auth/login
 const login = asyncHandler(async (req, res) => {
-  const { identifier, password, remember } = req.body;
+  const { identifier, password, remember, deviceId } = req.body;
 
   if (!identifier || !password)
     return res.status(400).json({ success: false, message: 'Please provide your Student ID / Email and password.' });
@@ -129,6 +175,29 @@ const login = asyncHandler(async (req, res) => {
       email: student.email,
     });
   }
+
+  // ── 2FA check ──────────────────────────────────────────────
+  if (student.twoFA) {
+    const now = new Date();
+    const isTrusted =
+      deviceId &&
+      student.trustedDevices?.some(
+        (d) => d.deviceId === deviceId && d.expiresAt > now
+      );
+
+    if (!isTrusted) {
+      const otp = await student.generateOTP('login_2fa');
+      await sendEmail({ to: student.email, type: 'studentLoginOtp', name: student.name, otp });
+
+      return res.status(200).json({
+        success: true,
+        requiresOtp: true,
+        message: `OTP sent to ${student.email}. Enter it to complete sign-in.`,
+        email: student.email,
+      });
+    }
+  }
+  // ─────────────────────────────────────────────────────────
 
   student.lastLogin = new Date();
   await student.save({ validateBeforeSave: false });
@@ -250,10 +319,116 @@ const changePassword = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, message: 'Password changed successfully.' });
 });
 
+
+// ─────────────────────────────────────────────
+// POST /api/student/auth/verify-login-otp
+// @desc   Verify OTP after password step when 2FA is on
+//         → issues session token + trusts this device for 90 days
+// ─────────────────────────────────────────────
+const verifyLoginOtp = asyncHandler(async (req, res) => {
+  const { email, otp, deviceId } = req.body;
+
+  if (!email || !otp)
+    return res.status(400).json({ success: false, message: 'Email and OTP are required.' });
+
+  const student = await Student.findOne({ email });
+  if (!student)
+    return res.status(404).json({ success: false, message: 'No account found with this email.' });
+
+  const result = await student.verifyOTP(otp, 'login_2fa');
+  if (!result.valid)
+    return res.status(400).json({ success: false, message: result.message });
+
+  const crypto = require('crypto');
+  const newDeviceId = deviceId || crypto.randomBytes(24).toString('hex');
+  const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+
+  const freshStudent = await Student.findById(student._id);
+  freshStudent.trustedDevices = freshStudent.trustedDevices || [];
+  freshStudent.trustedDevices.push({ deviceId: newDeviceId, expiresAt });
+  freshStudent.lastLogin = new Date();
+  await freshStudent.save({ validateBeforeSave: false });
+
+  const { generateToken } = require('../utils/jwt');
+  const token = generateToken(freshStudent._id);
+
+  res
+    .status(200)
+    .cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    })
+    .json({
+      success: true,
+      token,
+      deviceId: newDeviceId,
+      student: {
+        id: freshStudent._id,
+        name: freshStudent.name,
+        email: freshStudent.email,
+        isVerified: freshStudent.isVerified,
+      },
+    });
+});
+
+// ─────────────────────────────────────────────
+// PUT /api/student/auth/toggle-2fa  (step 1 — send OTP)
+// ─────────────────────────────────────────────
+const requestToggle2FA = asyncHandler(async (req, res) => {
+  const student = await Student.findById(req.student._id);
+  if (!student) return res.status(404).json({ success: false, message: 'Student not found.' });
+
+  const otp = await student.generateOTP('2fa_toggle');
+  const action = student.twoFA ? 'disable' : 'enable';
+
+  await sendEmail({
+    to: student.email,
+    type: 'student2FAOtp',
+    name: student.name,
+    otp,
+    action,
+  });
+
+  res.json({
+    success: true,
+    requiresOtp: true,
+    message: `OTP sent to ${student.email}. Enter it to ${action} 2FA.`,
+  });
+});
+
+// ─────────────────────────────────────────────
+// POST /api/student/auth/verify-2fa  (step 2 — confirm OTP, flip flag)
+// ─────────────────────────────────────────────
+const verifyToggle2FA = asyncHandler(async (req, res) => {
+  const { otp } = req.body;
+  if (!otp) return res.status(400).json({ success: false, message: 'OTP is required.' });
+
+  const student = await Student.findById(req.student._id);
+  if (!student) return res.status(404).json({ success: false, message: 'Student not found.' });
+
+  const result = await student.verifyOTP(otp, '2fa_toggle');
+  if (!result.valid) {
+    return res.status(400).json({ success: false, message: result.message });
+  }
+
+  student.twoFA = !student.twoFA;
+  await student.save({ validateBeforeSave: false });
+
+  res.json({
+    success: true,
+    twoFA: student.twoFA,
+    message: `2FA ${student.twoFA ? 'enabled' : 'disabled'} successfully.`,
+  });
+});
+
+
 // ✅ Single module.exports with changePassword added
 module.exports = {
-  signup, verifyEmail, resendOtp, login,
+  signup, verifyEmail, resendOtp, login, verifyLoginOtp,
   forgotPassword, verifyResetOtp, resetPassword,
-  logout, getMe, changePassword,  // ← added here
+  logout, getMe, changePassword, 
+  requestToggle2FA, verifyToggle2FA, // ← added here
 };
 

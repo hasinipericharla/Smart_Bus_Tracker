@@ -27,5 +27,8 @@ export const changePassword = (currentPassword, newPassword) =>
     body: { currentPassword, newPassword },
   });
 
-  export const toggleStudent2FA = () =>
+export const requestStudent2FAToggle = () =>
   request('/student/toggle-2fa', { method: 'PUT' });
+
+export const verifyStudent2FA = (otp) =>
+  request('/student/verify-2fa', { method: 'POST', body: { otp } });

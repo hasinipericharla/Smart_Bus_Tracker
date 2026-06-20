@@ -36,20 +36,24 @@ router.patch('/notifications/:id/read',  markStudentNotifRead);
 router.patch('/change-password',         changePassword); // ← add
 
 
-const Student = require('../models/Student');
+// const Student = require('../models/Student');
 
-router.put('/toggle-2fa', async (req, res) => {
-  try {
-    const student = await Student.findById(req.student._id);
-    if (!student) return res.status(404).json({ success: false, message: 'Not found.' });
-    student.twoFA = !student.twoFA;
-    await student.save();
-    res.json({ success: true, twoFA: student.twoFA,
-      message: `2FA ${student.twoFA ? 'enabled' : 'disabled'}.` });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to toggle 2FA.' });
-  }
-});
+// router.put('/toggle-2fa', async (req, res) => {
+//   try {
+//     const student = await Student.findById(req.student._id);
+//     if (!student) return res.status(404).json({ success: false, message: 'Not found.' });
+//     student.twoFA = !student.twoFA;
+//     await student.save();
+//     res.json({ success: true, twoFA: student.twoFA,
+//       message: `2FA ${student.twoFA ? 'enabled' : 'disabled'}.` });
+//   } catch (err) {
+//     res.status(500).json({ success: false, message: 'Failed to toggle 2FA.' });
+//   }
+// });
 
+const { requestToggle2FA, verifyToggle2FA } = require('../controllers/StudentauthController');
+
+router.put('/toggle-2fa', requestToggle2FA);
+router.post('/verify-2fa', verifyToggle2FA);
 
 module.exports = router;

@@ -269,15 +269,48 @@ export const driverVerifyEmail = async ({ email, otp }) => {
   return data;
 };
 
+// export const driverLogin = async ({ identifier, password, remember }) => {
+//   const res = await fetch(`${DRIVER_URL}/login`, {
+//     method: 'POST',
+//     headers: { 'Content-Type': 'application/json' },
+//     credentials: 'include',
+//     body: JSON.stringify({ identifier, password, remember }),
+//   });
+//   const data = await handleResponse(res);
+//   if (data.token) localStorage.setItem('driverToken', data.token);  // ← ADD
+//   return data;
+// };
+export function getDriverDeviceId() {
+  return localStorage.getItem('driver_device_id') || null;
+}
+export function setDriverDeviceId(id) {
+  localStorage.setItem('driver_device_id', id);
+}
+
 export const driverLogin = async ({ identifier, password, remember }) => {
+  const deviceId = getDriverDeviceId();
   const res = await fetch(`${DRIVER_URL}/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
-    body: JSON.stringify({ identifier, password, remember }),
+    body: JSON.stringify({ identifier, password, remember, deviceId }),
   });
   const data = await handleResponse(res);
-  if (data.token) localStorage.setItem('driverToken', data.token);  // ← ADD
+  if (data.token) localStorage.setItem('driverToken', data.token);
+  return data;
+};
+
+export const driverVerifyLoginOtp = async ({ email, otp }) => {
+  const deviceId = getDriverDeviceId();
+  const res = await fetch(`${DRIVER_URL}/verify-login-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ email, otp, deviceId }),
+  });
+  const data = await handleResponse(res);
+  if (data.deviceId) setDriverDeviceId(data.deviceId);
+  if (data.token) localStorage.setItem('driverToken', data.token);
   return data;
 };
 

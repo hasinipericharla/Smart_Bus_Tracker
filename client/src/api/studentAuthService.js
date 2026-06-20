@@ -25,14 +25,45 @@ export const verifyEmail = async ({ email, otp }) => {
   return handleResponse(res);
 };
 
+// export const login = async ({ identifier, password, remember }) => {
+//   const res = await fetch(`${BASE_URL}/login`, {
+//     method: 'POST',
+//     headers: { 'Content-Type': 'application/json' },
+//     credentials: 'include',
+//     body: JSON.stringify({ identifier, password, remember }),
+//   });
+//   return handleResponse(res);
+// };
+
+export function getStudentDeviceId() {
+  return localStorage.getItem('student_device_id') || null;
+}
+export function setStudentDeviceId(id) {
+  localStorage.setItem('student_device_id', id);
+}
+
 export const login = async ({ identifier, password, remember }) => {
+  const deviceId = getStudentDeviceId();
   const res = await fetch(`${BASE_URL}/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
-    body: JSON.stringify({ identifier, password, remember }),
+    body: JSON.stringify({ identifier, password, remember, deviceId }),
   });
   return handleResponse(res);
+};
+
+export const verifyLoginOtp = async ({ email, otp }) => {
+  const deviceId = getStudentDeviceId();
+  const res = await fetch(`${BASE_URL}/verify-login-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ email, otp, deviceId }),
+  });
+  const data = await handleResponse(res);
+  if (data.deviceId) setStudentDeviceId(data.deviceId);
+  return data;
 };
 
 export const forgotPassword = async ({ email }) => {

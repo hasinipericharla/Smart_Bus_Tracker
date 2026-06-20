@@ -946,7 +946,8 @@
 import { useState,useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { login, forgotPassword, verifyResetOtp, resetPassword, resendOtp } from '../api/studentAuthService';
+//import { login, forgotPassword, verifyResetOtp, resetPassword, resendOtp } from '../api/studentAuthService';
+import { login, verifyLoginOtp, forgotPassword, verifyResetOtp, resetPassword, resendOtp } from '../api/studentAuthService';
 
 const inputStyle = {
   width: '100%', padding: '11px 40px 11px 14px',
@@ -988,6 +989,14 @@ export default function StudentLogin() {
     }
   }, [navigate]);
 
+  // // ── Login state ───────────────────────────────────────────────────────────
+  // const [identifier, setIdentifier] = useState('');
+  // const [password, setPassword]     = useState('');
+  // const [showPassword, setShowPassword] = useState(false);
+  // const [remember, setRemember]     = useState(false);
+  // const [error, setError]           = useState('');
+  // const [loading, setLoading]       = useState(false);
+
   // ── Login state ───────────────────────────────────────────────────────────
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword]     = useState('');
@@ -995,6 +1004,12 @@ export default function StudentLogin() {
   const [remember, setRemember]     = useState(false);
   const [error, setError]           = useState('');
   const [loading, setLoading]       = useState(false);
+
+  // ── 2FA login-OTP state ───────────────────────────────────────────────────
+  const [otpStage, setOtpStage]         = useState(false);
+  const [loginOtp, setLoginOtp]         = useState('');
+  const [loginOtpError, setLoginOtpError] = useState('');
+  const [verifyingLoginOtp, setVerifyingLoginOtp] = useState(false);
 
   // ── Forgot password state ─────────────────────────────────────────────────
   const [showForgot, setShowForgot] = useState(false);
@@ -1019,6 +1034,28 @@ export default function StudentLogin() {
     const id = setInterval(() => setResendTimer(p => { if (p <= 1) { clearInterval(id); return 0; } return p - 1; }), 1000);
   };
 
+  // // ── LOGIN → real API ──────────────────────────────────────────────────────
+  // const handleLogin = async () => {
+  //   if (!identifier || !password)
+  //     return setError('Please enter your Student ID / Email and Password.');
+  //   setLoading(true); setError('');
+  //   try {
+  //     const data = await login({ identifier, password, remember });
+  //     if (data.requiresVerification) {
+  //       // Account exists but email not verified — send them to verify
+  //       setNeedsVerification(true);
+  //       setUnverifiedEmail(data.email);
+  //       setError('Email not verified. Check your inbox for a new OTP and complete signup.');
+  //     } else {
+  //       saveStudentSession(data.token, remember); 
+  //       navigate('/student/dashboard');
+  //     }
+  //   } catch (err) {
+  //     setError(err.message);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
   // ── LOGIN → real API ──────────────────────────────────────────────────────
   const handleLogin = async () => {
     if (!identifier || !password)
@@ -1031,6 +1068,9 @@ export default function StudentLogin() {
         setNeedsVerification(true);
         setUnverifiedEmail(data.email);
         setError('Email not verified. Check your inbox for a new OTP and complete signup.');
+      } else if (data.requiresOtp) {
+        setUnverifiedEmail(data.email); // reuse this state to hold resolved email for OTP step
+        setOtpStage(true);
       } else {
         saveStudentSession(data.token, remember); 
         navigate('/student/dashboard');
@@ -1039,6 +1079,24 @@ export default function StudentLogin() {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ── 2FA: verify login OTP → real API ─────────────────────────────────────
+  const handleVerifyLoginOtp = async () => {
+    if (!loginOtp || loginOtp.length < 6) {
+      setLoginOtpError('Please enter the 6-digit OTP.');
+      return;
+    }
+    setVerifyingLoginOtp(true); setLoginOtpError('');
+    try {
+      //const data = await verifyLoginOtp({ email: identifier, otp: loginOtp });
+      const data = await verifyLoginOtp({ email: unverifiedEmail, otp: loginOtp });
+      saveStudentSession(data.token, remember);
+      navigate('/student/dashboard');
+    } catch (err) {
+      setLoginOtpError(err.message || 'Invalid or expired OTP.');
+      setVerifyingLoginOtp(false);
     }
   };
 
@@ -1131,7 +1189,51 @@ export default function StudentLogin() {
     `Enter the 6-digit code sent to ${fpEmail}`,
     'Set your new student password',
   ];
+   if (otpStage) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#EEF2F7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Nunito', sans-serif", padding: '2rem' }}>
+        <div style={{ background: '#fff', borderRadius: '24px', boxShadow: '0 8px 40px rgba(27,43,75,0.10)', width: '100%', maxWidth: '420px', padding: '2.5rem 2.2rem 2rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
 
+          <Logo />
+          <div style={{ background: '#E8EDF5', color: '#2D4A7A', borderRadius: '50px', padding: '6px 18px', fontSize: '12px', fontWeight: '800', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '1.2rem', display: 'flex', alignItems: 'center', gap: '6px' }}>🎓 Student Portal</div>
+
+          <h2 style={{ fontSize: '21px', fontWeight: '800', color: '#1B2B4B', marginBottom: '0.3rem' }}>Verify It's You</h2>
+          <p style={{ fontSize: '13px', color: '#8898A9', fontWeight: '600', marginBottom: '1.8rem', textAlign: 'center' }}>
+            We sent a 6-digit code to <strong>{unverifiedEmail}</strong>
+          </p>
+
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {loginOtpError && <Banner type="error" message={loginOtpError} />}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={labelStyle}>Enter OTP</label>
+              <input
+                type="text"
+                placeholder="123456"
+                value={loginOtp}
+                onChange={e => setLoginOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                onKeyDown={e => e.key === 'Enter' && handleVerifyLoginOtp()}
+                style={{ ...inputStyle, textAlign: 'center', fontSize: '20px', fontWeight: '800', letterSpacing: '6px' }}
+                onFocus={focusStyle} onBlur={blurStyle}
+                maxLength={6}
+                autoFocus
+              />
+            </div>
+
+            <PrimaryBtn onClick={handleVerifyLoginOtp} loading={verifyingLoginOtp}>
+              {verifyingLoginOtp ? 'Verifying…' : 'Verify & Sign In'}
+            </PrimaryBtn>
+
+            <OutlineButton onClick={() => { setOtpStage(false); setLoginOtp(''); setLoginOtpError(''); }}>
+              ← Back to login
+            </OutlineButton>
+          </div>
+
+          <FooterDots />
+        </div>
+      </div>
+    );
+  }
   // ── FORGOT PASSWORD SCREEN ────────────────────────────────────────────────
   if (showForgot) {
     return (

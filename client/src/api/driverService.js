@@ -64,5 +64,8 @@ export const completeStop = (tripId) =>
 export const getStopPassengerCounts = (routeId) =>
   request(`/driver/trip/stop-counts/${routeId}`);
 
-export const toggleDriver2FA = () =>
+export const requestDriver2FAToggle = () =>
   request('/driver/toggle-2fa', { method: 'PUT' });
+
+export const verifyDriver2FA = (otp) =>
+  request('/driver/verify-2fa', { method: 'POST', body: { otp } });

@@ -353,6 +353,131 @@ const emailTemplates = {
       </div>
     `,
   }),
+  // ── Student 2FA toggle ──────────────────────────────────────────────────────
+  student2FAOtp: (name, otp, action = 'enable') => ({
+    subject: `🔐 BusNav — ${action === 'enable' ? 'Enable' : 'Disable'} Two-Factor Authentication`,
+    html: `
+      <div style="font-family:'Segoe UI',sans-serif;max-width:480px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(27,43,75,0.10);">
+        <div style="background:#1B2B4B;padding:28px 32px;text-align:center;">
+          <span style="font-size:32px;">🚍</span>
+          <h1 style="color:#fff;margin:8px 0 0;font-size:24px;font-weight:900;letter-spacing:-0.5px;">Bus<span style="color:#F5A623">Nav</span></h1>
+          <p style="color:#7A9FC0;margin:4px 0 0;font-size:12px;text-transform:uppercase;letter-spacing:0.08em;">Smart Transit · Real-time Tracking</p>
+        </div>
+        <div style="padding:32px;">
+          <h2 style="color:#1B2B4B;font-size:20px;margin:0 0 8px;">
+            ${action === 'enable' ? '🔒 Enable' : '🔓 Disable'} Two-Factor Authentication
+          </h2>
+          <p style="color:#6B7E9B;margin:0 0 24px;font-size:14px;line-height:1.6;">
+            Hi ${name}, a request was made to <strong>${action}</strong> 2FA on your BusNav student account.
+            Use the OTP below to confirm.
+          </p>
+          <div style="background:#EEF2F7;border-radius:12px;padding:20px;text-align:center;margin:0 0 24px;">
+            <p style="color:#8898A9;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 8px;">Confirmation Code</p>
+            <span style="font-size:36px;font-weight:900;color:#1B2B4B;letter-spacing:8px;">${otp}</span>
+            <p style="color:#F5A623;font-size:12px;font-weight:700;margin:8px 0 0;">⏳ Expires in 10 minutes</p>
+          </div>
+          <p style="color:#B8C8DA;font-size:12px;text-align:center;">
+            If you didn't request this, please ignore this email. Your 2FA setting won't change.
+          </p>
+        </div>
+        <div style="background:#F7FAFD;padding:16px 32px;text-align:center;border-top:1px solid #E8EDF5;">
+          <p style="color:#B8C8DA;font-size:11px;margin:0;">© ${new Date().getFullYear()} BusNav · Student Portal</p>
+        </div>
+      </div>
+    `,
+  }),
+
+  // ── Student login OTP (new-device 2FA check) ────────────────────────────────
+  studentLoginOtp: (name, otp) => ({
+    subject: '🔐 BusNav — Your Login Verification Code',
+    html: `
+      <div style="font-family:'Segoe UI',sans-serif;max-width:480px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(27,43,75,0.10);">
+        <div style="background:#1B2B4B;padding:28px 32px;text-align:center;">
+          <span style="font-size:32px;">🚍</span>
+          <h1 style="color:#fff;margin:8px 0 0;font-size:24px;font-weight:900;letter-spacing:-0.5px;">Bus<span style="color:#F5A623">Nav</span></h1>
+          <p style="color:#7A9FC0;margin:4px 0 0;font-size:12px;text-transform:uppercase;letter-spacing:0.08em;">Smart Transit · Real-time Tracking</p>
+        </div>
+        <div style="padding:32px;">
+          <h2 style="color:#1B2B4B;font-size:20px;margin:0 0 8px;">New Sign-in Detected 🔐</h2>
+          <p style="color:#6B7E9B;margin:0 0 24px;font-size:14px;line-height:1.6;">
+            Hi ${name}, someone is signing in to your BusNav student account from a new device.
+            Enter the OTP below to continue. If this wasn't you, change your password immediately.
+          </p>
+          <div style="background:#EEF2F7;border-radius:12px;padding:20px;text-align:center;margin:0 0 24px;">
+            <p style="color:#8898A9;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 8px;">Login Code</p>
+            <span style="font-size:36px;font-weight:900;color:#1B2B4B;letter-spacing:8px;">${otp}</span>
+            <p style="color:#F5A623;font-size:12px;font-weight:700;margin:8px 0 0;">⏳ Expires in 10 minutes</p>
+          </div>
+        </div>
+        <div style="background:#F7FAFD;padding:16px 32px;text-align:center;border-top:1px solid #E8EDF5;">
+          <p style="color:#B8C8DA;font-size:11px;margin:0;">© ${new Date().getFullYear()} BusNav · Student Portal</p>
+        </div>
+      </div>
+    `,
+  }),
+  // ── Driver 2FA toggle ──────────────────────────────────────────────────────
+  driver2FAOtp: (name, otp, action = 'enable') => ({
+    subject: `🔐 BusNav — ${action === 'enable' ? 'Enable' : 'Disable'} Two-Factor Authentication`,
+    html: `
+      <div style="font-family:'Segoe UI',sans-serif;max-width:480px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(27,43,75,0.10);">
+        <div style="background:#1B2B4B;padding:28px 32px;text-align:center;">
+          <span style="font-size:32px;">🚍</span>
+          <h1 style="color:#fff;margin:8px 0 0;font-size:24px;font-weight:900;letter-spacing:-0.5px;">Bus<span style="color:#F5A623">Nav</span></h1>
+          <p style="color:#7A9FC0;margin:4px 0 0;font-size:12px;text-transform:uppercase;letter-spacing:0.08em;">Smart Transit · Real-time Tracking</p>
+        </div>
+        <div style="padding:32px;">
+          <h2 style="color:#1B2B4B;font-size:20px;margin:0 0 8px;">
+            ${action === 'enable' ? '🔒 Enable' : '🔓 Disable'} Two-Factor Authentication
+          </h2>
+          <p style="color:#6B7E9B;margin:0 0 24px;font-size:14px;line-height:1.6;">
+            Hi ${name}, a request was made to <strong>${action}</strong> 2FA on your BusNav driver account.
+            Use the OTP below to confirm.
+          </p>
+          <div style="background:#EEF2F7;border-radius:12px;padding:20px;text-align:center;margin:0 0 24px;">
+            <p style="color:#8898A9;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 8px;">Confirmation Code</p>
+            <span style="font-size:36px;font-weight:900;color:#1B2B4B;letter-spacing:8px;">${otp}</span>
+            <p style="color:#F5A623;font-size:12px;font-weight:700;margin:8px 0 0;">⏳ Expires in 10 minutes</p>
+          </div>
+          <p style="color:#B8C8DA;font-size:12px;text-align:center;">
+            If you didn't request this, please ignore this email. Your 2FA setting won't change.
+          </p>
+        </div>
+        <div style="background:#F7FAFD;padding:16px 32px;text-align:center;border-top:1px solid #E8EDF5;">
+          <p style="color:#B8C8DA;font-size:11px;margin:0;">© ${new Date().getFullYear()} BusNav · Driver Portal</p>
+        </div>
+      </div>
+    `,
+  }),
+
+  // ── Driver login OTP (new-device 2FA check) ──────────────────────────────────
+  driverLoginOtp: (name, otp) => ({
+    subject: '🔐 BusNav — Your Login Verification Code',
+    html: `
+      <div style="font-family:'Segoe UI',sans-serif;max-width:480px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(27,43,75,0.10);">
+        <div style="background:#1B2B4B;padding:28px 32px;text-align:center;">
+          <span style="font-size:32px;">🚍</span>
+          <h1 style="color:#fff;margin:8px 0 0;font-size:24px;font-weight:900;letter-spacing:-0.5px;">Bus<span style="color:#F5A623">Nav</span></h1>
+          <p style="color:#7A9FC0;margin:4px 0 0;font-size:12px;text-transform:uppercase;letter-spacing:0.08em;">Smart Transit · Real-time Tracking</p>
+        </div>
+        <div style="padding:32px;">
+          <h2 style="color:#1B2B4B;font-size:20px;margin:0 0 8px;">New Sign-in Detected 🔐</h2>
+          <p style="color:#6B7E9B;margin:0 0 24px;font-size:14px;line-height:1.6;">
+            Hi ${name}, someone is signing in to your BusNav driver account from a new device.
+            Enter the OTP below to continue. If this wasn't you, change your password immediately.
+          </p>
+          <div style="background:#EEF2F7;border-radius:12px;padding:20px;text-align:center;margin:0 0 24px;">
+            <p style="color:#8898A9;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 8px;">Login Code</p>
+            <span style="font-size:36px;font-weight:900;color:#1B2B4B;letter-spacing:8px;">${otp}</span>
+            <p style="color:#F5A623;font-size:12px;font-weight:700;margin:8px 0 0;">⏳ Expires in 10 minutes</p>
+          </div>
+        </div>
+        <div style="background:#F7FAFD;padding:16px 32px;text-align:center;border-top:1px solid #E8EDF5;">
+          <p style="color:#B8C8DA;font-size:11px;margin:0;">© ${new Date().getFullYear()} BusNav · Driver Portal</p>
+        </div>
+      </div>
+    `,
+  }),
+
 };
 
 // const sendEmail = async ({ to, type, name, otp }) => {

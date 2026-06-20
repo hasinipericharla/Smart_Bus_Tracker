@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { clearDriverSession } from './DriverLogin';
-import { getMyDriverInfo, toggleDriver2FA } from '../api/driverService';
+//import { getMyDriverInfo, toggleDriver2FA } from '../api/driverService';
+import { getMyDriverInfo, requestDriver2FAToggle, verifyDriver2FA } from '../api/driverService';
 import { changePassword as changeDriverPwd } from '../api/driverService';
 import { io } from 'socket.io-client';
 import { startDriverTrip, endDriverTrip, updateDriverLocation, getStopPassengerCounts, completeStop  } from '../api/driverService';
@@ -815,8 +816,11 @@ function PageProfile({ navigate, driverInfo: propInfo }) {
   const [driverInfo, setDriverInfo] = useState(propInfo || null);
   const [loading, setLoading] = useState(!propInfo);
   const [showPwdModal, setShowPwdModal] = useState(false);
+  //const [twoFAEnabled, setTwoFAEnabled] = useState(false);
+  //const [togglingFA, setTogglingFA] = useState(false);
   const [twoFAEnabled, setTwoFAEnabled] = useState(false);
-  const [togglingFA, setTogglingFA] = useState(false);
+  const [show2FAModal, setShow2FAModal] = useState(false);
+  const [pending2FAAction, setPending2FAAction] = useState(null);
   const [pwdForm, setPwdForm] = useState({ current: '', newPwd: '', confirm: '' });
   const [showPwd, setShowPwd] = useState({ current: false, newPwd: false, confirm: false });
   const [pwdError, setPwdError] = useState('');
@@ -1008,17 +1012,13 @@ function PageProfile({ navigate, driverInfo: propInfo }) {
                     {twoFAEnabled ? 'Enabled' : 'Disabled'}
                   </span>
                   <button
-                    disabled={togglingFA}
                     onClick={async () => {
-                      setTogglingFA(true);
                       try {
-                        const res = await toggleDriver2FA();
-                        setTwoFAEnabled(res.twoFA);
-                        showLocalToast(res.message);
+                        await requestDriver2FAToggle();
+                        setPending2FAAction(twoFAEnabled ? 'disable' : 'enable');
+                        setShow2FAModal(true);
                       } catch (err) {
-                        showLocalToast('Failed: ' + err.message);
-                      } finally {
-                        setTogglingFA(false);
+                        showLocalToast('Failed to send OTP: ' + err.message);
                       }
                     }}
                     style={{
@@ -1026,11 +1026,10 @@ function PageProfile({ navigate, driverInfo: propInfo }) {
                       cursor: 'pointer', border: 'none', fontFamily: "'DM Sans',sans-serif",
                       background: twoFAEnabled ? 'rgba(220,38,38,.12)' : 'rgba(22,163,74,.12)',
                       color: twoFAEnabled ? 'var(--red)' : 'var(--green)',
-                      opacity: togglingFA ? .6 : 1,
                       transition: 'all .2s',
                     }}
                   >
-                    {togglingFA ? 'Updating…' : twoFAEnabled ? 'Disable 2FA' : 'Enable 2FA'}
+                    {twoFAEnabled ? 'Disable 2FA' : 'Enable 2FA'}
                   </button>
                 </div>
               </div>
@@ -1112,6 +1111,138 @@ function PageProfile({ navigate, driverInfo: propInfo }) {
           </div>
         </div>
       )}
+
+      {show2FAModal && (
+        <Modal2FAVerifyDriver
+          action={pending2FAAction}
+          email={driverInfo?.email}
+          onClose={() => setShow2FAModal(false)}
+          onSuccess={(newVal, msg) => {
+            setTwoFAEnabled(newVal);
+            setShow2FAModal(false);
+            showLocalToast(msg);
+          }}
+          showToast={showLocalToast}
+        />
+      )}
+    </div>
+  );
+}
+
+function Modal2FAVerifyDriver({ action, email, onClose, onSuccess, showToast }) {
+  const [otp, setOtp] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [error, setError] = useState('');
+  const [resending, setResending] = useState(false);
+
+  const handleVerify = async () => {
+    if (!otp || otp.length < 6) { setError('Please enter the 6-digit OTP.'); return; }
+    setVerifying(true);
+    setError('');
+    try {
+      const res = await verifyDriver2FA(otp);
+      onSuccess(res.twoFA, res.message);
+    } catch (err) {
+      setError(err.message || 'Invalid or expired OTP.');
+      setVerifying(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setResending(true);
+    setError('');
+    try {
+      await requestDriver2FAToggle();
+      showToast('New OTP sent to your email.');
+    } catch (err) {
+      setError('Failed to resend OTP.');
+    } finally {
+      setResending(false);
+    }
+  };
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300
+    }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{
+        background: '#fff', borderRadius: 16, padding: 28, width: 380,
+        boxShadow: '0 20px 60px rgba(0,0,0,.2)', textAlign: 'center'
+      }}>
+        <div style={{
+          width: 56, height: 56, borderRadius: '50%',
+          background: action === 'enable' ? 'rgba(22,163,74,.1)' : 'rgba(220,38,38,.1)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          margin: '0 auto 14px', fontSize: 26,
+        }}>
+          {action === 'enable' ? '🔒' : '🔓'}
+        </div>
+        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>
+          {action === 'enable' ? 'Enable' : 'Disable'} Two-Factor Authentication
+        </div>
+        <div style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 20 }}>
+          A 6-digit OTP has been sent to <strong>{email}</strong>.<br />
+          Enter it below to confirm.
+        </div>
+
+        {error && (
+          <div style={{
+            background: '#fff0f0', border: '1px solid #fcc',
+            borderRadius: 8, padding: '8px 12px',
+            fontSize: 12.5, color: '#c00', marginBottom: 12, textAlign: 'left',
+          }}>
+            ⚠️ {error}
+          </div>
+        )}
+
+        <input
+          placeholder="123456"
+          value={otp}
+          onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+          onKeyDown={e => e.key === 'Enter' && handleVerify()}
+          style={{
+            width: '100%', padding: '10px 12px', border: '1.5px solid var(--border)',
+            borderRadius: 9, fontSize: 22, fontWeight: 700, letterSpacing: 8,
+            textAlign: 'center', marginBottom: 14, fontFamily: "'DM Sans',sans-serif",
+            outline: 'none', boxSizing: 'border-box',
+          }}
+          maxLength={6}
+          autoFocus
+        />
+
+        <div style={{ marginBottom: 16 }}>
+          <button
+            onClick={handleResend}
+            disabled={resending}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'var(--blue)', fontSize: 12.5, fontFamily: "'DM Sans',sans-serif",
+              opacity: resending ? .6 : 1,
+            }}
+          >
+            {resending ? 'Sending…' : "Didn't receive it? Resend OTP"}
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="fab-btn fab-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={onClose} disabled={verifying}>
+            Cancel
+          </button>
+          <button
+            className="fab-btn"
+            style={{
+              flex: 1.4, justifyContent: 'center',
+              background: action === 'enable' ? 'var(--accent)' : 'var(--red)',
+              color: action === 'enable' ? '#1a1a1a' : '#fff',
+            }}
+            onClick={handleVerify}
+            disabled={verifying || otp.length < 6}
+          >
+            {verifying ? 'Verifying…' : `Confirm ${action === 'enable' ? 'Enable' : 'Disable'}`}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

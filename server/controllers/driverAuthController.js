@@ -240,8 +240,9 @@ const resendOtp = asyncHandler(async (req, res) => {
 });
 
 // POST /api/driver/auth/login
+// POST /api/driver/auth/login
 const login = asyncHandler(async (req, res) => {
-  const { identifier, password, remember } = req.body;
+  const { identifier, password, remember, deviceId } = req.body;
 
   if (!identifier || !password)
     return res.status(400).json({ success: false, message: 'Please provide credentials.' });
@@ -278,10 +279,34 @@ const login = asyncHandler(async (req, res) => {
     });
   }
 
+  // ── 2FA check ──────────────────────────────────────────────
+  if (driver.twoFA) {
+    const now = new Date();
+    const isTrusted =
+      deviceId &&
+      driver.trustedDevices?.some(
+        (d) => d.deviceId === deviceId && d.expiresAt > now
+      );
+
+    if (!isTrusted) {
+      const otp = await driver.generateOTP('login_2fa');
+      await sendEmail({ to: driver.email, type: 'driverLoginOtp', name: driver.name, otp });
+
+      return res.status(200).json({
+        success: true,
+        requiresOtp: true,
+        message: `OTP sent to ${driver.email}. Enter it to complete sign-in.`,
+        email: driver.email,
+      });
+    }
+  }
+  // ─────────────────────────────────────────────────────────
+
   driver.lastLogin = new Date();
   await driver.save({ validateBeforeSave: false });
   sendTokenResponse(driver, 200, res);
 });
+
 
 // POST /api/driver/auth/forgot-password
 const forgotPassword = asyncHandler(async (req, res) => {
@@ -409,7 +434,115 @@ const getStopPassengerCounts = asyncHandler(async (req, res) => {
   res.json({ success: true, counts });
 });
 
+// ─────────────────────────────────────────────
+// POST /api/driver/auth/verify-login-otp
+// @desc   Verify OTP after password step when 2FA is on
+//         → issues session token + trusts this device for 90 days
+// ─────────────────────────────────────────────
+const verifyLoginOtp = asyncHandler(async (req, res) => {
+  const { email, otp, deviceId } = req.body;
+
+  if (!email || !otp)
+    return res.status(400).json({ success: false, message: 'Email and OTP are required.' });
+
+  const driver = await Driver.findOne({ email });
+  if (!driver)
+    return res.status(404).json({ success: false, message: 'No account found with this email.' });
+
+  const result = await driver.verifyOTP(otp, 'login_2fa');
+  if (!result.valid)
+    return res.status(400).json({ success: false, message: result.message });
+
+  const crypto = require('crypto');
+  const newDeviceId = deviceId || crypto.randomBytes(24).toString('hex');
+  const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+
+  const freshDriver = await Driver.findById(driver._id);
+  freshDriver.trustedDevices = freshDriver.trustedDevices || [];
+  freshDriver.trustedDevices.push({ deviceId: newDeviceId, expiresAt });
+  freshDriver.lastLogin = new Date();
+  await freshDriver.save({ validateBeforeSave: false });
+
+  const { generateToken } = require('../utils/jwt');
+  const token = generateToken(freshDriver._id);
+
+  res
+    .status(200)
+    .cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    })
+    .json({
+      success: true,
+      token,
+      deviceId: newDeviceId,
+      driver: {
+        id: freshDriver._id,
+        name: freshDriver.name,
+        email: freshDriver.email,
+        isVerified: freshDriver.isVerified,
+      },
+    });
+});
+
+// ─────────────────────────────────────────────
+// PUT /api/driver/toggle-2fa  (step 1 — send OTP)
+// ─────────────────────────────────────────────
+const requestToggle2FA = asyncHandler(async (req, res) => {
+  const driver = await Driver.findById(req.driver._id);
+  if (!driver) return res.status(404).json({ success: false, message: 'Driver not found.' });
+
+  const otp = await driver.generateOTP('2fa_toggle');
+  const action = driver.twoFA ? 'disable' : 'enable';
+
+  await sendEmail({
+    to: driver.email,
+    type: 'driver2FAOtp',
+    name: driver.name,
+    otp,
+    action,
+  });
+
+  res.json({
+    success: true,
+    requiresOtp: true,
+    message: `OTP sent to ${driver.email}. Enter it to ${action} 2FA.`,
+  });
+});
+
+// ─────────────────────────────────────────────
+// POST /api/driver/verify-2fa  (step 2 — confirm OTP, flip flag)
+// ─────────────────────────────────────────────
+const verifyToggle2FA = asyncHandler(async (req, res) => {
+  const { otp } = req.body;
+  if (!otp) return res.status(400).json({ success: false, message: 'OTP is required.' });
+
+  const driver = await Driver.findById(req.driver._id);
+  if (!driver) return res.status(404).json({ success: false, message: 'Driver not found.' });
+
+  const result = await driver.verifyOTP(otp, '2fa_toggle');
+  if (!result.valid) {
+    return res.status(400).json({ success: false, message: result.message });
+  }
+
+  driver.twoFA = !driver.twoFA;
+  await driver.save({ validateBeforeSave: false });
+
+  res.json({
+    success: true,
+    twoFA: driver.twoFA,
+    message: `2FA ${driver.twoFA ? 'enabled' : 'disabled'} successfully.`,
+  });
+});
+
+// module.exports = {
+//   signup, verifyEmail, resendOtp, login,
+//   forgotPassword, verifyResetOtp, resetPassword, logout, changeDriverPassword, getStopPassengerCounts,  
+// };
 module.exports = {
-  signup, verifyEmail, resendOtp, login,
-  forgotPassword, verifyResetOtp, resetPassword, logout, changeDriverPassword, getStopPassengerCounts,  
+  signup, verifyEmail, resendOtp, login, verifyLoginOtp,
+  forgotPassword, verifyResetOtp, resetPassword, logout, changeDriverPassword, getStopPassengerCounts,
+  requestToggle2FA, verifyToggle2FA,
 };

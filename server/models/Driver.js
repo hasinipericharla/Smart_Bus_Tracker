@@ -11,10 +11,17 @@ const driverSchema = new mongoose.Schema({
   otp: {
     code:      { type: String, select: false },
     expiresAt: { type: Date, select: false },
-    purpose:   { type: String, enum: ['email_verification', 'password_reset'], select: false },
+    //purpose:   { type: String, enum: ['email_verification', 'password_reset'], select: false },
+    purpose:   { type: String, enum: ['email_verification', 'password_reset', '2fa_toggle', 'login_2fa'], select: false },
   },
   lastLogin: { type: Date },
   twoFA: { type: Boolean, default: false },
+  trustedDevices: [
+    {
+      deviceId: { type: String },
+      expiresAt: { type: Date },
+    },
+  ],
 }, { timestamps: true });
 
 // Hash password before saving

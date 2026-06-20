@@ -451,8 +451,8 @@
 // }
 import { useState,useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { driverLogin, driverForgotPassword, driverVerifyResetOtp, driverResetPassword, driverResendOtp } from '../api/auth';
-
+//import { driverLogin, driverForgotPassword, driverVerifyResetOtp, driverResetPassword, driverResendOtp } from '../api/auth';
+import { driverLogin, driverVerifyLoginOtp, driverForgotPassword, driverVerifyResetOtp, driverResetPassword, driverResendOtp } from '../api/auth';
 // ── shared styles ─────────────────────────────────────────────────────────────
 const inputStyle = {
   width: '100%', padding: '11px 40px 11px 14px',
@@ -505,12 +505,21 @@ export default function DriverLogin() {
     }
   }, [navigate]);
 
+ 
+
   // ── login state ──────────────────────────────────────────────────────────
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword]     = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember]     = useState(false);
   const [error, setError]           = useState('');
+
+  // ── 2FA login-OTP state ───────────────────────────────────────────────────
+  const [otpStage, setOtpStage]               = useState(false);
+  const [loginOtp, setLoginOtp]               = useState('');
+  const [loginOtpEmail, setLoginOtpEmail]     = useState('');
+  const [loginOtpError, setLoginOtpError]     = useState('');
+  const [verifyingLoginOtp, setVerifyingLoginOtp] = useState(false);
 
   // ── forgot password state (admin-style full-page steps) ──────────────────
   const [showForgot, setShowForgot] = useState(false);
@@ -626,6 +635,11 @@ export default function DriverLogin() {
       setError(data.message);
       return;
     }
+    if (data.requiresOtp) {
+      setLoginOtpEmail(data.email);
+      setOtpStage(true);
+      return;
+    }
     saveDriverSession(data.token, remember);
     navigate('/driver/dashboard');
   } catch (err) {
@@ -633,12 +647,102 @@ export default function DriverLogin() {
   }
 };
 
+  const handleVerifyLoginOtp = async () => {
+    if (!loginOtp || loginOtp.length < 6) {
+      setLoginOtpError('Please enter the 6-digit OTP.');
+      return;
+    }
+    setVerifyingLoginOtp(true);
+    setLoginOtpError('');
+    try {
+      const data = await driverVerifyLoginOtp({ email: loginOtpEmail, otp: loginOtp });
+      saveDriverSession(data.token, remember);
+      navigate('/driver/dashboard');
+    } catch (err) {
+      setLoginOtpError(err.message || 'Invalid or expired OTP.');
+      setVerifyingLoginOtp(false);
+    }
+  };
+
   const stepTitles = ['Reset Password', 'Verify OTP', 'New Password'];
   const stepSubs = [
     'Enter your registered email to receive an OTP',
     `Enter the 6-digit code sent to ${fpEmail}`,
     'Set your new driver password',
   ];
+  // ── 2FA LOGIN OTP SCREEN ───────────────────────────────────────────────────
+  if (otpStage) {
+    return (
+      <div style={{
+        minHeight: '100vh', background: '#EEF2F7',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontFamily: "'Nunito', sans-serif", padding: '2rem',
+      }}>
+        <div style={{
+          background: '#fff', borderRadius: '24px',
+          boxShadow: '0 8px 40px rgba(27,43,75,0.10)',
+          width: '100%', maxWidth: '420px',
+          padding: '2.5rem 2.2rem 2rem',
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+        }}>
+          {/* Logo */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.3rem' }}>
+            <div style={{ width: '46px', height: '46px', background: '#1B2B4B', borderRadius: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>🚍</div>
+            <div style={{ fontSize: '26px', fontWeight: '900', color: '#1B2B4B' }}>Bus<span style={{ color: '#F5A623' }}>Nav</span></div>
+          </div>
+          <p style={{ fontSize: '11px', color: '#6B7E9B', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: '700', marginBottom: '1.6rem' }}>Smart Transit · Real-time Tracking</p>
+
+          <div style={{ background: '#E8EDF5', color: '#2D4A7A', borderRadius: '50px', padding: '6px 18px', fontSize: '12px', fontWeight: '800', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '1.2rem', display: 'flex', alignItems: 'center', gap: '6px' }}>🚌 Driver Portal</div>
+
+          <h2 style={{ fontSize: '21px', fontWeight: '800', color: '#1B2B4B', marginBottom: '0.3rem' }}>Verify It's You</h2>
+          <p style={{ fontSize: '13px', color: '#8898A9', fontWeight: '600', marginBottom: '1.8rem', textAlign: 'center' }}>
+            We sent a 6-digit code to <strong>{loginOtpEmail}</strong>
+          </p>
+
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {loginOtpError && (
+              <div style={{ background: '#FFF0F0', border: '1.5px solid #F5C6C6', borderRadius: '10px', padding: '10px 14px', fontSize: '13px', color: '#C0392B', fontWeight: '700' }}>
+                ⚠️ {loginOtpError}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={labelStyle}>Enter OTP</label>
+              <input
+                type="text"
+                placeholder="123456"
+                value={loginOtp}
+                onChange={e => setLoginOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                onKeyDown={e => e.key === 'Enter' && handleVerifyLoginOtp()}
+                style={{ ...inputStyle, textAlign: 'center', fontSize: '20px', fontWeight: '800', letterSpacing: '6px' }}
+                onFocus={focusStyle} onBlur={blurStyle}
+                maxLength={6}
+                autoFocus
+              />
+            </div>
+
+            <PrimaryBtn onClick={handleVerifyLoginOtp}>
+              {verifyingLoginOtp ? 'Verifying…' : 'Verify & Sign In'}
+            </PrimaryBtn>
+
+            <button onClick={() => { setOtpStage(false); setLoginOtp(''); setLoginOtpError(''); }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#EEF2F7'; e.currentTarget.style.borderColor = '#1B2B4B'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#D8E2EE'; }}
+              style={{ width: '100%', padding: '11px 0', background: 'transparent', color: '#1B2B4B', border: '1.5px solid #D8E2EE', borderRadius: '12px', fontSize: '13px', fontWeight: '700', fontFamily: "'Nunito', sans-serif", cursor: 'pointer', transition: 'all 0.18s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+              ← Back to login
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', marginTop: '1.8rem' }}>
+            {['#1B2B4B', '#4D7BA3', '#F5A623', '#B8C8DA'].map((c, i) => (
+              <div key={i} style={{ width: '8px', height: '8px', borderRadius: '50%', background: c }} />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
 
   // ── FORGOT PASSWORD SCREEN ────────────────────────────────────────────────
   if (showForgot) {

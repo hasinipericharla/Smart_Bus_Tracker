@@ -50,19 +50,9 @@ router.patch('/trip/location',  updateLocation);
 router.patch('/trip/stop',      completeStop); 
 router.get('/my-trips',         getMyTrips);
 
-const Driver = require('../models/Driver');
+const { requestToggle2FA, verifyToggle2FA } = require('../controllers/driverAuthController');
 
-router.put('/toggle-2fa', async (req, res) => {
-  try {
-    const driver = await Driver.findById(req.driver._id);
-    if (!driver) return res.status(404).json({ success: false, message: 'Not found.' });
-    driver.twoFA = !driver.twoFA;
-    await driver.save();
-    res.json({ success: true, twoFA: driver.twoFA,
-      message: `2FA ${driver.twoFA ? 'enabled' : 'disabled'}.` });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to toggle 2FA.' });
-  }
-});
+router.put('/toggle-2fa', requestToggle2FA);
+router.post('/verify-2fa', verifyToggle2FA);
 
 module.exports = router;
