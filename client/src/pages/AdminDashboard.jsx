@@ -8,6 +8,7 @@ import {
   getAdminNotifications, markAdminNotifRead
 } from '../api/adminService';
 
+// import { getAdminAnalytics } from '../api/adminService'; 
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { clearSession } from './AdminLogin';
@@ -3210,75 +3211,271 @@ function PageHistory({ showToast }) {
 }
 
 
+// function PageAnalytics() {
+//   const [busData, setBusData] = useState(null);
+//   const [routeData, setRouteData] = useState(null);
+//   const [studentData, setStudentData] = useState(null);
+//   const [loading, setLoading] = useState(true);
+
+//   useEffect(() => {
+//     const fetchAnalytics = async () => {
+//       try {
+//         setLoading(true);
+        
+//         // Fetch buses data
+//         const busRes = await fetch('http://localhost:8000/api/admin/buses');
+//         const busesData = await busRes.json();
+        
+//         // Fetch routes data
+//         const routeRes = await fetch('http://localhost:8000/api/admin/routes');
+//         const routesData = await routeRes.json();
+        
+//         // Fetch students data
+//         const studentRes = await fetch('http://localhost:8000/api/admin/students');
+//         const studentsData = await studentRes.json();
+
+//         // Process bus data
+//         const buses = busesData.buses || [];
+//         const activeBuses = buses.filter(b => b.status === 'active').length;
+//         const maintenanceBuses = buses.filter(b => b.status === 'maintenance').length;
+//         const idleBuses = buses.filter(b => b.status === 'idle').length;
+
+//         setBusData({
+//           total: buses.length,
+//           active: activeBuses,
+//           maintenance: maintenanceBuses,
+//           idle: idleBuses,
+//           utilization: buses.length > 0 ? Math.round((activeBuses / buses.length) * 100) : 0,
+//         });
+
+//         // Process route data
+//         const routes = routesData.routes || [];
+//         setRouteData({
+//           total: routes.length,
+//           busesPerRoute: routes.map(r => ({
+//             name: r.name,
+//             buses: r.assignedBuses?.length || 0,
+//           })),
+//           avgStopsPerRoute: routes.length > 0 
+//             ? Math.round(routes.reduce((sum, r) => sum + (r.stops?.length || 0), 0) / routes.length)
+//             : 0,
+//         });
+
+//         // Process student data
+//         const students = studentsData.students || [];
+//         const activeStudents = students.filter(s => s.status === 'active').length;
+//         const pendingStudents = students.filter(s => s.status === 'pending').length;
+
+//         setStudentData({
+//           total: students.length,
+//           active: activeStudents,
+//           pending: pendingStudents,
+//           inactive: students.length - activeStudents - pendingStudents,
+//         });
+
+//         setLoading(false);
+//       } catch (err) {
+//         console.error('Failed to load analytics:', err);
+//         setLoading(false);
+//       }
+//     };
+
+//     fetchAnalytics();
+//   }, []);
+
+//   if (loading) {
+//     return (
+//       <div className="page">
+//         <div className="page-header">
+//           <div>
+//             <div className="page-title">Analytics</div>
+//             <div className="page-subtitle">Fleet and operations analytics</div>
+//           </div>
+//         </div>
+//         <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>
+//           Loading analytics...
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   return (
+//     <div className="page">
+//       <div className="page-header">
+//         <div>
+//           <div className="page-title">Analytics</div>
+//           <div className="page-subtitle">Fleet and operations overview</div>
+//         </div>
+//       </div>
+
+//       {/* BUS ANALYTICS */}
+//       <div style={{ marginBottom: 20 }}>
+//         <div className="page-title" style={{ fontSize: 16, marginBottom: 14 }}>🚌 Bus Fleet Analytics</div>
+//         <div className="stat-grid">
+//           <div className="stat-card s-blue">
+//             <div className="stat-label">Total Buses</div>
+//             <div className="stat-val blue">{busData?.total || 0}</div>
+//             <div className="stat-sub">Fleet size</div>
+//           </div>
+//           <div className="stat-card s-green">
+//             <div className="stat-label">Active Buses</div>
+//             <div className="stat-val green">{busData?.active || 0}</div>
+//             <div className="stat-sub">
+//               <span className="stat-trend up">{busData?.utilization || 0}%</span> utilization
+//             </div>
+//           </div>
+//           <div className="stat-card s-amber">
+//             <div className="stat-label">In Maintenance</div>
+//             <div className="stat-val amber">{busData?.maintenance || 0}</div>
+//             <div className="stat-sub">Unavailable</div>
+//           </div>
+//           <div className="stat-card s-purple">
+//             <div className="stat-label">Idle Buses</div>
+//             <div className="stat-val purple">{busData?.idle || 0}</div>
+//             <div className="stat-sub">Not in use</div>
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* ROUTE ANALYTICS */}
+//       <div style={{ marginBottom: 20 }}>
+//         <div className="page-title" style={{ fontSize: 16, marginBottom: 14 }}>🗺️ Route Analytics</div>
+//         <div className="stat-grid">
+//           <div className="stat-card s-blue">
+//             <div className="stat-label">Total Routes</div>
+//             <div className="stat-val blue">{routeData?.total || 0}</div>
+//             <div className="stat-sub">Active routes</div>
+//           </div>
+//           <div className="stat-card s-green">
+//             <div className="stat-label">Avg Stops Per Route</div>
+//             <div className="stat-val green">{routeData?.avgStopsPerRoute || 0}</div>
+//             <div className="stat-sub">Coverage</div>
+//           </div>
+//         </div>
+
+//         {routeData?.busesPerRoute && routeData.busesPerRoute.length > 0 && (
+//           <div className="table-card" style={{ marginTop: 14 }}>
+//             <div className="card-header">
+//               <span className="card-title">Buses per Route</span>
+//             </div>
+//             <table className="data-table">
+//               <thead>
+//                 <tr>
+//                   <th>Route Name</th>
+//                   <th>Assigned Buses</th>
+//                 </tr>
+//               </thead>
+//               <tbody>
+//                 {routeData.busesPerRoute.map((route, idx) => (
+//                   <tr key={idx}>
+//                     <td><strong>{route.name}</strong></td>
+//                     <td>
+//                       <span className="status-pill sp-blue">{route.buses} buses</span>
+//                     </td>
+//                   </tr>
+//                 ))}
+//               </tbody>
+//             </table>
+//           </div>
+//         )}
+//       </div>
+
+//       {/* STUDENT ANALYTICS */}
+//       <div>
+//         <div className="page-title" style={{ fontSize: 16, marginBottom: 14 }}>👥 Student Analytics</div>
+//         <div className="stat-grid">
+//           <div className="stat-card s-purple">
+//             <div className="stat-label">Total Students</div>
+//             <div className="stat-val purple">{studentData?.total || 0}</div>
+//             <div className="stat-sub">Enrolled</div>
+//           </div>
+//           <div className="stat-card s-green">
+//             <div className="stat-label">Active Students</div>
+//             <div className="stat-val green">{studentData?.active || 0}</div>
+//             <div className="stat-sub">Using service</div>
+//           </div>
+//           <div className="stat-card s-amber">
+//             <div className="stat-label">Pending Approval</div>
+//             <div className="stat-val amber">{studentData?.pending || 0}</div>
+//             <div className="stat-sub">Awaiting verification</div>
+//           </div>
+//           <div className="stat-card s-blue">
+//             <div className="stat-label">Inactive</div>
+//             <div className="stat-val blue">{studentData?.inactive || 0}</div>
+//             <div className="stat-sub">Not active</div>
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* SUMMARY */}
+//       <div className="table-card" style={{ marginTop: 20 }}>
+//         <div className="card-header">
+//           <span className="card-title">📊 Quick Summary</span>
+//         </div>
+//         <div style={{ padding: '18px' }}>
+//           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, fontSize: 13 }}>
+//             <div>
+//               <div style={{ color: 'var(--muted)', marginBottom: 4 }}>Fleet Efficiency</div>
+//               <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--green)' }}>
+//                 {busData?.utilization || 0}%
+//               </div>
+//               <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
+//                 Active buses out of total fleet
+//               </div>
+//             </div>
+//             <div>
+//               <div style={{ color: 'var(--muted)', marginBottom: 4 }}>Student Coverage</div>
+//               <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--blue2)' }}>
+//                 {studentData?.total || 0}
+//               </div>
+//               <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
+//                 Students enrolled in bus service
+//               </div>
+//             </div>
+//             <div>
+//               <div style={{ color: 'var(--muted)', marginBottom: 4 }}>Network Reach</div>
+//               <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--accent)' }}>
+//                 {routeData?.total || 0} Routes
+//               </div>
+//               <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
+//                 Covering {routeData?.avgStopsPerRoute || 0} stops average
+//               </div>
+//             </div>
+//             <div>
+//               <div style={{ color: 'var(--muted)', marginBottom: 4 }}>Maintenance Status</div>
+//               <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--red)' }}>
+//                 {busData?.maintenance || 0}
+//               </div>
+//               <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
+//                 Buses in maintenance
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+
+import { getAdminAnalytics } from '../api/adminService'; // add to your existing import block at the top
+
 function PageAnalytics() {
-  const [busData, setBusData] = useState(null);
-  const [routeData, setRouteData] = useState(null);
-  const [studentData, setStudentData] = useState(null);
+  const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState('');
 
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
         setLoading(true);
-        
-        // Fetch buses data
-        const busRes = await fetch('http://localhost:8000/api/admin/buses');
-        const busesData = await busRes.json();
-        
-        // Fetch routes data
-        const routeRes = await fetch('http://localhost:8000/api/admin/routes');
-        const routesData = await routeRes.json();
-        
-        // Fetch students data
-        const studentRes = await fetch('http://localhost:8000/api/admin/students');
-        const studentsData = await studentRes.json();
-
-        // Process bus data
-        const buses = busesData.buses || [];
-        const activeBuses = buses.filter(b => b.status === 'active').length;
-        const maintenanceBuses = buses.filter(b => b.status === 'maintenance').length;
-        const idleBuses = buses.filter(b => b.status === 'idle').length;
-
-        setBusData({
-          total: buses.length,
-          active: activeBuses,
-          maintenance: maintenanceBuses,
-          idle: idleBuses,
-          utilization: buses.length > 0 ? Math.round((activeBuses / buses.length) * 100) : 0,
-        });
-
-        // Process route data
-        const routes = routesData.routes || [];
-        setRouteData({
-          total: routes.length,
-          busesPerRoute: routes.map(r => ({
-            name: r.name,
-            buses: r.assignedBuses?.length || 0,
-          })),
-          avgStopsPerRoute: routes.length > 0 
-            ? Math.round(routes.reduce((sum, r) => sum + (r.stops?.length || 0), 0) / routes.length)
-            : 0,
-        });
-
-        // Process student data
-        const students = studentsData.students || [];
-        const activeStudents = students.filter(s => s.status === 'active').length;
-        const pendingStudents = students.filter(s => s.status === 'pending').length;
-
-        setStudentData({
-          total: students.length,
-          active: activeStudents,
-          pending: pendingStudents,
-          inactive: students.length - activeStudents - pendingStudents,
-        });
-
-        setLoading(false);
+        const res = await getAdminAnalytics();
+        setData(res);
       } catch (err) {
-        console.error('Failed to load analytics:', err);
+        setError(err.message || 'Failed to load analytics');
+      } finally {
         setLoading(false);
       }
     };
-
     fetchAnalytics();
   }, []);
 
@@ -3298,6 +3495,24 @@ function PageAnalytics() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="page">
+        <div className="page-header">
+          <div>
+            <div className="page-title">Analytics</div>
+            <div className="page-subtitle">Fleet and operations analytics</div>
+          </div>
+        </div>
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--red)' }}>
+          ⚠️ {error}
+        </div>
+      </div>
+    );
+  }
+
+  const { buses, routes, students, drivers } = data;
+
   return (
     <div className="page">
       <div className="page-header">
@@ -3313,24 +3528,22 @@ function PageAnalytics() {
         <div className="stat-grid">
           <div className="stat-card s-blue">
             <div className="stat-label">Total Buses</div>
-            <div className="stat-val blue">{busData?.total || 0}</div>
+            <div className="stat-val blue">{buses.total}</div>
             <div className="stat-sub">Fleet size</div>
           </div>
           <div className="stat-card s-green">
             <div className="stat-label">Active Buses</div>
-            <div className="stat-val green">{busData?.active || 0}</div>
-            <div className="stat-sub">
-              <span className="stat-trend up">{busData?.utilization || 0}%</span> utilization
-            </div>
+            <div className="stat-val green">{buses.active}</div>
+            <div className="stat-sub"><span className="stat-trend up">{buses.utilization}%</span> utilization</div>
           </div>
           <div className="stat-card s-amber">
             <div className="stat-label">In Maintenance</div>
-            <div className="stat-val amber">{busData?.maintenance || 0}</div>
+            <div className="stat-val amber">{buses.maintenance}</div>
             <div className="stat-sub">Unavailable</div>
           </div>
           <div className="stat-card s-purple">
             <div className="stat-label">Idle Buses</div>
-            <div className="stat-val purple">{busData?.idle || 0}</div>
+            <div className="stat-val purple">{buses.idle}</div>
             <div className="stat-sub">Not in use</div>
           </div>
         </div>
@@ -3342,35 +3555,26 @@ function PageAnalytics() {
         <div className="stat-grid">
           <div className="stat-card s-blue">
             <div className="stat-label">Total Routes</div>
-            <div className="stat-val blue">{routeData?.total || 0}</div>
+            <div className="stat-val blue">{routes.total}</div>
             <div className="stat-sub">Active routes</div>
           </div>
           <div className="stat-card s-green">
             <div className="stat-label">Avg Stops Per Route</div>
-            <div className="stat-val green">{routeData?.avgStopsPerRoute || 0}</div>
+            <div className="stat-val green">{routes.avgStopsPerRoute}</div>
             <div className="stat-sub">Coverage</div>
           </div>
         </div>
 
-        {routeData?.busesPerRoute && routeData.busesPerRoute.length > 0 && (
+        {routes.busesPerRoute.length > 0 && (
           <div className="table-card" style={{ marginTop: 14 }}>
-            <div className="card-header">
-              <span className="card-title">Buses per Route</span>
-            </div>
+            <div className="card-header"><span className="card-title">Buses per Route</span></div>
             <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Route Name</th>
-                  <th>Assigned Buses</th>
-                </tr>
-              </thead>
+              <thead><tr><th>Route Name</th><th>Assigned Buses</th></tr></thead>
               <tbody>
-                {routeData.busesPerRoute.map((route, idx) => (
+                {routes.busesPerRoute.map((route, idx) => (
                   <tr key={idx}>
-                    <td><strong>{route.name}</strong></td>
-                    <td>
-                      <span className="status-pill sp-blue">{route.buses} buses</span>
-                    </td>
+                    <td><strong>{route.routeId} — {route.name}</strong></td>
+                    <td><span className="status-pill sp-blue">{route.buses} buses</span></td>
                   </tr>
                 ))}
               </tbody>
@@ -3380,74 +3584,51 @@ function PageAnalytics() {
       </div>
 
       {/* STUDENT ANALYTICS */}
-      <div>
+      <div style={{ marginBottom: 20 }}>
         <div className="page-title" style={{ fontSize: 16, marginBottom: 14 }}>👥 Student Analytics</div>
         <div className="stat-grid">
-          <div className="stat-card s-purple">
-            <div className="stat-label">Total Students</div>
-            <div className="stat-val purple">{studentData?.total || 0}</div>
-            <div className="stat-sub">Enrolled</div>
-          </div>
-          <div className="stat-card s-green">
-            <div className="stat-label">Active Students</div>
-            <div className="stat-val green">{studentData?.active || 0}</div>
-            <div className="stat-sub">Using service</div>
-          </div>
-          <div className="stat-card s-amber">
-            <div className="stat-label">Pending Approval</div>
-            <div className="stat-val amber">{studentData?.pending || 0}</div>
-            <div className="stat-sub">Awaiting verification</div>
-          </div>
-          <div className="stat-card s-blue">
-            <div className="stat-label">Inactive</div>
-            <div className="stat-val blue">{studentData?.inactive || 0}</div>
-            <div className="stat-sub">Not active</div>
-          </div>
+          <div className="stat-card s-purple"><div className="stat-label">Total Students</div><div className="stat-val purple">{students.total}</div><div className="stat-sub">Enrolled</div></div>
+          <div className="stat-card s-green"><div className="stat-label">Active Students</div><div className="stat-val green">{students.active}</div><div className="stat-sub">Using service</div></div>
+          <div className="stat-card s-amber"><div className="stat-label">Pending Approval</div><div className="stat-val amber">{students.pending}</div><div className="stat-sub">Awaiting verification</div></div>
+          <div className="stat-card s-blue"><div className="stat-label">Inactive</div><div className="stat-val blue">{students.inactive}</div><div className="stat-sub">Not active</div></div>
+        </div>
+      </div>
+
+      {/* DRIVER ANALYTICS — new, now that the data's already in the same call */}
+      <div style={{ marginBottom: 20 }}>
+        <div className="page-title" style={{ fontSize: 16, marginBottom: 14 }}>🧑‍✈️ Driver Analytics</div>
+        <div className="stat-grid">
+          <div className="stat-card s-blue"><div className="stat-label">Total Drivers</div><div className="stat-val blue">{drivers.total}</div><div className="stat-sub">Registered</div></div>
+          <div className="stat-card s-green"><div className="stat-label">Active Drivers</div><div className="stat-val green">{drivers.active}</div><div className="stat-sub">On duty</div></div>
+          <div className="stat-card s-amber"><div className="stat-label">On Leave</div><div className="stat-val amber">{drivers.onLeave}</div><div className="stat-sub">Temporarily out</div></div>
+          <div className="stat-card s-purple"><div className="stat-label">Inactive</div><div className="stat-val purple">{drivers.inactive}</div><div className="stat-sub">Not assigned</div></div>
         </div>
       </div>
 
       {/* SUMMARY */}
       <div className="table-card" style={{ marginTop: 20 }}>
-        <div className="card-header">
-          <span className="card-title">📊 Quick Summary</span>
-        </div>
+        <div className="card-header"><span className="card-title">📊 Quick Summary</span></div>
         <div style={{ padding: '18px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, fontSize: 13 }}>
             <div>
               <div style={{ color: 'var(--muted)', marginBottom: 4 }}>Fleet Efficiency</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--green)' }}>
-                {busData?.utilization || 0}%
-              </div>
-              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
-                Active buses out of total fleet
-              </div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--green)' }}>{buses.utilization}%</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>Active buses out of total fleet</div>
             </div>
             <div>
               <div style={{ color: 'var(--muted)', marginBottom: 4 }}>Student Coverage</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--blue2)' }}>
-                {studentData?.total || 0}
-              </div>
-              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
-                Students enrolled in bus service
-              </div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--blue2)' }}>{students.total}</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>Students enrolled in bus service</div>
             </div>
             <div>
               <div style={{ color: 'var(--muted)', marginBottom: 4 }}>Network Reach</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--accent)' }}>
-                {routeData?.total || 0} Routes
-              </div>
-              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
-                Covering {routeData?.avgStopsPerRoute || 0} stops average
-              </div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--accent)' }}>{routes.total} Routes</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>Covering {routes.avgStopsPerRoute} stops average</div>
             </div>
             <div>
               <div style={{ color: 'var(--muted)', marginBottom: 4 }}>Maintenance Status</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--red)' }}>
-                {busData?.maintenance || 0}
-              </div>
-              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
-                Buses in maintenance
-              </div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--red)' }}>{buses.maintenance}</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>Buses in maintenance</div>
             </div>
           </div>
         </div>
@@ -3455,8 +3636,6 @@ function PageAnalytics() {
     </div>
   );
 }
-
-
 
 
 // function PageProfile({ showToast }) {
