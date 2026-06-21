@@ -241,9 +241,19 @@ function MapUpdater({ position }) {
 
 
 //function PageHome({ showToast, setActivePage, onNameLoaded }) {
+
+
 function PageHome({ showToast, setActivePage, onNameLoaded, notifs = [] }) {
   const [myInfo, setMyInfo] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Re-check the time every minute so the dashboard auto-switches between
+  // Morning / Evening / "no active trip" without needing a page reload
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   // useEffect(() => {
   //   getMyInfo()
@@ -263,6 +273,8 @@ useEffect(() => {
       // ...
   }, []);
   // Use real data if available, fall back to defaults
+  
+
   const routeName   = myInfo?.assignedRoute?.name    || 'Not assigned';
   const routeId     = myInfo?.assignedRoute?.routeId || '—';
   const pickupStop  = myInfo?.pickupStop             || 'Not assigned';
@@ -270,6 +282,18 @@ useEffect(() => {
   const rollNo      = myInfo?.rollNo                 || '—';
   const className   = myInfo?.className              || '—';
   const parentPhone = myInfo?.parentContact          || '—';
+  //const tripType    = myInfo?.tripType               || 'both';
+  const tripType    = myInfo?.tripType               || 'both';
+
+  // Morning shows until 12:00 PM. Evening shows from 3:30 PM onward.
+  // Between 12:00 PM and 3:30 PM, neither trip is "live" for the day.
+  const minutesNow      = currentTime.getHours() * 60 + currentTime.getMinutes();
+  const isMorningWindow = minutesNow < 12 * 60;        // before 12:00 PM
+  const isEveningWindow = minutesNow >= 15 * 60 + 30;  // from 3:30 PM onward
+
+  const showMorningCard = (tripType === 'morning' || tripType === 'both') && isMorningWindow;
+  const showEveningCard = (tripType === 'evening' || tripType === 'both') && isEveningWindow;
+  const noActiveTrip    = !showMorningCard && !showEveningCard;
 
   return (
     <div className="page">
@@ -348,57 +372,81 @@ useEffect(() => {
           <div className="stat-val blue" style={{ fontSize: 16, marginTop: 4 }}>{pickupStop}</div>
           <div className="stat-sub">{routeName}</div>
         </div>
+
         <div className="stat-card s-purple">
           <div className="stat-label">Today's Trips</div>
-          <div className="stat-val purple">2</div>
-          <div className="stat-sub">Morning + Evening</div>
+          <div className="stat-val purple">{tripType === 'both' ? 2 : 1}</div>
+          <div className="stat-sub">
+            {tripType === 'both' ? 'Morning + Evening' : tripType === 'morning' ? 'Morning only' : 'Evening only'}
+          </div>
         </div>
       </div>
 
       {/* Quick info cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-        <div className="card" style={{ padding: 20 }}>
-          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 18 }}>🌅</span> Morning Trip
-          </div>
-          {[
-            ['My Stop',    pickupStop],
-            ['Route',      `${routeId} — ${routeName}`],
-            ['Status',     myInfo?.status || 'Active'],
-          ].map(([k, v]) => (
-            <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, paddingBottom: 8, borderBottom: '1px solid var(--border)', marginBottom: 6 }}>
-              <span style={{ color: 'var(--muted)' }}>{k}</span>
-              <span style={{ fontWeight: 600 }}>{v}</span>
+      <div style={{ display: 'grid', gridTemplateColumns: (showMorningCard && showEveningCard) ? '1fr 1fr' : '1fr', gap: 14 }}>
+        {showMorningCard && (
+          <div className="card" style={{ padding: 20 }}>
+            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 18 }}>🌅</span> Morning Trip
             </div>
-          ))}
-          <button
-            className="fab-btn fab-primary"
-            style={{ width: '100%', justifyContent: 'center', marginTop: 8 }}
-            onClick={() => setActivePage('tracking')}
-          >
-            📍 Track Live
-          </button>
-        </div>
+            {[
+              ['My Stop',     pickupStop],
+              ['Route',       `${routeId} — ${routeName}`],
+              ['Pickup Time', myInfo?.morningPickupTime || '—'],
+              ['Status',      myInfo?.status || 'Active'],
+            ].map(([k, v]) => (
+              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, paddingBottom: 8, borderBottom: '1px solid var(--border)', marginBottom: 6 }}>
+                <span style={{ color: 'var(--muted)' }}>{k}</span>
+                <span style={{ fontWeight: 600 }}>{v}</span>
+              </div>
+            ))}
+            <button
+              className="fab-btn fab-primary"
+              style={{ width: '100%', justifyContent: 'center', marginTop: 8 }}
+              onClick={() => setActivePage('tracking')}
+            >
+              📍 Track Live
+            </button>
+          </div>
+        )}
 
-        <div className="card" style={{ padding: 20 }}>
-          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 18 }}>🌆</span> Evening Trip
-          </div>
-          {[
-            ['My Stop',  pickupStop],
-            ['Route',    `${routeId} — ${routeName}`],
-            ['Status',   myInfo?.status || 'Active'],
-          ].map(([k, v]) => (
-            <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, paddingBottom: 8, borderBottom: '1px solid var(--border)', marginBottom: 6 }}>
-              <span style={{ color: 'var(--muted)' }}>{k}</span>
-              <span style={{ fontWeight: 600 }}>{v}</span>
+        {showEveningCard && (
+          <div className="card" style={{ padding: 20 }}>
+            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 18 }}>🌆</span> Evening Trip
             </div>
-          ))}
-          <div style={{ marginTop: 8, padding: '10px 14px', background: 'rgba(100,116,139,.06)', borderRadius: 9, fontSize: 12, color: 'var(--muted)', fontWeight: 600, textAlign: 'center' }}>
-            ⏰ Check schedule with admin
+            {[
+              ['My Stop',       pickupStop],
+              ['Route',         `${routeId} — ${routeName}`],
+              ['Drop-off Time', myInfo?.eveningPickupTime || '—'],
+              ['Status',        myInfo?.status || 'Active'],
+            ].map(([k, v]) => (
+              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, paddingBottom: 8, borderBottom: '1px solid var(--border)', marginBottom: 6 }}>
+                <span style={{ color: 'var(--muted)' }}>{k}</span>
+                <span style={{ fontWeight: 600 }}>{v}</span>
+              </div>
+            ))}
+            <button
+              className="fab-btn fab-primary"
+              style={{ width: '100%', justifyContent: 'center', marginTop: 8 }}
+              onClick={() => setActivePage('tracking')}
+            >
+              📍 Track Live
+            </button>
           </div>
-        </div>
+        )}
+        {noActiveTrip && (
+          <div className="card" style={{ padding: 32, textAlign: 'center' }}>
+            <div style={{ fontSize: 30, marginBottom: 10 }}>⏳</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>No active trip right now</div>
+            <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 6 }}>
+              {tripType !== 'evening' && 'Morning tracking ends at 12:00 PM. '}
+              {tripType !== 'morning' && 'Evening tracking starts at 3:30 PM.'}
+            </div>
+          </div>
+        )}
       </div>
+    
 
       {/* Recent Notifications preview */}
       <div className="card">
