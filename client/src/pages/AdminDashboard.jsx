@@ -5,7 +5,7 @@ import {
   getRoutes, createRoute, updateRoute, deleteRoute,
   getAdminDrivers, createAdminDriver, updateAdminDriver, deleteAdminDriver,
   getTrips, getAdminProfile, updateAdminProfile, changeAdminPassword, toggleAdmin2FA,
-  getAdminNotifications, markAdminNotifRead
+  getAdminNotifications, markAdminNotifRead,getRecentActivity
 } from '../api/adminService';
 
 // import { getAdminAnalytics } from '../api/adminService'; 
@@ -1372,16 +1372,180 @@ function ModalStudent({ onClose, onSave, editData }) {
 
 /* ─── PAGES ─────────────────────────────────────────────────────────── */
 
+// function PageDashboard({ showModal, unreadCount, onBellClick, onNavigate }) {
+//   // const [buses, setBuses] = useState([]);
+// //   useEffect(() => {
+// //   fetch("http://localhost:8000/api/admin/buses")
+// //     .then((res) => res.json())
+// //     .then((data) => setBuses(data.buses))
+// //     .catch((err) => console.error(err));
+// // }, []);
+//   //const [activePill, setActivePill] = useState("All");
+//   //const pills = ["All", "Route A", "Route B", "Route C"];
+//   return (
+//     <div className="page">
+//       <div className="page-header">
+//         <div>
+//           <div className="page-title">Dashboard</div>
+//           <div className="page-subtitle">{getGreeting()} — {getDateString()}</div>
+//         </div>
+         
+//       </div>
+//       <div className="stat-grid">
+//         <div className="stat-card s-green"><div className="stat-label">Active Buses</div><div className="stat-val green">18</div><div className="stat-sub"><span className="stat-trend up">+2</span> vs yesterday</div></div>
+//         <div className="stat-card s-amber"><div className="stat-label">Delayed Buses</div><div className="stat-val amber">3</div><div className="stat-sub"><span className="stat-trend down">▲ 1</span> alert active</div></div>
+//         <div className="stat-card s-blue"><div className="stat-label">Drivers on Duty</div><div className="stat-val blue">21</div><div className="stat-sub"><span className="stat-trend up">100%</span> assigned</div></div>
+//         <div className="stat-card s-purple"><div className="stat-label">Students Today</div><div className="stat-val purple">1,248</div><div className="stat-sub"><span className="stat-trend up">+34</span> this week</div></div>
+//       </div>
+//       <div className="map-card">
+//         <div className="card-header">
+//           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+//           <span className="card-title">Live Map</span>
+//           <span className="card-sub">— all buses</span>
+//         </div>
+//         <div style={{
+//           padding: '28px 24px',
+//           display: 'flex',
+//           alignItems: 'center',
+//           justifyContent: 'space-between',
+//           gap: 20,
+//         }}>
+//           <div>
+//             <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 5 }}>
+//               Real-time bus tracking
+//             </div>
+//             <div style={{ fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.6 }}>
+//               Monitor all active buses, routes, and live locations across the fleet.
+//             </div>
+//             <div style={{ display: 'flex', gap: 18, marginTop: 12 }}>
+//               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+//                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green)' }} />
+//                 <span style={{ color: 'var(--muted)' }}>On time (18)</span>
+//               </div>
+//               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+//                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }} />
+//                 <span style={{ color: 'var(--muted)' }}>Delayed (3)</span>
+//               </div>
+//               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+//                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3a4a60' }} />
+//                 <span style={{ color: 'var(--muted)' }}>Idle (2)</span>
+//               </div>
+//             </div>
+//           </div>
+//           <button
+//             //onClick={() => showModal === undefined ? null : setActivePage('tracking')}
+//             onClick={() => onNavigate('tracking')}
+//             style={{
+//               background: 'var(--accent)',
+//               color: '#1a1a1a',
+//               border: 'none',
+//               borderRadius: 10,
+//               padding: '13px 32px',
+//               fontSize: 14,
+//               fontWeight: 700,
+//               cursor: 'pointer',
+//               display: 'flex',
+//               alignItems: 'center',
+//               gap: 8,
+//               fontFamily: "'DM Sans',sans-serif",
+//               whiteSpace: 'nowrap',
+//               flexShrink: 0,
+//               transition: 'all .15s',
+//               boxShadow: '0 4px 14px rgba(245,166,35,.35)',
+//             }}
+//             onMouseEnter={e => e.currentTarget.style.background = 'var(--accent2)'}
+//             onMouseLeave={e => e.currentTarget.style.background = 'var(--accent)'}
+//           >
+//             📍 Track Live
+//           </button>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+
+// // Bus icon for admin map
+// const makeBusIcon = (color) => L.divIcon({
+//   html: `<div style="
+//     background:${color};
+//     width:40px;height:40px;border-radius:50%;
+//     display:flex;align-items:center;justify-content:center;
+//     font-size:20px;border:3px solid #fff;
+//     box-shadow:0 2px 10px rgba(0,0,0,.35);
+//   ">🚌</div>`,
+//   className: '',
+//   iconSize: [40, 40],
+//   iconAnchor: [20, 20],
+// });
+
+// const ROUTE_COLORS = {
+//   A: '#1a73e8',
+//   B: '#0f9d58',
+//   C: '#f9ab00',
+//   D: '#9334e6',
+// };
 function PageDashboard({ showModal, unreadCount, onBellClick, onNavigate }) {
-  // const [buses, setBuses] = useState([]);
-//   useEffect(() => {
-//   fetch("http://localhost:8000/api/admin/buses")
-//     .then((res) => res.json())
-//     .then((data) => setBuses(data.buses))
-//     .catch((err) => console.error(err));
-// }, []);
-  //const [activePill, setActivePill] = useState("All");
-  //const pills = ["All", "Route A", "Route B", "Route C"];
+  const [stats, setStats] = useState({
+    activeBuses: 0,
+    delayedBuses: 0,
+    idleBuses: 0,
+    driversOnDuty: 0,
+    totalDrivers: 0,
+    studentsTotal: 0,
+    studentsActive: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardStats = async () => {
+      try {
+        setLoading(true);
+
+        const [busData, driverData, studentData] = await Promise.all([
+          getBuses(),
+          getAdminDrivers(),
+          getAdminStudents(),
+        ]);
+
+        const buses   = busData.buses     || [];
+        const drivers = driverData.drivers || [];
+        const students = studentData.students || [];
+
+        const activeBuses  = buses.filter(b => b.status === 'active').length;
+        const idleBuses    = buses.filter(b => b.status === 'idle').length;
+        // "Delayed" buses = buses whose assigned driver is on_leave or inactive
+        // Since trips are real-time, we derive delayed from non-active non-idle
+        const delayedBuses = buses.filter(
+          b => b.status !== 'active' && b.status !== 'idle'
+        ).length;
+
+        const driversOnDuty = drivers.filter(d => d.status === 'active').length;
+
+        const studentsActive = students.filter(s => s.status === 'active').length;
+
+        setStats({
+          activeBuses,
+          delayedBuses,
+          idleBuses,
+          driversOnDuty,
+          totalDrivers: drivers.length,
+          studentsTotal: students.length,
+          studentsActive,
+        });
+      } catch (err) {
+        console.error('Dashboard fetch error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardStats();
+  }, []);
+
+  const driverPct = stats.totalDrivers > 0
+    ? Math.round((stats.driversOnDuty / stats.totalDrivers) * 100)
+    : 0;
+
   return (
     <div className="page">
       <div className="page-header">
@@ -1389,26 +1553,80 @@ function PageDashboard({ showModal, unreadCount, onBellClick, onNavigate }) {
           <div className="page-title">Dashboard</div>
           <div className="page-subtitle">{getGreeting()} — {getDateString()}</div>
         </div>
-         
       </div>
+
       <div className="stat-grid">
-        <div className="stat-card s-green"><div className="stat-label">Active Buses</div><div className="stat-val green">18</div><div className="stat-sub"><span className="stat-trend up">+2</span> vs yesterday</div></div>
-        <div className="stat-card s-amber"><div className="stat-label">Delayed Buses</div><div className="stat-val amber">3</div><div className="stat-sub"><span className="stat-trend down">▲ 1</span> alert active</div></div>
-        <div className="stat-card s-blue"><div className="stat-label">Drivers on Duty</div><div className="stat-val blue">21</div><div className="stat-sub"><span className="stat-trend up">100%</span> assigned</div></div>
-        <div className="stat-card s-purple"><div className="stat-label">Students Today</div><div className="stat-val purple">1,248</div><div className="stat-sub"><span className="stat-trend up">+34</span> this week</div></div>
+        {/* Active Buses */}
+        <div className="stat-card s-green">
+          <div className="stat-label">Active Buses</div>
+          <div className="stat-val green">
+            {loading ? '—' : stats.activeBuses}
+          </div>
+          <div className="stat-sub">
+            <span className="stat-trend up">
+              {loading ? '—' : stats.idleBuses}
+            </span>
+            idle in fleet
+          </div>
+        </div>
+
+        {/* Delayed / Maintenance Buses */}
+        <div className="stat-card s-amber">
+          <div className="stat-label">Delayed Buses</div>
+          <div className="stat-val amber">
+            {loading ? '—' : stats.delayedBuses}
+          </div>
+          <div className="stat-sub">
+            <span className="stat-trend down">
+              {loading ? '—' : `▲ ${stats.delayedBuses}`}
+            </span>
+            {stats.delayedBuses === 1 ? 'alert' : 'alerts'} active
+          </div>
+        </div>
+
+        {/* Drivers on Duty */}
+        <div className="stat-card s-blue">
+          <div className="stat-label">Drivers on Duty</div>
+          <div className="stat-val blue">
+            {loading ? '—' : stats.driversOnDuty}
+          </div>
+          <div className="stat-sub">
+            <span className="stat-trend up">
+              {loading ? '—' : `${driverPct}%`}
+            </span>
+            assigned
+          </div>
+        </div>
+
+        {/* Students */}
+        <div className="stat-card s-purple">
+          <div className="stat-label">Students Enrolled</div>
+          <div className="stat-val purple">
+            {loading ? '—' : stats.studentsTotal.toLocaleString()}
+          </div>
+          <div className="stat-sub">
+            <span className="stat-trend up">
+              {loading ? '—' : stats.studentsActive}
+            </span>
+            active
+          </div>
+        </div>
       </div>
+
+      {/* Live Map card — unchanged */}
       <div className="map-card">
         <div className="card-header">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+            stroke="var(--accent)" strokeWidth="2">
+            <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>
+          </svg>
           <span className="card-title">Live Map</span>
           <span className="card-sub">— all buses</span>
         </div>
         <div style={{
           padding: '28px 24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 20,
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between', gap: 20,
         }}>
           <div>
             <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 5 }}>
@@ -1419,38 +1637,34 @@ function PageDashboard({ showModal, unreadCount, onBellClick, onNavigate }) {
             </div>
             <div style={{ display: 'flex', gap: 18, marginTop: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green)' }} />
-                <span style={{ color: 'var(--muted)' }}>On time (18)</span>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green)' }}/>
+                <span style={{ color: 'var(--muted)' }}>
+                  Active ({loading ? '…' : stats.activeBuses})
+                </span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }} />
-                <span style={{ color: 'var(--muted)' }}>Delayed (3)</span>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }}/>
+                <span style={{ color: 'var(--muted)' }}>
+                  Delayed ({loading ? '…' : stats.delayedBuses})
+                </span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3a4a60' }} />
-                <span style={{ color: 'var(--muted)' }}>Idle (2)</span>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3a4a60' }}/>
+                <span style={{ color: 'var(--muted)' }}>
+                  Idle ({loading ? '…' : stats.idleBuses})
+                </span>
               </div>
             </div>
           </div>
           <button
-            //onClick={() => showModal === undefined ? null : setActivePage('tracking')}
             onClick={() => onNavigate('tracking')}
             style={{
-              background: 'var(--accent)',
-              color: '#1a1a1a',
-              border: 'none',
-              borderRadius: 10,
-              padding: '13px 32px',
-              fontSize: 14,
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              fontFamily: "'DM Sans',sans-serif",
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-              transition: 'all .15s',
+              background: 'var(--accent)', color: '#1a1a1a',
+              border: 'none', borderRadius: 10,
+              padding: '13px 32px', fontSize: 14, fontWeight: 700,
+              cursor: 'pointer', display: 'flex', alignItems: 'center',
+              gap: 8, fontFamily: "'DM Sans',sans-serif",
+              whiteSpace: 'nowrap', flexShrink: 0, transition: 'all .15s',
               boxShadow: '0 4px 14px rgba(245,166,35,.35)',
             }}
             onMouseEnter={e => e.currentTarget.style.background = 'var(--accent2)'}
@@ -1463,28 +1677,6 @@ function PageDashboard({ showModal, unreadCount, onBellClick, onNavigate }) {
     </div>
   );
 }
-
-// Bus icon for admin map
-const makeBusIcon = (color) => L.divIcon({
-  html: `<div style="
-    background:${color};
-    width:40px;height:40px;border-radius:50%;
-    display:flex;align-items:center;justify-content:center;
-    font-size:20px;border:3px solid #fff;
-    box-shadow:0 2px 10px rgba(0,0,0,.35);
-  ">🚌</div>`,
-  className: '',
-  iconSize: [40, 40],
-  iconAnchor: [20, 20],
-});
-
-const ROUTE_COLORS = {
-  A: '#1a73e8',
-  B: '#0f9d58',
-  C: '#f9ab00',
-  D: '#9334e6',
-};
-
 // function PageTracking({ showToast }) {
 //   const canvasRef = useRef(null);
 //   const busesRef = useRef(INITIAL_BUSES.map(b => ({ ...b })));
@@ -3830,6 +4022,13 @@ function PageProfile({ showToast }) {
   const [error, setError] = useState("");
   const [twoFA, setTwoFA] = useState(false);
   const [togglingFA, setTogglingFA] = useState(false);
+  const [activities, setActivities] = useState([]);
+
+  useEffect(() => {
+  getRecentActivity()
+    .then(res => setActivities(res.activities || []))
+    .catch(() => {});
+}, []);
 
   // Fetch admin profile on mount
   useEffect(() => {
@@ -3900,14 +4099,14 @@ function PageProfile({ showToast }) {
     );
   }
 
-  const activities = [
-    { dot:"var(--green)",  text:"Added new bus KA-09-I to Route D",           time:"Today, 09:22 AM" },
-    { dot:"var(--accent)", text:"Updated driver P. Sharma's route assignment",  time:"Today, 08:45 AM" },
-    { dot:"var(--blue2)",  text:"Generated April analytics report",             time:"Yesterday, 05:10 PM" },
-    { dot:"var(--purple)", text:"Created Route E — East Extension",             time:"Apr 19, 03:40 PM" },
-    { dot:"var(--red)",    text:"Resolved bus KA-05-E engine warning",          time:"Apr 19, 11:15 AM" },
-    { dot:"var(--green)",  text:"Added 12 new students to Route B",             time:"Apr 18, 02:30 PM" },
-  ];
+  // const activities = [
+  //   { dot:"var(--green)",  text:"Added new bus KA-09-I to Route D",           time:"Today, 09:22 AM" },
+  //   { dot:"var(--accent)", text:"Updated driver P. Sharma's route assignment",  time:"Today, 08:45 AM" },
+  //   { dot:"var(--blue2)",  text:"Generated April analytics report",             time:"Yesterday, 05:10 PM" },
+  //   { dot:"var(--purple)", text:"Created Route E — East Extension",             time:"Apr 19, 03:40 PM" },
+  //   { dot:"var(--red)",    text:"Resolved bus KA-05-E engine warning",          time:"Apr 19, 11:15 AM" },
+  //   { dot:"var(--green)",  text:"Added 12 new students to Route B",             time:"Apr 18, 02:30 PM" },
+  // ];
 
   return (
     <div className="page">
@@ -4030,7 +4229,9 @@ function PageProfile({ showToast }) {
             {activities.map((a, i) => (
               <div className="activity-item" key={i}>
                 <div className="activity-dot" style={{ background: a.dot }} />
-                <div><div className="activity-text">{a.text}</div><div className="activity-time">{a.time}</div></div>
+                <div><div className="activity-text">{a.text}</div><div className="activity-time">
+  {new Date(a.time).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+</div></div>
               </div>
             ))}
           </div>
