@@ -4023,6 +4023,7 @@ function PageProfile({ showToast }) {
   const [twoFA, setTwoFA] = useState(false);
   const [togglingFA, setTogglingFA] = useState(false);
   const [activities, setActivities] = useState([]);
+  const [profileStats, setProfileStats] = useState({ buses: 0, drivers: 0, routes: 0 });
 
   useEffect(() => {
   getRecentActivity()
@@ -4031,30 +4032,64 @@ function PageProfile({ showToast }) {
 }, []);
 
   // Fetch admin profile on mount
-  useEffect(() => {
-    const fetchAdminProfile = async () => {
-      try {
-        setLoading(true);
-        const data = await getAdminProfile();
+  // useEffect(() => {
+  //   const fetchAdminProfile = async () => {
+  //     try {
+  //       setLoading(true);
+  //       const data = await getAdminProfile();
         
-        if (data.admin) {
-          setAdminId(data.admin._id);
-          setName(data.admin.name || "");
-          setEmail(data.admin.email || "");
-          setTwoFA(data.admin.twoFA || false);
-          //setPhone(data.admin.phone || "");
-          //setDept(data.admin.department || "");
-        }
-      } catch (err) {
-        console.error('Failed to load admin profile:', err);
-        setError('Failed to load profile');
-      } finally {
-        setLoading(false);
-      }
-    };
+  //       if (data.admin) {
+  //         setAdminId(data.admin._id);
+  //         setName(data.admin.name || "");
+  //         setEmail(data.admin.email || "");
+  //         setTwoFA(data.admin.twoFA || false);
+  //         //setPhone(data.admin.phone || "");
+  //         //setDept(data.admin.department || "");
+  //       }
+  //     } catch (err) {
+  //       console.error('Failed to load admin profile:', err);
+  //       setError('Failed to load profile');
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
 
-    fetchAdminProfile();
-  }, []);
+  //   fetchAdminProfile();
+  // }, []);
+  useEffect(() => {
+  const fetchAdminProfile = async () => {
+    try {
+      setLoading(true);
+      const [profileData, busData, driverData, routeData] = await Promise.all([
+        getAdminProfile(),
+        getBuses(),
+        getAdminDrivers(),
+        getRoutes(),
+      ]);
+
+      if (profileData.admin) {
+        setAdminId(profileData.admin._id);
+        setName(profileData.admin.name || '');
+        setEmail(profileData.admin.email || '');
+        setTwoFA(profileData.admin.twoFA || false);
+      }
+
+      setProfileStats({
+        buses:   (busData.buses     || []).length,
+        drivers: (driverData.drivers || []).length,
+        routes:  (routeData.routes   || []).length,
+      });
+
+    } catch (err) {
+      console.error('Failed to load admin profile:', err);
+      setError('Failed to load profile');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchAdminProfile();
+}, []);
 
   // Save profile changes
   const handleSave = async () => {
@@ -4139,10 +4174,19 @@ function PageProfile({ showToast }) {
           <div className="profile-role"><span className="status-pill sp-amber">Super Admin</span></div>
           <div className="profile-divider" />
           <div className="profile-stat-row">
-            <div className="profile-stat"><div className="profile-stat-val">23</div><div className="profile-stat-lbl">Buses</div></div>
-            <div className="profile-stat"><div className="profile-stat-val">21</div><div className="profile-stat-lbl">Drivers</div></div>
-            <div className="profile-stat"><div className="profile-stat-val">4</div><div className="profile-stat-lbl">Routes</div></div>
-          </div>
+  <div className="profile-stat">
+    <div className="profile-stat-val">{profileStats.buses}</div>
+    <div className="profile-stat-lbl">Buses</div>
+  </div>
+  <div className="profile-stat">
+    <div className="profile-stat-val">{profileStats.drivers}</div>
+    <div className="profile-stat-lbl">Drivers</div>
+  </div>
+  <div className="profile-stat">
+    <div className="profile-stat-val">{profileStats.routes}</div>
+    <div className="profile-stat-lbl">Routes</div>
+  </div>
+</div>
           <div className="profile-divider" />
           <div style={{ width: "100%", fontSize: 12, color: "var(--muted)", lineHeight: 1.8 }}>
             <div style={{ display: "flex", justifyContent: "space-between" }}><span>Member since</span><span style={{ color: "var(--text)", fontWeight: 600 }}>Jan 2024</span></div>
